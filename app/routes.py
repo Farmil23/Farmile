@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, request, Blueprint
+from flask import render_template, redirect, url_for, request, Blueprint, abort, flash
 from flask_login import current_user, login_required, login_user, logout_user
 from app import db, oauth
 from app.models import User, ProjectSubmission
@@ -97,11 +97,57 @@ def submit_project():
 @bp.route('/interview/<path_name>')
 @login_required
 def interview(path_name):
-    submission = ProjectSubmission.query.filter_by(author=current_user, path_name=path_name).first()
-    if not submission:
-        return redirect(url_for('routes.paths'))
+    submission = ProjectSubmission.query.filter_by(author=current_user, path_name=path_name).first_or_404()
+    
+    # Keamanan tambahan: Pastikan submission ini benar-benar milik user yang login
+    if submission.author != current_user:
+        abort(403)
 
-    return render_template('interview.html', title=f"Wawancara {path_name.title()}", path_name=path_name)
+    return render_template('interview.html', title=f"Wawancara {submission.path_name.replace('-', ' ').title()}", submission=submission)
+
+
+# app/routes.py
+
+# ... (setelah fungsi interview) ...
+
+@bp.route('/cancel-submission', methods=['POST'])
+@login_required
+def cancel_submission():
+    path_name = request.form.get('path_name')
+
+    # Cari submission yang sesuai dengan user dan path_name
+    submission = ProjectSubmission.query.filter_by(author=current_user, path_name=path_name).first()
+
+    # Jika submission ditemukan, hapus dari database
+    if submission:
+        db.session.delete(submission)
+        db.session.commit()
+        # Anda bisa menambahkan flash message di sini untuk notifikasi
+        # flash('Submission proyek Anda telah berhasil dibatalkan.')
+
+    # Arahkan pengguna kembali ke halaman pemilihan jalur
+    return redirect(url_for('routes.paths'))
+
+
+@bp.route('/edit-submission/<int:submission_id>', methods=['GET', 'POST'])
+@login_required
+def edit_submission(submission_id):
+    submission = ProjectSubmission.query.get_or_404(submission_id)
+
+    if submission.author != current_user:
+        abort(403)
+
+    if request.method == 'POST':
+        new_link = request.form.get('project_link')
+        if new_link:
+            submission.project_link = new_link
+            db.session.commit()
+            # TAMBAHKAN BARIS INI
+            flash('Link proyek berhasil diperbarui!', 'success')
+            return redirect(url_for('routes.profile'))
+
+    return render_template('edit_submission.html', title="Edit Link Proyek", submission=submission)
+
 
 # --- Rute Tes untuk Error 500 ---
 @bp.route('/test500')

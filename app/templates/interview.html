@@ -8,4 +8,18 @@
         <p style="text-align: center; color: #6c757d;">(Fitur wawancara sedang dalam pengembangan)</p>
         <p style="text-align: center;">Setelah wawancara selesai, skor dan feedback akan muncul di halaman profil Anda.</p>
     </div>
+    <div class="review-section">
+        <p>Sebelum mulai, Anda bisa meninjau atau memperbaiki link proyek Anda.</p>
+        <a href="{{ url_for('routes.edit_submission', submission_id=submission.id) }}" class="button-secondary">Tinjau/Edit Link Proyek</a>
+    </div>
+    
+    <hr style="margin: 30px 0;">
+
+    <div class="cancel-section">
+        <p>Merasa belum siap atau ingin memperbaiki proyek Anda?</p>
+        <form action="{{ url_for('routes.cancel_submission') }}" method="POST">
+            <input type="hidden" name="path_name" value="{{ path_name }}">
+            <button type="submit" class="button-danger js-confirm-cancel">Batalkan</button>
+        </form>
+    </div>
 {% endblock %}

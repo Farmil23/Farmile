@@ -1,87 +1,329 @@
 /* static/css/style.css */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    background-color: #f8f9fa;
-    color: #212529;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+    --primary-color: #4A90E2;
+    --primary-hover: #357ABD;
+    --danger-color: #D0021B;
+    --danger-hover: #A00114;
+    
+    /* Variabel Tema Terang (Light Theme) */
+    --background-color: #F7F8FC;
+    --card-bg-color: #FFFFFF;
+    --text-color: #333333;
+    --subtle-text-color: #777777;
+    --border-color: #EAEAEA;
+    --header-bg-color: #FFFFFF;
+    --shadow-color: rgba(0, 0, 0, 0.05);
 }
 
-main {
-    max-width: 900px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+[data-theme='dark'] {
+    /* Variabel Tema Gelap (Dark Theme) */
+    --background-color: #121212;
+    --card-bg-color: #1E1E1E;
+    --text-color: #E0E0E0;
+    --subtle-text-color: #A0A0A0;
+    --border-color: #333333;
+    --header-bg-color: #1E1E1E;
+    --shadow-color: rgba(0, 0, 0, 0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.7;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 header {
-    background-color: #ffffff;
+    background-color: var(--header-bg-color);
     padding: 1rem 2rem;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 header h1 {
     margin: 0;
     font-size: 1.5rem;
+    font-weight: 600;
 }
 
 .header-link {
     text-decoration: none;
-    color: #212529;
+    color: var(--primary-color);
 }
 
 header nav a {
-    margin-left: 15px;
+    margin-left: 20px;
     text-decoration: none;
-    color: #495057;
+    color: var(--subtle-text-color);
     font-weight: 500;
+    transition: color 0.2s ease;
 }
 
 header nav a:hover {
-    color: #007bff;
+    color: var(--primary-color);
+}
+
+/* === Konten Utama & Layout === */
+main {
+    max-width: 960px;
+    margin: 40px auto;
+    padding: 0 20px;
 }
 
 footer {
     text-align: center;
-    margin-top: 40px;
-    padding: 20px;
+    margin-top: 50px;
+    padding: 30px;
     font-size: 0.9rem;
-    color: #6c757d;
+    color: var(--subtle-text-color);
+    border-top: 1px solid var(--border-color);
 }
 
-.hero {
+/* === Tombol (Buttons) === */
+.button-primary, .button-danger {
+    display: inline-block;
+    color: #ffffff;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.button-primary { background-color: var(--primary-color); }
+.button-primary:hover { background-color: var(--primary-hover); }
+
+.button-danger { background-color: var(--danger-color); }
+.button-danger:hover { background-color: var(--danger-hover); }
+
+.button-primary:active, .button-danger:active {
+    transform: translateY(1px);
+}
+
+/* === Kartu (Cards) === */
+.card {
+    background-color: var(--card-bg-color);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.path-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.card-link { text-decoration: none; color: inherit; }
+
+/* === Halaman Spesifik === */
+.profile-header, .hero, .paths-container {
     text-align: center;
     padding: 40px 20px;
-}
-
-.button-primary {
-    display: inline-block;
-    background-color: #007bff;
-    color: #ffffff;
-    padding: 12px 24px;
-    border-radius: 5px;
-    text-decoration: none;
-    font-weight: bold;
-    margin-top: 20px;
-}
-
-.button-primary:hover {
-    background-color: #0056b3;
-}
-
-.profile-header {
-    text-align: center;
+    background-color: var(--card-bg-color);
+    border-radius: 12px;
     margin-bottom: 40px;
 }
 
 .profile-pic {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
+    margin-bottom: 20px;
+    border: 4px solid var(--primary-color);
+}
+
+.sertifikat-item {
+    margin-bottom: 20px;
+}
+
+.sertifikat-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.sertifikat-actions form { margin: 0; }
+
+.submission-form {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.submission-form input[type="url"] {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+}
+
+/* === Pop-up Modal Kustom === */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-box {
+    background-color: var(--card-bg-color);
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.visible .modal-box {
+    transform: scale(1);
+}
+
+.modal-box h3 {
     margin-bottom: 15px;
+}
+
+.modal-box p {
+    margin-bottom: 25px;
+    color: var(--subtle-text-color);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.modal-button-cancel {
+    background-color: #eee;
+    color: #333;
+}
+.modal-button-cancel:hover {
+    background-color: #ddd;
+}
+
+/* static/css/style.css */
+/* ... (tambahkan di bagian Buttons) ... */
+
+.button-secondary {
+    display: inline-block;
+    background-color: #6c757d;
+    color: #ffffff;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.button-secondary:hover { background-color: #5a6268; }
+
+/* ... (tambahkan di bagian Halaman Spesifik) ... */
+
+.form-container.card {
+    padding: 40px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 20px;
+    align-items: center;
+}
+
+.review-section {
+    text-align: center;
+    margin-top: 30px;
+}
+
+
+/* static/css/style.css */
+/* ... (tambahkan di bagian paling bawah) ... */
+
+/* === Flash Message / Alerts === */
+.flash-container {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 9999;
+    width: 300px;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #fff;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.alert.alert-success {
+    background-color: #28a745; /* Hijau untuk sukses */
+    border-color: #28a745;
+}
+
+.alert.fade-out {
+    opacity: 0;
+}
+
+
+
+#theme-toggle {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 20px;
 }

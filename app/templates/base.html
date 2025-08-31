@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
+<html lang="id" data-theme="light"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title|default('FARSIGHT') }} - FARSIGHT</title>
@@ -10,21 +9,114 @@
     <header>
         <h1><a href="{{ url_for('routes.index') }}" class="header-link">FARSIGHT MVP</a></h1>
         <nav>
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('routes.profile') }}">Profil</a>
-                <a href="{{ url_for('routes.logout') }}">Logout</a>
-            {% else %}
-                <a href="{{ url_for('routes.login') }}">Login</a>
-            {% endif %}
+            <div style="display: flex; align-items: center;">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('routes.profile') }}">Profil</a>
+                    <a href="{{ url_for('routes.logout') }}">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('routes.login') }}">Login</a>
+                {% endif %}
+                <button id="theme-toggle" title="Toggle theme">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+            </div>
         </nav>
     </header>
 
     <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
+
     </main>
 
     <footer>
         <p>&copy; 2025 Farsight Project by Farhan Kamil Hermansyah</p>
     </footer>
+
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modalTitle">Konfirmasi Tindakan</h3>
+            <p id="modalMessage">Apakah Anda yakin?</p>
+            <div class="modal-actions">
+                <button id="modalCancelBtn" class="button-primary modal-button-cancel">Batal</button>
+                <button id="modalConfirmBtn" class="button-danger">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // (Semua kode JavaScript Anda untuk modal, flash message, dan theme switcher ada di sini)
+        // Logika untuk modal konfirmasi
+        const modal = document.getElementById('confirmModal');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        let formToSubmit = null;
+        const confirmTriggers = document.querySelectorAll('.js-confirm-cancel');
+        confirmTriggers.forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                formToSubmit = event.target.closest('form');
+                modal.classList.add('visible');
+            });
+        });
+        modalCancelBtn.addEventListener('click', () => {
+            modal.classList.remove('visible');
+            formToSubmit = null;
+        });
+        modalConfirmBtn.addEventListener('click', () => {
+            if (formToSubmit) {
+                formToSubmit.submit();
+            }
+        });
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.remove('visible');
+                formToSubmit = null;
+            }
+        });
+
+        // Logika untuk menghilangkan flash message
+        document.addEventListener('DOMContentLoaded', () => {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.classList.add('fade-out');
+                    setTimeout(() => alert.remove(), 500);
+                }, 5000);
+            });
+        });
+
+        // Logika untuk Theme Switcher
+        const themeToggle = document.getElementById('theme-toggle');
+        const applyTheme = (theme) => {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        };
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme(newTheme);
+        });
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else {
+            // Opsional: deteksi preferensi sistem
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(prefersDark ? 'dark' : 'light');
+        }
+    </script>
+
 </body>
 </html>
