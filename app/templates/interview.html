@@ -10,7 +10,7 @@
     </div>
     <div class="review-section">
         <p>Sebelum mulai, Anda bisa meninjau atau memperbaiki link proyek Anda.</p>
-        <a href="{{ url_for('routes.edit_submission', submission_id=submission.id) }}" class="button-secondary">Tinjau/Edit Link Proyek</a>
+        <a href="{{ url_for('routes.edit_submission', submission_id=submission.id, next=request.path) }}" class="button-secondary">Tinjau/Edit Link Proyek</a>
     </div>
     
     <hr style="margin: 30px 0;">

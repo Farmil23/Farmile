@@ -6,11 +6,15 @@
     <p>Untuk jalur: <strong>{{ submission.path_name|replace('-', ' ')|title }}</strong></p>
     
     <form method="POST" action="{{ url_for('routes.edit_submission', submission_id=submission.id) }}" class="submission-form">
+        {% if next_url %}
+            <input type="hidden" name="next_url" value="{{ next_url }}">
+        {% endif %}
+
         <label for="project_link">Link Proyek Baru:</label>
         <input type="url" id="project_link" name="project_link" value="{{ submission.project_link }}" required>
         
         <div class="form-actions">
-            <a href="{{ url_for('routes.profile') }}" class="button-secondary">Kembali</a>
+            <a href="{{ next_url or url_for('routes.profile') }}" class="button-secondary">Kembali</a>
             <button type="submit" class="button-primary">Simpan Perubahan</button>
         </div>
     </form>

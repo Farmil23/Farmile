@@ -110,44 +110,54 @@ def interview(path_name):
 
 # ... (setelah fungsi interview) ...
 
+# app/routes.py
+
 @bp.route('/cancel-submission', methods=['POST'])
 @login_required
 def cancel_submission():
     path_name = request.form.get('path_name')
+    origin = request.form.get('origin') # Ambil penanda 'origin'
 
-    # Cari submission yang sesuai dengan user dan path_name
     submission = ProjectSubmission.query.filter_by(author=current_user, path_name=path_name).first()
 
-    # Jika submission ditemukan, hapus dari database
     if submission:
         db.session.delete(submission)
         db.session.commit()
-        # Anda bisa menambahkan flash message di sini untuk notifikasi
-        # flash('Submission proyek Anda telah berhasil dibatalkan.')
+        flash('Submission proyek berhasil dibatalkan.', 'success')
 
-    # Arahkan pengguna kembali ke halaman pemilihan jalur
+    # Jika origin adalah 'profile', kembali ke profil. Jika tidak, kembali ke paths.
+    if origin == 'profile':
+        return redirect(url_for('routes.profile'))
+    
     return redirect(url_for('routes.paths'))
 
+
+# app/routes.py
 
 @bp.route('/edit-submission/<int:submission_id>', methods=['GET', 'POST'])
 @login_required
 def edit_submission(submission_id):
     submission = ProjectSubmission.query.get_or_404(submission_id)
+    next_url = request.args.get('next') # Ambil 'next' dari URL saat GET
 
     if submission.author != current_user:
         abort(403)
 
     if request.method == 'POST':
         new_link = request.form.get('project_link')
+        next_url_from_form = request.form.get('next_url') # Ambil 'next' dari form saat POST
+
         if new_link:
             submission.project_link = new_link
             db.session.commit()
-            # TAMBAHKAN BARIS INI
             flash('Link proyek berhasil diperbarui!', 'success')
-            return redirect(url_for('routes.profile'))
+        
+        # Jika ada next_url, kembali ke sana. Jika tidak, kembali ke profil.
+        if next_url_from_form:
+            return redirect(next_url_from_form)
+        return redirect(url_for('routes.profile'))
 
-    return render_template('edit_submission.html', title="Edit Link Proyek", submission=submission)
-
+    return render_template('edit_submission.html', title="Edit Link Proyek", submission=submission, next_url=next_url)
 
 # --- Rute Tes untuk Error 500 ---
 @bp.route('/test500')

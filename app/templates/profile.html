@@ -26,6 +26,8 @@
                             <a href="{{ url_for('routes.interview', path_name=sub.path_name) }}" class="button-primary">Lanjutkan Wawancara</a>
                             <a href="{{ url_for('routes.edit_submission', submission_id=sub.id) }}" class="button-secondary">Edit Link</a>
                             <form action="{{ url_for('routes.cancel_submission') }}" method="POST">
+                                <input type="hidden" name="origin" value="profile"> 
+                                
                                 <input type="hidden" name="path_name" value="{{ sub.path_name }}">
                                 <button type="submit" class="button-danger js-confirm-cancel">Batalkan</button>
                             </form>
