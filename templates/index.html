@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="hero">
+        <h2>Bangun Portofolio Karier Impianmu</h2>
+        <p>Pilih jalur, selesaikan proyek nyata, dan buktikan keahlianmu melalui wawancara AI.</p>
+        
+        {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('login') }}" class="button-primary">Mulai dengan Google</a>
+        {% else %}
+            <a href="{{ url_for('profile') }}" class="button-primary">Lihat Profil Anda</a>
+        {% endif %}
+    </div>
+{% endblock %}
