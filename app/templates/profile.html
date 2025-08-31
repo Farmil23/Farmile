@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="profile-header">
+        <img src="{{ user.profile_pic }}" alt="Foto Profil {{ user.name }}" class="profile-pic">
+        <h2>Selamat Datang, {{ user.name }}!</h2>
+        <p>{{ user.email }}</p>
+    </div>
+    
+    <div class="sertifikat-section">
+        <h3>Sertifikat Digital Anda</h3>
+        
+        {% if submissions %}
+            <div class="sertifikat-list">
+                {% for sub in submissions %}
+                <div class="sertifikat-item card">
+                    <h4>Jalur: {{ sub.path_name|title }}</h4>
+                    <p><strong>Link Proyek:</strong> <a href="{{ sub.project_link }}" target="_blank">Lihat Proyek</a></p>
+                    <p><strong>Skor Wawancara:</strong> {{ sub.interview_score or 'Menunggu' }}</p>
+                    <p><strong>Feedback:</strong> {{ sub.interview_feedback or 'Menunggu' }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Anda belum menyelesaikan proyek apa pun. Mulai sekarang!</p>
+            <a href="{{ url_for('routes.paths') }}" class="button-primary">Lihat Jalur Karier</a>
+        {% endif %}
+    </div>
+{% endblock %}
