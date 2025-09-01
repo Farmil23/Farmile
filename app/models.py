@@ -13,19 +13,33 @@ order = db.Column(db.Integer, nullable=False)
 career_path = db.Column(db.String(100), nullable=False)
 lessons = db.relationship('Lesson', backref='module', lazy='dynamic', cascade="all, delete-orphan")
 
+# app/models.py
+
+# ... (tambahkan di bawah class ChatMessage) ...
+
+class Module(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    career_path = db.Column(db.String(100), nullable=False)
+    lessons = db.relationship('Lesson', backref='module', lazy='dynamic', cascade="all, delete-orphan")
+
 class Lesson(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     order = db.Column(db.Integer, nullable=False)
     url = db.Column(db.String(500)) # Link ke artikel/video
     module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False)
+    # --- TAMBAHKAN DUA BARIS INI ---
+    lesson_type = db.Column(db.String(50), default='article') # 'article', 'video', 'quiz'
+    estimated_time = db.Column(db.Integer) # Dalam menit
 
 class UserProgress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
-
+    
 class User(UserMixin, db.Model):
     # INI YANG PALING PENTING, PASTIKAN ADA
     id = db.Column(db.Integer, primary_key=True)
@@ -98,4 +112,3 @@ class ChatSession(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     messages = db.relationship('ChatMessage', backref='session', lazy='dynamic', cascade="all, delete-orphan")
 
-    

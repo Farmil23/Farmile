@@ -4,30 +4,32 @@
     {% include 'dashboard_sidebar.html' %}
     <main class="dashboard-content">
         <div class="page-header">
-            <div>
-                <h2>Roadmap: {{ current_user.career_path|replace('-', ' ')|title }}</h2>
-                <p class="subtitle">Ikuti alur belajar ini untuk menguasai skill yang dibutuhkan.</p>
             </div>
-        </div>
-
         <h4>Progres Keseluruhan: {{ progress }}%</h4>
-        <div class="progress-bar" style="margin-bottom: 30px;">
+        <div class="progress-bar">
             <div class="progress-bar-inner" style="width: {{ progress }}%;"></div>
         </div>
-
         <div class="module-accordion">
             {% for module in modules %}
-            <details class="module-item card">
-                <summary>{{ module.title }}</summary>
+            <details class="module-item card" open>
+                <summary>
+                    <div class="summary-title">
+                        <span class="module-order">Bagian {{ module.order }}</span>
+                        {{ module.title }}
+                    </div>
+                </summary>
                 <ul class="lesson-list">
                     {% for lesson in module.lessons.order_by('order').all() %}
                     <li>
-                        <input type="checkbox" id="lesson-{{ lesson.id }}" data-lesson-id="{{ lesson.id }}" 
-                               {% if lesson.id in completed_lesson_ids %}checked{% endif %}>
-                        <label for="lesson-{{ lesson.id }}">{{ lesson.title }}</label>
-                        {% if lesson.url %}
-                        <a href="{{ lesson.url }}" target="_blank" class="learn-link">Mulai Belajar ➔</a>
-                        {% endif %}
+                        <input type="checkbox" id="lesson-{{ lesson.id }}" data-lesson-id="{{ lesson.id }}" {% if lesson.id in completed_lesson_ids %}checked{% endif %}>
+                        <label for="lesson-{{ lesson.id }}" class="lesson-label">
+                            {% if lesson.lesson_type == 'video' %}<svg></svg>{% else %}<svg></svg>{% endif %}
+                            <div class="lesson-info">
+                                {{ lesson.title }}
+                                <span>Estimasi: {{ lesson.estimated_time }} menit</span>
+                            </div>
+                        </label>
+                        <a href="{{ lesson.url }}" target="_blank" class="learn-link button-secondary">Mulai</a>
                     </li>
                     {% endfor %}
                 </ul>
@@ -36,16 +38,4 @@
         </div>
     </main>
 </div>
-<script>
-    // Script untuk mengirim status checkbox ke backend
-    document.querySelectorAll('.lesson-list input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', async (e) => {
-            if (e.target.checked) {
-                const lessonId = e.target.dataset.lessonId;
-                await fetch(`/complete-lesson/${lessonId}`, { method: 'POST' });
-                // Di sini bisa ditambahkan logika untuk update progress bar secara real-time
-            }
-        });
-    });
-</script>
 {% endblock %}

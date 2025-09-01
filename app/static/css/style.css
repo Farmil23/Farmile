@@ -822,3 +822,25 @@ select {
 .lesson-list li { display: flex; align-items: center; padding: 10px 0; }
 .lesson-list input[type="checkbox"] { margin-right: 15px; }
 .lesson-list .learn-link { margin-left: auto; text-decoration: none; color: var(--primary-color); font-weight: 500; }
+.module-item summary { display: flex; align-items: center; justify-content: space-between; }
+.summary-title { font-size: 1.2rem; font-weight: 600; }
+.module-order { font-size: 0.8rem; font-weight: 500; color: var(--primary-color); display: block; margin-bottom: 5px;}
+.lesson-label { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
+.lesson-info span { font-size: 0.85rem; color: var(--text-secondary); display: block; line-height: 1; }
+.learn-link.button-secondary { padding: 6px 14px; text-decoration: none; }
+
+
+#session-title-container { position: relative; }
+#session-title-input {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    color: var(--text-primary);
+    border: none;
+    background: var(--border-color);
+    padding: 5px 10px;
+    border-radius: 8px;
+}
+.hidden { display: none; }
+.edit-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 5px; }
+.edit-btn:hover { color: var(--primary-color); }
