@@ -7,10 +7,12 @@
         <h3>Riwayat Percakapan</h3>
         <button id="close-sidebar-btn" class="icon-btn">&times;</button>
     </div>
-    <form action="{{ url_for('routes.new_chat_session') }}" method="POST">
-        <button type="submit" class="button-primary new-chat-btn">＋ Percakapan Baru</button>
-    </form>
+    
     <nav class="session-list">
+        <form action="{{ url_for('routes.new_chat_session') }}" method="POST">
+            <button type="submit" class="button-primary new-chat-btn">＋ Percakapan Baru</button>
+        </form>
+        
         {% for session in all_sessions %}
         <a href="{{ url_for('routes.chatbot_session', session_id=session.id) }}" 
            class="session-item {% if session.id == current_session.id %}active{% endif %}">

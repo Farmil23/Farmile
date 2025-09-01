@@ -11,7 +11,10 @@
 <body data-theme="dark">
     <header>
         <a href="{{ url_for('routes.dashboard') }}" class="header-link">FARSIGHT</a>
+
+        
         <nav class="main-app-nav">
+            <a href="{{ url_for('routes.dashboard') }}" class="#">DASHBOARD</a>
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('routes.profile') }}" class="profile-link" title="Pengaturan & Profil">
                     <img src="{{ current_user.profile_pic }}" alt="Profil">
