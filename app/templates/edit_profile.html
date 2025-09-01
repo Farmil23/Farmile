@@ -1,0 +1,17 @@
+{% extends "settings_base.html" %}
+{% block settings_content %}
+    <h2>Edit Profil</h2>
+    <hr>
+    <form method="POST" class="submission-form">
+        <label for="name">Nama Lengkap</label>
+        <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
+
+        <label for="semester">Semester</label>
+        <input type="number" id="semester" name="semester" value="{{ current_user.semester }}" required>
+
+        <div class="form-actions">
+            <a href="{{ url_for('routes.profile') }}" class="button-secondary">Batal</a>
+            <button type="submit" class="button-primary">Simpan Perubahan</button>
+        </div>
+    </form>
+{% endblock %}
