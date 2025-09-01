@@ -2,6 +2,8 @@ from app import db
 from flask_login import UserMixin
 from datetime import datetime
 
+# app/models.py
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     google_id = db.Column(db.String(100), unique=True, nullable=False)
@@ -11,11 +13,13 @@ class User(UserMixin, db.Model):
     semester = db.Column(db.Integer, nullable=True)
     has_completed_onboarding = db.Column(db.Boolean, default=False, nullable=False)
     career_path = db.Column(db.String(100), nullable=True)
+
+    # --- RELASI YANG DIPERLUKAN UNTUK DASBOR ---
     submissions = db.relationship('ProjectSubmission', backref='author', lazy='dynamic', cascade="all, delete-orphan")
     chat_sessions = db.relationship('ChatSession', backref='author', lazy='dynamic', cascade="all, delete-orphan")
-    chat_messages = db.relationship('ChatMessage', backref='author', lazy='dynamic', cascade="all, delete-orphan")
     modules = db.relationship('Module', backref='author', lazy='dynamic', cascade="all, delete-orphan")
     progress = db.relationship('UserProgress', backref='user', lazy='dynamic', cascade="all, delete-orphan")
+    # --- AKHIR BAGIAN PENTING ---
 
 # ... (Kode lengkap untuk semua model lain: Project, ProjectSubmission, ChatSession, ChatMessage, Module, Lesson, UserProgress)
     def __repr__(self):

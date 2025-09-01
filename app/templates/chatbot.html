@@ -63,7 +63,8 @@
         const toggleBtn = document.getElementById('sidebar-toggle-btn');
         const closeBtn = document.getElementById('close-sidebar-btn');
         const overlay = document.getElementById('sidebar-overlay');
-    
+        const sendIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+        const spinnerIconSVG = `<svg class="spinner" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="none" stroke-width="2" stroke="currentColor" opacity="0.3"/><path d="M12,2 A10,10 0 0,1 22,12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
         // --- FUNGSI UTAMA ---
     
         /**
@@ -91,15 +92,41 @@
             chatWindow.appendChild(messageDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
         };
+
+        // Di dalam <script>, di bawah fungsi addMessage
+        const showTypingIndicator = (show = true) => {
+            let indicator = document.getElementById('typing-indicator');
+            if (show && !indicator) {
+                const messageDiv = document.createElement('div');
+                messageDiv.id = 'typing-indicator';
+                messageDiv.className = 'message ai';
+                messageDiv.innerHTML = `
+                    <img src="[https://i.ibb.co/mC9kS26/ai-avatar.png](https://i.ibb.co/mC9kS26/ai-avatar.png)" class="avatar">
+                    <div class="bubble">
+                        <div class="typing-indicator"><span></span><span></span><span></span></div>
+                    </div>
+                `;
+                chatWindow.appendChild(messageDiv);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            } else if (!show && indicator) {
+                indicator.remove();
+            }
+        };
     
         /**
          * Mengirim pesan ke backend dan menampilkan respons AI.
          */
-        const sendChatMessage = async () => {
+         const sendChatMessage = async () => {
             const message = chatInput.value.trim();
             if (!message) return;
+    
             addMessage(message, 'user', false);
             chatInput.value = '';
+    
+            // --- PERBAIKAN UTAMA DI SINI ---
+            sendBtn.disabled = true; // Nonaktifkan tombol
+            sendBtn.innerHTML = spinnerIconSVG; // Ganti ikon menjadi spinner
+    
             try {
                 const response = await fetch("{{ url_for('routes.chat_ai', session_id=current_session.id) }}", {
                     method: 'POST',
@@ -110,6 +137,10 @@
                 addMessage(data.response || data.error, 'ai', !data.error);
             } catch (error) {
                 addMessage('Tidak dapat terhubung ke server.', 'ai', false);
+            } finally {
+                // Selalu kembalikan tombol ke kondisi semula setelah selesai
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = sendIconSVG;
             }
         };
         

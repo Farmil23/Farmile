@@ -15,27 +15,17 @@
 
   <!-- Dashboard Sidebar -->
   <aside class="dashboard-sidebar" id="dashboardSidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-logo">
-        <h2>FARSIGHT</h2>
-      </div>
-      <button class="sidebar-close" id="sidebarClose">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
 
     <!-- User Profile Section -->
+  <!-- 
     <div class="sidebar-profile">
       <div class="profile-avatar">
         <img src="{{ current_user.profile_pic }}" alt="Profile" class="sidebar-profile-pic">
         <div class="profile-status online"></div>
       </div>
       <div class="profile-info">
-        <h3 class="profile-name">{{ current_user.name }}</h3>
-        <p class="profile-role">{{ current_user.career_path|replace('-', ' ')|title if current_user.career_path else 'Explorer' }}</p>
+        <h3 class="profile-name" style="font-size: 1.2rem;">{{ current_user.name }}</h3>
+        <p class="profile-role" style="font-size: 0.8rem;">{{ current_user.career_path|replace('-', ' ')|title if current_user.career_path else 'Explorer' }}</p>
         <div class="profile-level">
           <div class="level-progress">
             <div class="level-fill" style="width: {{ ((current_user.progress.count() / 50) * 100)|round|int }}%"></div>
@@ -44,7 +34,7 @@
         </div>
       </div>
     </div>
-
+  -->
     <!-- Navigation Menu -->
     <nav class="sidebar-nav">
       <div class="nav-section">
@@ -199,18 +189,7 @@
           </svg>
         </div>
         <div class="stat-content">
-          <div class="stat-number">
-            {% if current_user.modules.count() > 0 %}
-              {% set total_lessons = current_user.modules.join(Lesson).count() %}
-              {% if total_lessons > 0 %}
-                {{ ((current_user.progress.count() / total_lessons) * 100)|round|int }}%
-              {% else %}
-                0%
-              {% endif %}
-            {% else %}
-              0%
-            {% endif %}
-          </div>
+          <div class="stat-number">{{ progress_percentage }}%</div>
           <div class="stat-label">Progress Keseluruhan</div>
         </div>
       </div>

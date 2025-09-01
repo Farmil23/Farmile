@@ -67,59 +67,33 @@ def index():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    try:
-        # Get user statistics
-        completed_lessons_count = current_user.progress.count()
-        total_lessons = 0
-        if current_user.modules.count() > 0:
-            total_lessons = db.session.query(Lesson).join(Module).filter(Module.author == current_user).count()
-        
-        progress_percentage = 0
-        if total_lessons > 0:
-            progress_percentage = int((completed_lessons_count / total_lessons) * 100)
-        
-        # Get recent activities with error handling
-        recent_sessions = []
-        recent_submissions = []
-        recent_progress = []
-        
-        try:
-            recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(3).all()
-        except Exception as e:
-            print(f"Error getting chat sessions: {e}")
-            recent_sessions = []
-        
-        try:
-            recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(3).all()
-        except Exception as e:
-            print(f"Error getting submissions: {e}")
-            recent_submissions = []
-        
-        try:
-            recent_progress = current_user.progress.order_by(UserProgress.completed_at.desc()).limit(3).all()
-        except Exception as e:
-            print(f"Error getting progress: {e}")
-            recent_progress = []
-        
-        return render_template('dashboard.html', 
-                             title='Dasbor Anda',
-                             completed_lessons_count=completed_lessons_count,
-                             total_lessons=total_lessons,
-                             progress_percentage=progress_percentage,
-                             recent_sessions=recent_sessions,
-                             recent_submissions=recent_submissions,
-                             recent_progress=recent_progress)
-    except Exception as e:
-        print(f"Dashboard error: {e}")
-        # Return with empty data if there's an error
-        return render_template('dashboard.html', 
-                             title='Dasbor Anda',
-                             completed_lessons_count=0,
-                             total_lessons=0,
-                             progress_percentage=0,
-                             recent_sessions=[],
-                             recent_submissions=[],
-                             recent_progress=[])
+    # --- LOGIKA PERHITUNGAN STATISTIK UNTUK DASBOR BARU ---
+    
+    # 1. Hitung progres roadmap
+    completed_lessons_count = current_user.progress.count()
+    modules_for_path = current_user.modules.filter_by(career_path=current_user.career_path)
+    total_lessons = db.session.query(Lesson).join(Module).filter(Module.id.in_([m.id for m in modules_for_path])).count()
+    
+    progress_percentage = 0
+    if total_lessons > 0:
+        progress_percentage = int((completed_lessons_count / total_lessons) * 100)
+
+    # 2. Ambil data untuk kartu "Aktivitas Terbaru"
+    recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(1).all()
+    recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(1).all()
+    # Pastikan relasi 'lesson' di-load untuk menghindari query tambahan
+    recent_progress = current_user.progress.options(
+        db.joinedload(UserProgress.lesson) # Eager loading untuk efisiensi
+    ).order_by(UserProgress.completed_at.desc()).limit(1).all()
+    
+    return render_template(
+        'dashboard.html', 
+        title='Dasbor Anda',
+        progress_percentage=progress_percentage,
+        recent_sessions=recent_sessions,
+        recent_submissions=recent_submissions,
+        recent_progress=recent_progress
+    )
 
 @bp.route('/login')
 def login():
@@ -316,34 +290,6 @@ def rename_session(session_id):
         return jsonify({'status': 'success', 'new_title': session.title})
     return jsonify({'status': 'error', 'message': 'Nama tidak boleh kosong'}), 400
 
-# app/routes.py -> di dalam grup RUTE CHATBOT
-
-@bp.route('/chatbot/new/lesson/<int:lesson_id>', methods=['POST'])
-@login_required
-def new_chat_for_lesson(lesson_id):
-    lesson = Lesson.query.get_or_404(lesson_id)
-
-    # Buat sesi chat baru dengan judul dari nama materi
-    new_session = ChatSession(author=current_user, title=f"Diskusi: {lesson.title}")
-    db.session.add(new_session)
-
-    # Buat pesan sapaan otomatis dari AI yang sudah berisi konteks
-    welcome_message_content = (
-        f"Tentu! Mari kita bahas tentang **{lesson.title}**. "
-        f"Ini adalah sumber belajar yang bisa kamu mulai: {lesson.url if lesson.url else 'Belum ada link.'}. "
-        "Apa ada pertanyaan spesifik tentang topik ini yang bisa saya bantu jelaskan?"
-    )
-    welcome_message = ChatMessage(
-        session=new_session, 
-        author=current_user, 
-        role='assistant', 
-        content=welcome_message_content
-    )
-    db.session.add(welcome_message)
-    db.session.commit()
-
-    # Arahkan pengguna langsung ke sesi chat yang baru dibuat
-    return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
 # ===============================================
 # RUTE PENGATURAN & PROFIL
@@ -351,24 +297,7 @@ def new_chat_for_lesson(lesson_id):
 @bp.route('/profile')
 @login_required
 def profile():
-    # Get user statistics for profile
-    completed_lessons_count = current_user.progress.count()
-    total_lessons = 50  # Assuming 50 total lessons in roadmap
-    progress_percentage = int((completed_lessons_count / total_lessons) * 100) if total_lessons > 0 else 0
-    
-    # Get recent activities
-    recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(2).all()
-    recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(3).all()
-    recent_progress = current_user.progress.order_by(UserProgress.completed_at.desc()).limit(2).all()
-    
-    return render_template('profile.html', 
-                         title="Profil Saya",
-                         completed_lessons_count=completed_lessons_count,
-                         total_lessons=total_lessons,
-                         progress_percentage=progress_percentage,
-                         recent_sessions=recent_sessions,
-                         recent_submissions=recent_submissions,
-                         recent_progress=recent_progress)
+    return render_template('profile.html', title="Profil Saya")
 
 @bp.route('/settings/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -449,7 +378,3 @@ def chat_ai(session_id):
         db.session.rollback()
         current_app.logger.error(f"BytePlus API Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI, silakan coba lagi.'}), 500
-    
-    
-# app/routes.py
-
