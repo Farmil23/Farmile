@@ -1,0 +1,20 @@
+{% extends "landing_base.html" %}
+{% block content %}
+<div class="hero">
+    <h1>Platform Cerdas untuk Karier Teknologimu</h1>
+    <p>Bukan hanya belajar, tapi membangun bukti nyata. FARSIGHT adalah rekan AI-mu untuk bertransisi dari mahasiswa menjadi profesional siap kerja.</p>
+    <a href="{{ url_for('routes.login') }}" class="button-primary">Mulai Gratis Sekarang</a>
+</div>
+
+<hr>
+<div id="fitur" class="section">
+    <h2 class="reveal-on-scroll">Semua yang Kamu Butuhkan di Satu Tempat</h2>
+    <div class="features-grid reveal-on-scroll">
+        <div class="card"><h3>📝 Roadmap Belajar Terarah</h3><p>Kurikulum yang relevan dengan industri, membawamu dari nol hingga siap membangun proyek nyata.</p></div>
+        <div class="card"><h3>📦 Proyek Portofolio Terverifikasi</h3><p>Kerjakan tantangan proyek yang dirancang untuk menguji dan membuktikan skill teknis fundamentalmu.</p></div>
+        <div class="card"><h3>💬 Mentor AI 24/7</h3><p>Jangan pernah stuck. Tanyakan apa saja, kapan saja, pada chatbot mentor yang selalu siap membantumu.</p></div>
+        <div class="card"><h3>🎙️ Simulasi Wawancara Realistis</h3><p>Latih mental dan kemampuan menjawab pertanyaan teknis dengan AI Interviewer yang akan memberimu feedback.</p></div>
+    </div>
+</div>
+
+{% endblock %}

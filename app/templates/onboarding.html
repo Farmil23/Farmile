@@ -1,0 +1,88 @@
+{% extends "onboarding_base.html" %}
+{% block content %}
+<div class="onboarding-container card">
+    <div class="progress-bar">
+        <div id="progressBar" class="progress-bar-inner"></div>
+    </div>
+
+    <div id="step-1" class="onboarding-step active">
+        <h3>Selamat datang di FARSIGHT! Siapa nama lengkapmu?</h3>
+        <div class="text-input-wrapper">
+            <input type="text" id="name-input" placeholder="Contoh: Farhan Kamil" value="{{ current_user.name }}">
+        </div>
+        <div class="onboarding-nav"><button class="button-primary">Lanjutkan</button></div>
+    </div>
+
+    <div id="step-2" class="onboarding-step">
+        <h3>Senang bertemu denganmu! Saat ini kamu berada di semester berapa?</h3>
+        <div class="answer-options">
+            <button data-value="1"><strong>Semester 1-2</strong><span>Baru memulai perjalanan.</span></button>
+            <button data-value="3"><strong>Semester 3-4</strong><span>Mulai mendalami materi.</span></button>
+            <button data-value="5"><strong>Semester 5-6</strong><span>Menuju tingkat lanjut.</span></button>
+            <button data-value="7"><strong>Semester 7+</strong><span>Siap untuk dunia profesional.</span></button>
+        </div>
+    </div>
+
+    <div id="step-3" class="onboarding-step">
+        <h3>Terakhir, aktivitas seperti apa yang paling menarik bagimu?</h3>
+        <div class="answer-options">
+            <button data-value="frontend"></button>
+            <button data-value="backend"></button>
+            <button data-value="data-analyst"></button>
+        </div>
+    </div>
+    
+    <div id="step-final" class="onboarding-step">
+        <h3>Luar biasa! Berdasarkan pilihanmu, kami merekomendasikan jalur <strong id="recommended-path"></strong>.</h3>
+        <div class="onboarding-nav"><button id="finishBtn" class="button-primary">Mulai Belajar!</button></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const steps = document.querySelectorAll('.onboarding-step');
+    const progressBar = document.getElementById('progressBar');
+    const totalSteps = 4; // Sekarang ada 4 langkah
+    let currentStep = 1;
+    let answers = {
+        user_name: document.getElementById('name-input').value // Ambil nama awal dari Google
+    };
+
+    function showStep(stepNum) {
+        currentStep = stepNum;
+        steps.forEach(step => step.classList.remove('active'));
+        document.getElementById(`step-${stepNum}`).classList.add('active');
+        progressBar.style.width = `${((currentStep -1) / (totalSteps -1)) * 100}%`;
+    }
+
+    // Navigasi dari Step 1 ke 2
+    document.querySelector('#step-1 .onboarding-nav button').addEventListener('click', () => {
+        answers['user_name'] = document.getElementById('name-input').value;
+        showStep(2);
+    });
+    
+    // Navigasi dari Step 2 ke 3
+    document.querySelector('#step-2 .onboarding-nav button').addEventListener('click', () => {
+        answers['semester'] = document.getElementById('semester-input').value;
+        showStep(3);
+    });
+
+    // Navigasi dari Step 3 ke Final
+    document.querySelector('#step-3 .answer-options').addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        if (button) {
+            const pathValue = button.getAttribute('data-value');
+            answers['career_focus'] = pathValue;
+            const pathText = { 'frontend': 'Frontend', 'backend': 'Backend', 'data-analyst': 'Data Analyst' };
+            document.getElementById('recommended-path').textContent = pathText[pathValue];
+            showStep('final');
+        }
+    });
+
+    // Tombol Finish (mengirim semua data)
+    document.getElementById('finishBtn').addEventListener('click', async () => {
+        // ... (fungsi fetch ke '/complete-onboarding' sama seperti sebelumnya) ...
+    });
+});
+</script>
+{% endblock %}

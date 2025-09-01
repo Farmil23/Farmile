@@ -1,25 +1,22 @@
 {% extends "base.html" %}
-
 {% block content %}
-    <h2>Simulasi Wawancara AI</h2>
-    <h3>Jalur: {{ path_name|title }}</h3>
+<div class="interview-container">
+    <div class="interviewer-panel card">
+        <img src="https://i.ibb.co/mC9kS26/ai-avatar.png" alt="AI Avatar" class="interviewer-avatar">
+        <div class="interviewer-info">
+            <strong>Farmile AI</strong>
+            <span>Technical Interviewer</span>
+        </div>
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
+    </div>
 
-    <div class="chat-container">
-        <p style="text-align: center; color: #6c757d;">(Fitur wawancara sedang dalam pengembangan)</p>
-        <p style="text-align: center;">Setelah wawancara selesai, skor dan feedback akan muncul di halaman profil Anda.</p>
+    <div id="chat-window" class="chat-window">
+        <div class="message ai"><div class="bubble">Selamat datang di simulasi wawancara teknis. Saya Farmile AI. Apakah Anda siap untuk memulai?</div></div>
     </div>
-    <div class="review-section">
-        <p>Sebelum mulai, Anda bisa meninjau atau memperbaiki link proyek Anda.</p>
-        <a href="{{ url_for('routes.edit_submission', submission_id=submission.id, next=request.path) }}" class="button-secondary">Tinjau/Edit Link Proyek</a>
-    </div>
-    
-    <hr style="margin: 30px 0;">
 
-    <div class="cancel-section">
-        <p>Merasa belum siap atau ingin memperbaiki proyek Anda?</p>
-        <form action="{{ url_for('routes.cancel_submission') }}" method="POST">
-            <input type="hidden" name="path_name" value="{{ path_name }}">
-            <button type="submit" class="button-danger js-confirm-cancel">Batalkan</button>
-        </form>
+    <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Ketik jawaban Anda..." autocomplete="off">
+        <button id="send-chat-btn" class="button-primary">Kirim</button>
     </div>
+</div>
 {% endblock %}

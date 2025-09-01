@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="settings-layout">
+    <aside class="settings-sidebar">
+        <div class="sidebar-profile">
+            <img src="{{ current_user.profile_pic }}" alt="Profil" class="sidebar-profile-pic">
+            <div class="sidebar-profile-info">
+                <strong>{{ current_user.name }}</strong>
+                <span>Pengaturan Akun</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('routes.profile') }}" class="nav-link {% if request.endpoint == 'routes.profile' %}active{% endif %}">
+                <span>Profil Publik</span>
+            </a>
+            <a href="#" class="nav-link disabled">
+                <span>Akun & Keamanan</span>
+            </a>
+            <a href="#" class="nav-link disabled">
+                <span>Notifikasi</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button id="theme-toggle" title="Ganti tema">
+            </button>
+            <a href="{{ url_for('routes.logout') }}" id="logout-link" class="logout-button">Logout</a>
+        </div>
+    </aside>
+    <main class="settings-content card">
+        {% block settings_content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

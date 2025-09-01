@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboard_sidebar.html' %}
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h2>Pilih Proyek Baru</h2>
+                <p class="subtitle">Pilih proyek dari katalog untuk jalur {{ current_user.career_path|replace('-', ' ')|title }}.</p>
+            </div>
+        </div>
+
+        {% if projects %}
+        <div class="projects-grid">
+            {% for project in projects %}
+            <div class="card project-card">
+                <div class="project-card-header">
+                    <h4>{{ project.title }}</h4>
+                    <span class="status-badge pending">{{ project.difficulty }}</span>
+                </div>
+                <p>{{ project.description }}</p>
+                <a href="#" class="button-primary" style="margin-top: 20px;">Lihat Detail & Kerjakan</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card empty-state">
+            <h3>Hebat!</h3>
+            <p>Anda sudah menyelesaikan semua proyek yang tersedia untuk jalur ini.</p>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

@@ -1,12 +1,13 @@
 # run.py
 from app import create_app, db
-from app.models import User, ProjectSubmission
+from app.models import User, ProjectSubmission, Project # Tambahkan model lain jika ada
 
 app = create_app()
 
 @app.shell_context_processor
 def make_shell_context():
-    return {'db': db, 'User': User, 'ProjectSubmission': ProjectSubmission}
+    return {'db': db, 'User': User, 'ProjectSubmission': ProjectSubmission, 'Project': Project}
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Nonaktifkan reloader untuk mengatasi MismatchingStateError saat debug
+    app.run(debug=True, use_reloader=False)

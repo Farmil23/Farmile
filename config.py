@@ -14,6 +14,6 @@ class Config:
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 
-    # BytePlus API Keys
-    BYTEPLUS_ACCESS_KEY_ID = os.environ.get('BYTEPLUS_ACCESS_KEY_ID')
-    BYTEPLUS_SECRET_ACCESS_KEY = os.environ.get('BYTEPLUS_SECRET_ACCESS_KEY')
+     # Ganti variabel BytePlus yang lama
+    ARK_API_KEY = os.environ.get('ARK_API_KEY')
+    MODEL_ENDPOINT_ID = os.environ.get('MODEL_ENDPOINT_ID')
