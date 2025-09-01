@@ -7,6 +7,9 @@ from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress)
 
+
+# app/routes.py -> di bagian atas
+from sqlalchemy.orm import subqueryload
 bp = Blueprint('routes', __name__)
 
 
@@ -67,10 +70,10 @@ def index():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    # --- LOGIKA PERHITUNGAN STATISTIK UNTUK DASBOR BARU ---
-    
-    # 1. Hitung progres roadmap
+    # --- LOGIKA PERHITUNGAN STATISTIK ---
     completed_lessons_count = current_user.progress.count()
+    
+    # Menghitung total materi dengan cara yang benar
     modules_for_path = current_user.modules.filter_by(career_path=current_user.career_path)
     total_lessons = db.session.query(Lesson).join(Module).filter(Module.id.in_([m.id for m in modules_for_path])).count()
     
@@ -78,13 +81,10 @@ def dashboard():
     if total_lessons > 0:
         progress_percentage = int((completed_lessons_count / total_lessons) * 100)
 
-    # 2. Ambil data untuk kartu "Aktivitas Terbaru"
+    # Mengambil data untuk kartu "Aktivitas Terbaru"
     recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(1).all()
     recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(1).all()
-    # Pastikan relasi 'lesson' di-load untuk menghindari query tambahan
-    recent_progress = current_user.progress.options(
-        db.joinedload(UserProgress.lesson) # Eager loading untuk efisiensi
-    ).order_by(UserProgress.completed_at.desc()).limit(1).all()
+    recent_progress = current_user.progress.order_by(UserProgress.completed_at.desc()).limit(1).all()
     
     return render_template(
         'dashboard.html', 
@@ -92,7 +92,8 @@ def dashboard():
         progress_percentage=progress_percentage,
         recent_sessions=recent_sessions,
         recent_submissions=recent_submissions,
-        recent_progress=recent_progress
+        recent_progress=recent_progress,
+        Lesson=Lesson
     )
 
 @bp.route('/login')
@@ -143,6 +144,9 @@ def complete_onboarding():
 # ===============================================
 # RUTE ROADMAP BELAJAR
 # ===============================================
+# app/routes.py
+
+# GANTI FUNGSI ROADMAP LAMA ANDA DENGAN INI
 @bp.route('/roadmap')
 @login_required
 def roadmap():
@@ -150,22 +154,31 @@ def roadmap():
         flash('Selesaikan onboarding untuk menentukan jalur karier Anda.', 'warning')
         return redirect(url_for('routes.onboarding'))
     
-    modules = Module.query.filter_by(author=current_user).order_by(Module.order).all()
-    if not modules:
-        if _generate_roadmap_for_user(current_user):
-            flash('Roadmap belajar personal Anda berhasil dibuat oleh AI!', 'success')
-        else:
-            flash('Maaf, AI gagal membuat roadmap. Coba lagi dari chatbot.', 'danger')
-        return redirect(url_for('routes.roadmap'))
-
+    # QUERY YANG SUDAH DIPERBAIKI (TANPA .options())
+    modules = Module.query.filter(
+        ((Module.user_id == current_user.id) | (Module.user_id == None)),
+        (Module.career_path == current_user.career_path)
+    ).order_by(Module.order).all()
+    
+    has_personal_modules = any(module.user_id is not None for module in modules)
+    show_generate_button = not has_personal_modules
+    
     completed_lessons_query = db.session.query(UserProgress.lesson_id).filter_by(user_id=current_user.id)
     completed_lesson_ids = {item[0] for item in completed_lessons_query.all()}
-    total_lessons = Lesson.query.join(Module).filter(Module.author == current_user).count()
+    
+    total_lessons = 0
+    if modules:
+        module_ids = [m.id for m in modules]
+        total_lessons = db.session.query(Lesson).filter(Lesson.module_id.in_(module_ids)).count()
+
     progress_percentage = int((len(completed_lesson_ids) / total_lessons) * 100) if total_lessons > 0 else 0
     
-    return render_template('roadmap.html', title="Roadmap Belajar", modules=modules, 
-                           completed_lesson_ids=completed_lesson_ids, progress=progress_percentage)
-
+    return render_template('roadmap.html', 
+                           title="Roadmap Belajar", 
+                           modules=modules,
+                           show_generate_button=show_generate_button,
+                           completed_lesson_ids=completed_lesson_ids,
+                           progress=progress_percentage)
 @bp.route('/generate-roadmap', methods=['POST'])
 @login_required
 def generate_roadmap():
@@ -290,7 +303,34 @@ def rename_session(session_id):
         return jsonify({'status': 'success', 'new_title': session.title})
     return jsonify({'status': 'error', 'message': 'Nama tidak boleh kosong'}), 400
 
+# app/routes.py -> di dalam grup RUTE CHATBOT
 
+@bp.route('/chatbot/new/lesson/<int:lesson_id>', methods=['POST'])
+@login_required
+def new_chat_for_lesson(lesson_id):
+    lesson = Lesson.query.get_or_404(lesson_id)
+
+    # Buat sesi chat baru dengan judul dari nama materi
+    new_session = ChatSession(author=current_user, title=f"Diskusi: {lesson.title}")
+    db.session.add(new_session)
+
+    # Buat pesan sapaan otomatis dari AI yang sudah berisi konteks
+    welcome_message_content = (
+        f"Tentu! Mari kita bahas tentang **{lesson.title}**. "
+        f"Ini adalah sumber belajar yang bisa kamu mulai: {lesson.url if lesson.url else 'Belum ada link.'}. "
+        "Apa ada pertanyaan spesifik tentang topik ini yang bisa saya bantu jelaskan?"
+    )
+    welcome_message = ChatMessage(
+        session=new_session, 
+        author=current_user, 
+        role='assistant', 
+        content=welcome_message_content
+    )
+    db.session.add(welcome_message)
+    db.session.commit()
+
+    # Arahkan pengguna langsung ke sesi chat yang baru dibuat
+    return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 # ===============================================
 # RUTE PENGATURAN & PROFIL
 # ===============================================

@@ -3963,3 +3963,106 @@ textarea#chat-input::placeholder {
 .typing-indicator span:nth-child(2) { animation-delay: 0.1s; }
 .typing-indicator span:nth-child(3) { animation-delay: 0.2s; }
 @keyframes wave { 0%, 60%, 100% { transform: initial; } 30% { transform: translateY(-8px); } }
+
+/* static/css/style.css -> GANTI SEMUA STYLE ROADMAP LAMA DENGAN INI */
+
+/* === Penyempurnaan Desain Roadmap Accordion V2 === */
+.module-item {
+    padding: 0; /* Hapus padding dari kartu utama */
+    overflow: hidden; /* Pastikan konten tidak keluar dari border-radius */
+}
+
+.module-item summary {
+    /* display: block; <-- Dihapus karena ini penyebab masalah */
+    padding: 20px 30px 20px 50px; /* Beri ruang untuk panah custom */
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    position: relative;
+    list-style: none; /* Sembunyikan panah default browser */
+}
+
+/* Membuat panah custom yang lebih bagus */
+.module-item summary::before {
+    content: '▶';
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%) rotate(0deg);
+    transition: transform 0.2s ease;
+    font-size: 0.8em;
+    color: var(--primary-color);
+}
+
+.module-item[open] > summary::before {
+    transform: translateY(-50%) rotate(90deg);
+}
+
+.module-item summary:hover {
+    background-color: rgba(74, 144, 226, 0.1); /* Efek hover biru transparan */
+}
+
+.lesson-list {
+    list-style-type: none; 
+    padding: 0 30px 20px 50px; 
+    margin-top: 0;
+    border-top: 1px solid var(--border-color);
+}
+
+/* static/css/style.css -> GANTI SEMUA STYLE LESSON LAMA DENGAN INI */
+
+.lesson-list {
+    list-style-type: none; 
+    padding: 0;
+    margin-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.lesson-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.lesson-top {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.lesson-label {
+    flex-grow: 1;
+    color: var(--text-primary);
+}
+
+.lesson-info strong {
+    display: block;
+    font-weight: 500;
+}
+
+.lesson-info span {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: block;
+    line-height: 1;
+}
+
+.lesson-bottom {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end; /* Tombol di sebelah kanan */
+    padding-top: 15px;
+    margin-top: 15px;
+    border-top: 1px solid var(--border-color); /* Garis pemisah tipis */
+}
+
+/* Menyesuaikan ukuran tombol di dalam lesson */
+.lesson-bottom .button-primary,
+.lesson-bottom .button-secondary {
+    font-size: 0.85rem;
+    padding: 6px 14px;
+}
+
+.lesson-bottom form {
+    margin: 0;
+}

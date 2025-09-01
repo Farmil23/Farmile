@@ -222,19 +222,7 @@
             </div>
           </div>
           <div class="card-progress">
-            <div class="progress-bar">
-              {% if current_user.modules.count() > 0 %}
-                {% set total_lessons = current_user.modules.join(Lesson).count() %}
-                {% if total_lessons > 0 %}
-                  {% set progress_percentage = ((current_user.progress.count() / total_lessons) * 100)|round|int %}
-                  <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
-                {% else %}
-                  <div class="progress-fill" style="width: 0%"></div>
-                {% endif %}
-              {% else %}
-                <div class="progress-fill" style="width: 0%"></div>
-              {% endif %}
-            </div>
+
             <span class="progress-text">
               {% if current_user.modules.count() > 0 %}
                 {% set total_lessons = current_user.modules.join(Lesson).count() %}
@@ -261,6 +249,7 @@
               Mulai dengan membuat roadmap belajar Anda.
             {% endif %}
           </p>
+          
           <div class="card-actions">
             <a href="{{ url_for('routes.roadmap') }}" class="button-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

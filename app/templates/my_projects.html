@@ -1,33 +1,53 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="dashboard-layout">
-    <aside class="dashboard-sidebar" id="dashboardSidebar">
-        </aside>
+    {% include 'dashboard_sidebar.html' %}
 
     <main class="dashboard-content">
-        <div class="dashboard-header">
-            <div class="welcome-section">
-                <h1 class="dashboard-title">Proyek Saya</h1>
-                <p class="dashboard-subtitle">Ini adalah daftar semua proyek yang telah Anda submit.</p>
+        <div class="page-header">
+            <div>
+                <h2>Proyek Saya</h2>
+                <p class="subtitle">Ini adalah portofolio terverifikasi Anda. Teruslah berkarya!</p>
             </div>
-            <div class="dashboard-actions">
-                <a href="{{ url_for('routes.select_project') }}" class="quick-action-btn">
-                    <svg></svg> <span>Tambah Proyek</span>
-                </a>
-            </div>
+            <a href="{{ url_for('routes.select_project') }}" class="button-primary">Tambah Proyek Baru</a>
         </div>
-
-        <div class="projects-grid">
-            {% for sub in submissions %}
-            <div class="card project-card">
+        
+        {% if submissions %}
+            <div class="projects-grid">
+                {% for sub in submissions %}
+                <div class="card project-card">
+                    <div class="project-card-header">
+                        <h4>{{ sub.project.title }}</h4>
+                        {% if sub.interview_score %}
+                            <span class="status-badge completed">Selesai</span>
+                        {% else %}
+                            <span class="status-badge pending">Menunggu Wawancara</span>
+                        {% endif %}
+                    </div>
+                    <p><strong>Link:</strong> <a href="{{ sub.project_link }}" target="_blank" rel="noopener noreferrer">Lihat Proyek</a></p>
+                    
+                    {% if sub.interview_score %}
+                        <p><strong>Skor Akhir:</strong> <span class="skor-badge">{{ sub.interview_score }}</span></p>
+                    {% else %}
+                        <div class="sertifikat-actions">
+                            <a href="{{ url_for('routes.interview', submission_id=sub.id) }}" class="button-primary">Mulai Wawancara</a>
+                            <a href="{{ url_for('routes.edit_submission', submission_id=sub.id) }}" class="button-secondary">Edit</a>
+                            <form action="{{ url_for('routes.cancel_submission', submission_id=sub.id) }}" method="POST">
+                                <button type="submit" class="button-danger js-confirm-cancel">Hapus</button>
+                            </form>
+                        </div>
+                    {% endif %}
                 </div>
-            {% else %}
-            <div class="card empty-state">
-                <h3>Portofolio Anda Masih Kosong</h3>
-                <a href="{{ url_for('routes.select_project') }}" class="button-primary">Pilih Proyek Pertama</a>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
+        {% else %}
+            <div class="card empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                <h3>Portofolio Anda Masih Kosong</h3>
+                <p>Mulai perjalanan Anda dengan memilih jalur karier dan menyelesaikan proyek pertama Anda.</p>
+                <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 20px;">Pilih Proyek Pertama</a>
+            </div>
+        {% endif %}
     </main>
 </div>
 {% endblock %}
