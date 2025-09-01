@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light"> <head>
+<html lang="id">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title|default('FARSIGHT') }} - FARSIGHT</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
-<body>
+<body data-theme="dark">
     <header>
-        <h1><a href="{{ url_for('routes.index') }}" class="header-link">FARSIGHT MVP</a></h1>
+        <a href="{{ url_for('routes.dashboard') }}" class="header-link">FARSIGHT</a>
         <nav class="main-app-nav">
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('routes.dashboard') }}">Dasbor</a>
-                <a href="{{ url_for('routes.profile') }}" class="profile-link">
+                <a href="{{ url_for('routes.profile') }}" class="profile-link" title="Pengaturan & Profil">
                     <img src="{{ current_user.profile_pic }}" alt="Profil">
                 </a>
             {% endif %}
@@ -19,147 +21,32 @@
     </header>
 
     <main>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-container">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
         {% block content %}{% endblock %}
-
     </main>
 
-    <footer>
-        <p>&copy; 2025 Farsight Project by Farhan Kamil Hermansyah</p>
-    </footer>
-
     <div id="confirmModal" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box card">
             <h3 id="modalTitle">Konfirmasi Tindakan</h3>
-            <p id="modalMessage">Apakah Anda yakin?</p>
+            <p id="modalMessage" class="text-secondary">Apakah Anda yakin?</p>
             <div class="modal-actions">
-                <button id="modalCancelBtn" class="button-primary modal-button-cancel">Batal</button>
+                <button id="modalCancelBtn" class="button-secondary">Batal</button>
                 <button id="modalConfirmBtn" class="button-danger">Ya, Lanjutkan</button>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
     <script>
-
-        // Logika untuk Header Dinamis
-        const header = document.querySelector('header');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 10) { // Jika scroll lebih dari 10px
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
-            }
-        });
-
-        // Logika untuk Animasi Saat Scroll
-        const revealElements = document.querySelectorAll('.reveal-on-scroll');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('revealed');
-                }
-            });
-        }, { threshold: 0.1 }); // Muncul saat 10% elemen terlihat
-
-        revealElements.forEach(el => observer.observe(el));
-        // (Semua kode JavaScript Anda untuk modal, flash message, dan theme switcher ada di sini)
-        // Logika untuk modal konfirmasi
-        const modal = document.getElementById('confirmModal');
-        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
-        const modalCancelBtn = document.getElementById('modalCancelBtn');
-        let formToSubmit = null;
-        const confirmTriggers = document.querySelectorAll('.js-confirm-cancel');
-        confirmTriggers.forEach(button => {
-            button.addEventListener('click', function(event) {
-                event.preventDefault();
-                formToSubmit = event.target.closest('form');
-                modal.classList.add('visible');
-            });
-        });
-        modalCancelBtn.addEventListener('click', () => {
-            modal.classList.remove('visible');
-            formToSubmit = null;
-        });
-        modalConfirmBtn.addEventListener('click', () => {
-            if (formToSubmit) {
-                formToSubmit.submit();
-            }
-        });
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.classList.remove('visible');
-                formToSubmit = null;
-            }
-        });
-
-        // Logika untuk menghilangkan flash message
+        // JAVASCRIPT LENGKAP UNTUK SEMUA FITUR GLOBAL
         document.addEventListener('DOMContentLoaded', () => {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                setTimeout(() => {
-                    alert.classList.add('fade-out');
-                    setTimeout(() => alert.remove(), 500);
-                }, 5000);
-            });
+            const confirmModal = document.getElementById('confirmModal');
+            if (confirmModal) {
+                const modalCancelBtn = document.getElementById('modalCancelBtn');
+                modalCancelBtn.addEventListener('click', () => confirmModal.classList.remove('visible'));
+                confirmModal.addEventListener('click', (e) => {
+                    if (e.target === confirmModal) confirmModal.classList.remove('visible');
+                });
+            }
         });
-
-        // Ganti seluruh logika theme switcher yang lama dengan ini
-        const themeToggle = document.getElementById('theme-toggle');
-        const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
-        const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
-
-        const applyTheme = (theme) => {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            themeToggle.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
-        };
-
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            applyTheme(currentTheme === 'light' ? 'dark' : 'light');
-        });
-
-        // Terapkan tema saat halaman dimuat (untuk aplikasi internal)
-        if(document.querySelector('.dashboard-layout, .settings-layout')){
-            const savedTheme = localStorage.getItem('theme') || 'dark'; // Default ke gelap
-            applyTheme(savedTheme);
-        }
-
-        // app/templates/base.html -> di dalam <script>
-        const logoutLink = document.getElementById('logout-link');
-        if (logoutLink) {
-            logoutLink.addEventListener('click', function(event) {
-                event.preventDefault(); // Hentikan link
-
-                // Atur pesan di modal yang sudah ada
-                document.getElementById('modalTitle').textContent = 'Konfirmasi Logout';
-                document.getElementById('modalMessage').textContent = 'Apakah Anda yakin ingin keluar dari sesi ini?';
-
-                // Tampilkan modal
-                const modal = document.getElementById('confirmModal');
-                modal.classList.add('visible');
-
-                // Atur aksi tombol konfirmasi
-                document.getElementById('modalConfirmBtn').onclick = () => {
-                    window.location.href = event.target.href; // Lanjutkan ke URL logout
-                };
-            });
-        }
-
     </script>
-
 </body>
 </html>

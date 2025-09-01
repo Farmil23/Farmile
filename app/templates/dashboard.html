@@ -1,46 +1,58 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="dashboard-layout">
-    {% include 'dashboard_sidebar.html' %}
+  {% include 'dashboard_sidebar.html' %}
 
-    <main class="dashboard-content">
-        <h2>Dasbor Utama</h2>
-        <p class="subtitle">Selamat datang kembali! Mari lanjutkan progres belajarmu hari ini.</p>
-        
-        <div class="dashboard-grid">
-            <div class="card card-main-task">
-    <h4>Alur Belajar Anda</h4>
-    
-    {% if current_user.career_path %}
-        <p>Lihat dan kelola roadmap belajar Anda untuk jalur <strong>{{ current_user.career_path|replace('-', ' ')|title }}</strong>.</p>
-        <a href="#" class="button-primary" style="margin-top: 20px;">Lihat Roadmap</a>
-    
-    {% else %}
-        <p>Anda belum memiliki alur belajar. Mulailah dengan membuat roadmap personal Anda.</p>
-        <a href="#" class="button-primary" style="margin-top: 20px;">Buat Alur Belajar Sekarang</a>
-    {% endif %}
-</div>
+  <main class="dashboard-content">
+    <h2>Dasbor Utama</h2>
+    <p class="subtitle">
+      Selamat datang kembali! Mari lanjutkan progres belajarmu hari ini.
+    </p>
 
-        
+    <div class="dashboard-grid">
+      <div class="card card-main-task">
+        <h4>Alur Belajar Anda</h4>
 
-            <div class="card">
-                <h4>Chatbot Mentor AI</h4>
-                <p>Punya pertanyaan cepat tentang karier atau proyek Anda? Mentor AI siap membantu.</p>
-                <a href="{{ url_for('routes.chatbot') }}" class="link-arrow" style="margin-top:10px;">Mulai Percakapan ➔</a>
-            </div>
+        {% if current_user.career_path %}
+        <p>
+          Lihat dan kelola roadmap belajar Anda untuk jalur
+          <strong>{{ current_user.career_path|replace('-', ' ')|title }}</strong
+          >.
+        </p>
+        <a href="#" class="button-primary" style="margin-top: 20px"
+          >Lihat Roadmap</a
+        >
 
-            <div class="card">
-                <h5>Proyek Aktif</h5>
-                <p>Landing Page Interaktif</p>
-                <a href="{{ url_for('routes.my_projects') }}" class="link-arrow">Lihat Detail ➔</a>
-            </div>
+        {% else %}
+        <p>
+          Anda belum memiliki alur belajar. Mulailah dengan membuat roadmap
+          personal Anda.
+        </p>
+        <a href="#" class="button-primary" style="margin-top: 20px"
+          >Buat Alur Belajar Sekarang</a
+        >
+        {% endif %}
+      </div>
 
-            <div class="card">
-                <h5>Tantangan Harian</h5>
-                <p>Problem: "Palindrome Checker"</p>
-                <a href="#" class="link-arrow">Coba Kerjakan ➔</a>
-            </div>
-        </div>
-    </main>
+      <div class="card">
+        <h4>Chatbot Mentor AI</h4>
+        <p>Punya pertanyaan cepat tentang karier atau proyek Anda? Mentor AI siap membantu.</p>
+        <a href="{{ url_for('routes.chatbot') }}" class="link-arrow" style="margin-top:10px;">Mulai Percakapan ➔</a>
+    </div>
+
+      <div class="card">
+        <h5>Proyek Aktif</h5>
+        <p>Landing Page Interaktif</p>
+        <a href="{{ url_for('routes.my_projects') }}" class="link-arrow"
+          >Lihat Detail ➔</a
+        >
+      </div>
+
+      <div class="card">
+        <h5>Tantangan Harian</h5>
+        <p>Problem: "Palindrome Checker"</p>
+        <a href="#" class="link-arrow">Coba Kerjakan ➔</a>
+      </div>
+    </div>
+  </main>
 </div>
 {% endblock %}

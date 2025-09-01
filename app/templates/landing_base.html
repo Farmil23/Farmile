@@ -1,48 +1,23 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="dark">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title|default('FARSIGHT') }} - FARSIGHT</title>
-
+    <title>{{ title|default('FARSIGHT') }} - Personal Trainer AI untuk Karir Anda</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-
 </head>
-<body>
+<body class="landing-body">
     <header class="landing-header">
         <a href="{{ url_for('routes.index') }}" class="header-link">FARSIGHT</a>
-        <nav class="landing-nav">
+        <nav>
             <a href="#fitur">Fitur</a>
-            <a href="#about-us">Tentang Kami</a>
-            <a href="#contact">Kontak</a>
-            <a href="{{ url_for('routes.login') }}" class="button-secondary">Login</a>
-            <a href="{{ url_for('routes.login') }}" class="button-primary">Daftar Gratis</a>
+            <a href="#about-us">Tentang</a>
+            <a href="{{ url_for('routes.login') }}">Login</a>
+            <a href="{{ url_for('routes.login') }}" class="button-primary">Mulai Gratis</a>
         </nav>
     </header>
-
-    <main class="landing-main">
+    <main style="max-width: none; padding: 0; margin: 0;">
         {% block content %}{% endblock %}
     </main>
-
-    <footer class="landing-footer">
-        <div class="footer-content">
-            <div class="footer-brand">
-                <h3>FARSIGHT</h3>
-                <p>Personal Trainer AI untuk Karir Teknologi Anda.</p>
-            </div>
-            <div class="footer-links">
-                <h4>Tautan</h4>
-                <a href="#fitur">Fitur</a>
-                <a href="#about-us">Tentang Kami</a>
-                <a href="#">Privasi</a>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 FARSIGHT by Farhan Kamil Hermansyah. All rights reserved.</p>
-        </div>
-    </footer>
-    <script>
-        // ... (Hanya script yang relevan untuk landing page, misal: scroll effects) ...
-    </script>
-</body>
+    </body>
 </html>
