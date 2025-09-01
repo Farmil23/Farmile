@@ -75,7 +75,7 @@ header nav a:hover {
 
 /* === Konten Utama & Layout === */
 main {
-    max-width: 960px;
+    max-width: 1280px;
     margin: 40px auto;
     padding: 0 20px;
 }
@@ -383,8 +383,6 @@ header .header-link { color: var(--text-primary); font-weight: 700; }
 header nav a { color: var(--text-secondary); }
 header nav a.button-primary { color: white; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
 
-/* === MAIN CONTENT === */
-main { max-width: 1000px; margin: 50px auto; padding: 0 20px; }
 
 /* === LANDING PAGE (Hero Section) === */
 .hero { text-align: center; padding: 80px 20px; }
@@ -799,14 +797,43 @@ select {
     align-items: center;
     gap: 20px;
 }
-.chat-page-layout { display: flex; height: calc(100vh - 80px); }
+./* GANTI SEMUA STYLE CHAT LAMA DENGAN INI */
+.chat-page-container {
+    position: relative; /* Diperlukan untuk sidebar absolut */
+    max-width: 800px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+}
+
 .chat-history-sidebar {
-    flex: 0 0 280px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 10;
+    width: 280px;
     padding: 15px;
     background-color: var(--card-bg-color);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.chat-history-sidebar:not(.hidden) {
+    transform: translateX(0);
+    box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 5px;
 }
 .new-chat-btn { width: 100%; margin-bottom: 20px; }
 .session-list { overflow-y: auto; }
@@ -844,3 +871,45 @@ select {
 .hidden { display: none; }
 .edit-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 5px; }
 .edit-btn:hover { color: var(--primary-color); }
+
+
+/* static/css/style.css -> tambahkan di akhir */
+.lesson-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+}
+.lesson-main {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+.lesson-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ask-ai-btn {
+    padding: 6px 14px;
+}
+
+/* static/css/style.css -> tambahkan di akhir */
+
+/* Perbaikan Warna Teks di dalam Kartu Roadmap */
+.module-item .lesson-list,
+.module-item .lesson-list label,
+.module-item .lesson-list span {
+    color: var(--text-primary); /* Pastikan warna teks utama digunakan */
+}
+
+.lesson-info span {
+    color: var(--text-secondary); /* Gunakan warna sekunder untuk detail */
+}
+
+/* Pastikan tombol terlihat jelas */
+.lesson-actions .button-secondary,
+.lesson-actions .button-primary {
+    color: white; /* Atur warna teks tombol menjadi putih */
+}
+

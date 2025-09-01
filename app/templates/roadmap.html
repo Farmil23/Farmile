@@ -20,16 +20,19 @@
                 </summary>
                 <ul class="lesson-list">
                     {% for lesson in module.lessons.order_by('order').all() %}
-                    <li>
-                        <input type="checkbox" id="lesson-{{ lesson.id }}" data-lesson-id="{{ lesson.id }}" {% if lesson.id in completed_lesson_ids %}checked{% endif %}>
-                        <label for="lesson-{{ lesson.id }}" class="lesson-label">
-                            {% if lesson.lesson_type == 'video' %}<svg></svg>{% else %}<svg></svg>{% endif %}
-                            <div class="lesson-info">
-                                {{ lesson.title }}
-                                <span>Estimasi: {{ lesson.estimated_time }} menit</span>
-                            </div>
-                        </label>
-                        <a href="{{ lesson.url }}" target="_blank" class="learn-link button-secondary">Mulai</a>
+                    <li class="lesson-item">
+                        <div class="lesson-main">
+                            <input type="checkbox" id="lesson-{{ lesson.id }}" data-lesson-id="{{ lesson.id }}" 
+                                   {% if lesson.id in completed_lesson_ids %}checked{% endif %}>
+                            <label for="lesson-{{ lesson.id }}" class="lesson-label">
+                                </label>
+                        </div>
+                        <div class="lesson-actions">
+                            <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST">
+                                <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
+                            </form>
+                            <a href="{{ lesson.url or '#' }}" target="_blank" class="learn-link button-primary">Mulai Belajar</a>
+                        </div>
                     </li>
                     {% endfor %}
                 </ul>

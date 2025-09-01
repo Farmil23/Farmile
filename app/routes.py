@@ -2,6 +2,7 @@
 from flask import (render_template, redirect, url_for, request, Blueprint, 
                    abort, flash, jsonify, current_app)
 from flask_login import current_user, login_required, login_user, logout_user
+import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress)
@@ -9,8 +10,53 @@ from app.models import (User, Project, ProjectSubmission, ChatMessage,
 bp = Blueprint('routes', __name__)
 
 
+# --- Helper Function untuk Generate Roadmap ---
+def _generate_roadmap_for_user(user):
+    """Fungsi internal untuk membuat roadmap menggunakan AI."""
+    # Hapus roadmap lama jika ada untuk path yang sama
+    Module.query.filter_by(author=user, career_path=user.career_path).delete()
+    db.session.commit()
+    
+    prompt = f"""
+    Anda adalah seorang desainer kurikulum ahli untuk mahasiswa IT. Buat roadmap belajar detail untuk mahasiswa semester {user.semester} dengan fokus karier "{user.career_path}".
+    Roadmap harus terdiri dari 3 hingga 5 modul utama. Setiap modul harus berisi 3 hingga 5 materi (lesson) yang relevan.
+    Berikan jawaban HANYA dalam format JSON yang valid, dengan struktur seperti ini:
+    {{"modules": [{{"title": "Judul Modul", "order": 1, "lessons": [{{"title": "Judul Materi", "order": 1, "lesson_type": "article", "estimated_time": 30}}]}}]}}
+    """
+    try:
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=[{"role": "user", "content": prompt}]
+        )
+        ai_response_str = completion.choices[0].message.content
+        if "```json" in ai_response_str:
+            ai_response_str = ai_response_str.split("```json")[1].split("```")[0].strip()
+        
+        roadmap_data = json.loads(ai_response_str)
+
+        for module_data in roadmap_data.get('modules', []):
+            new_module = Module(title=module_data['title'], order=module_data['order'],
+                                career_path=user.career_path, author=user)
+            db.session.add(new_module)
+            db.session.flush() 
+            for lesson_data in module_data.get('lessons', []):
+                new_lesson = Lesson(
+                    title=lesson_data.get('title', 'Materi Baru'),
+                    order=lesson_data.get('order', 1),
+                    lesson_type=lesson_data.get('lesson_type', 'article'),
+                    estimated_time=lesson_data.get('estimated_time', 30),
+                    module_id=new_module.id
+                )
+                db.session.add(new_lesson)
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Gagal membuat roadmap: {e}")
+        return False
+
 # ===============================================
-# RUTE PUBLIK & INTI APLIKASI
+# RUTE UTAMA & ONBOARDING
 # ===============================================
 @bp.route('/')
 def index():
@@ -23,10 +69,6 @@ def index():
 def dashboard():
     return render_template('dashboard.html', title='Dasbor Anda')
 
-
-# ===============================================
-# RUTE AUTENTIKASI & ONBOARDING
-# ===============================================
 @bp.route('/login')
 def login():
     redirect_uri = url_for('routes.auth', _external=True)
@@ -81,13 +123,31 @@ def roadmap():
     if not current_user.career_path:
         flash('Selesaikan onboarding untuk menentukan jalur karier Anda.', 'warning')
         return redirect(url_for('routes.onboarding'))
-    modules = Module.query.filter_by(career_path=current_user.career_path).order_by(Module.order).all()
+    
+    modules = Module.query.filter_by(author=current_user).order_by(Module.order).all()
+    if not modules:
+        if _generate_roadmap_for_user(current_user):
+            flash('Roadmap belajar personal Anda berhasil dibuat oleh AI!', 'success')
+        else:
+            flash('Maaf, AI gagal membuat roadmap. Coba lagi dari chatbot.', 'danger')
+        return redirect(url_for('routes.roadmap'))
+
     completed_lessons_query = db.session.query(UserProgress.lesson_id).filter_by(user_id=current_user.id)
     completed_lesson_ids = {item[0] for item in completed_lessons_query.all()}
-    total_lessons = Lesson.query.join(Module).filter(Module.career_path==current_user.career_path).count()
+    total_lessons = Lesson.query.join(Module).filter(Module.author == current_user).count()
     progress_percentage = int((len(completed_lesson_ids) / total_lessons) * 100) if total_lessons > 0 else 0
+    
     return render_template('roadmap.html', title="Roadmap Belajar", modules=modules, 
                            completed_lesson_ids=completed_lesson_ids, progress=progress_percentage)
+
+@bp.route('/generate-roadmap', methods=['POST'])
+@login_required
+def generate_roadmap():
+    if _generate_roadmap_for_user(current_user):
+        flash('Roadmap belajar personal Anda berhasil dibuat ulang oleh AI!', 'success')
+    else:
+        flash('Maaf, AI gagal membuat roadmap. Coba lagi.', 'danger')
+    return redirect(url_for('routes.roadmap'))
 
 @bp.route('/complete-lesson/<int:lesson_id>', methods=['POST'])
 @login_required
@@ -163,6 +223,9 @@ def chatbot():
     else:
         new_session = ChatSession(author=current_user, title="Percakapan Pertama")
         db.session.add(new_session)
+        welcome_message = ChatMessage(session=new_session, author=current_user, role='assistant', 
+                                      content=f"Hai {current_user.name.split()[0]}! Ada yang bisa saya bantu?")
+        db.session.add(welcome_message)
         db.session.commit()
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
@@ -171,6 +234,9 @@ def chatbot():
 def new_chat_session():
     new_session = ChatSession(author=current_user, title="Percakapan Baru")
     db.session.add(new_session)
+    new_topic_message = ChatMessage(session=new_session, author=current_user, role='assistant', 
+                                    content="Tentu, mari kita mulai topik baru. Apa yang ingin Anda diskusikan?")
+    db.session.add(new_topic_message)
     db.session.commit()
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
@@ -185,6 +251,47 @@ def chatbot_session(session_id):
     return render_template('chatbot.html', title=session.title, 
                            current_session=session, all_sessions=all_sessions, history=messages)
 
+@bp.route('/rename-session/<int:session_id>', methods=['POST'])
+@login_required
+def rename_session(session_id):
+    session = ChatSession.query.get_or_404(session_id)
+    if session.author != current_user:
+        abort(403)
+    new_title = request.get_json().get('title', '').strip()
+    if new_title:
+        session.title = new_title
+        db.session.commit()
+        return jsonify({'status': 'success', 'new_title': session.title})
+    return jsonify({'status': 'error', 'message': 'Nama tidak boleh kosong'}), 400
+
+# app/routes.py -> di dalam grup RUTE CHATBOT
+
+@bp.route('/chatbot/new/lesson/<int:lesson_id>', methods=['POST'])
+@login_required
+def new_chat_for_lesson(lesson_id):
+    lesson = Lesson.query.get_or_404(lesson_id)
+
+    # Buat sesi chat baru dengan judul dari nama materi
+    new_session = ChatSession(author=current_user, title=f"Diskusi: {lesson.title}")
+    db.session.add(new_session)
+
+    # Buat pesan sapaan otomatis dari AI yang sudah berisi konteks
+    welcome_message_content = (
+        f"Tentu! Mari kita bahas tentang **{lesson.title}**. "
+        f"Ini adalah sumber belajar yang bisa kamu mulai: {lesson.url if lesson.url else 'Belum ada link.'}. "
+        "Apa ada pertanyaan spesifik tentang topik ini yang bisa saya bantu jelaskan?"
+    )
+    welcome_message = ChatMessage(
+        session=new_session, 
+        author=current_user, 
+        role='assistant', 
+        content=welcome_message_content
+    )
+    db.session.add(welcome_message)
+    db.session.commit()
+
+    # Arahkan pengguna langsung ke sesi chat yang baru dibuat
+    return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
 # ===============================================
 # RUTE PENGATURAN & PROFIL
@@ -205,22 +312,6 @@ def edit_profile():
         return redirect(url_for('routes.profile'))
     return render_template('edit_profile.html', title="Edit Profil")
 
-# app/routes.py
-
-@bp.route('/rename-session/<int:session_id>', methods=['POST'])
-@login_required
-def rename_session(session_id):
-    session = ChatSession.query.get_or_404(session_id)
-    if session.author != current_user:
-        abort(403)
-    
-    new_title = request.get_json().get('title')
-    if new_title and len(new_title.strip()) > 0:
-        session.title = new_title.strip()
-        db.session.commit()
-        return jsonify({'status': 'success', 'new_title': session.title})
-    
-    return jsonify({'status': 'error', 'message': 'Nama tidak boleh kosong'}), 400
 
 # ===============================================
 # RUTE API UNTUK AI
@@ -235,9 +326,21 @@ def chat_ai(session_id):
     if session.author != current_user:
         abort(403)
     
-    user_message_content = request.get_json().get('message')
+    user_message_content = request.get_json().get('message', '').strip()
     if not user_message_content:
         return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
+
+    # Logika untuk "Perintah Cepat"
+    if user_message_content == '/buatkan_roadmap':
+        if _generate_roadmap_for_user(current_user):
+            ai_response_content = "Tentu! Saya telah membuatkan roadmap belajar personal baru untukmu. Silakan cek halaman 'Roadmap Belajar' untuk melihat hasilnya."
+        else:
+            ai_response_content = "Maaf, sepertinya saya gagal membuat roadmap saat ini. Coba lagi beberapa saat."
+        user_message = ChatMessage(session_id=session.id, author=current_user, role='user', content=user_message_content)
+        ai_message = ChatMessage(session_id=session.id, author=current_user, role='assistant', content=ai_response_content)
+        db.session.add_all([user_message, ai_message])
+        db.session.commit()
+        return jsonify({'response': ai_response_content})
 
     user_message = ChatMessage(session_id=session.id, author=current_user, role='user', content=user_message_content)
     db.session.add(user_message)
@@ -260,7 +363,6 @@ def chat_ai(session_id):
     messages = [{"role": "system", "content": system_prompt}]
     for msg in recent_history:
         messages.append({"role": msg.role, "content": msg.content})
-    messages.append({"role": "user", "content": user_message_content})
     
     try:
         completion = ark_client.chat.completions.create(
@@ -274,8 +376,11 @@ def chat_ai(session_id):
         db.session.commit()
         
         return jsonify({'response': ai_response_content})
-
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"BytePlus API Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI, silakan coba lagi.'}), 500
+    
+    
+# app/routes.py
+

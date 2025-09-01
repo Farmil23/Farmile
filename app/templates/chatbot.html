@@ -2,7 +2,7 @@
 {% block content %}
 <div class="chat-page-layout">
 
-    <aside class="chat-history-sidebar">
+    <aside id="history-sidebar" class="chat-history-sidebar hidden">
         <form action="{{ url_for('routes.new_chat_session') }}" method="POST">
             <button type="submit" class="button-primary new-chat-btn">＋ Percakapan Baru</button>
         </form>
@@ -19,31 +19,26 @@
     <main class="chat-page-container">
         <div class="chat-header">
             <div class="chat-header-left">
-                <a href="{{ url_for('routes.dashboard') }}" class="button-secondary" style="padding: 8px 16px;">← Dasbor</a>
+                <button id="history-toggle-btn" class="icon-btn" title="Tampilkan Riwayat">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
                 <div id="session-title-container">
                     <h2 id="session-title">{{ current_session.title }}</h2>
                     <input type="text" id="session-title-input" class="hidden" value="{{ current_session.title }}">
                 </div>
-                <button id="edit-title-btn" class="edit-btn">
+                <button id="edit-title-btn" class="edit-btn" title="Ubah Nama">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
             </div>
-            <a href="#" class="button-primary">Mulai Roadmap Belajar 🚀</a>
+            <a href="{{ url_for('routes.roadmap') }}" class="button-primary">Lihat Roadmap Belajar 🚀</a>
         </div>
         
         <div id="chat-window" class="chat-window">
-            {% for message in history %}
-                <div class="message {{ 'user' if message.role == 'user' else 'ai' }}">
-                    <img src="{{ current_user.profile_pic if message.role == 'user' else 'https://i.ibb.co/mC9kS26/ai-avatar.png' }}" class="avatar">
-                    <div class="bubble">
-                        {{ message.content | safe }} </div>
-                </div>
-            {% endfor %}
-        </div>
+            </div>
 
         <div class="chat-input-area">
             <textarea id="chat-input" placeholder="Ketik pesan Anda di sini... (Shift+Enter untuk baris baru)" rows="1"></textarea>
-            <button id="send-chat-btn" class="button-primary">
+            <button id="send-chat-btn" class="button-primary" title="Kirim Pesan">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
         </div>
@@ -52,40 +47,54 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Definisi semua elemen UI
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-chat-btn');
     const chatWindow = document.getElementById('chat-window');
+    const titleDisplay = document.getElementById('session-title');
+    const titleInput = document.getElementById('session-title-input');
+    const editBtn = document.getElementById('edit-title-btn');
+    const historyToggleBtn = document.getElementById('history-toggle-btn');
+    const historySidebar = document.getElementById('history-sidebar');
 
+    // --- FUNGSI UTAMA ---
     const addMessage = (text, sender, isMarkdown = false) => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}`;
-        const avatar = `<img src="${sender === 'user' ? '{{ current_user.profile_pic }}' : 'https://i.ibb.co/mC9kS26/ai-avatar.png'}" class="avatar">`;
+        const avatarSrc = sender === 'user' ? '{{ current_user.profile_pic }}' : 'https://i.ibb.co/mC9kS26/ai-avatar.png';
+        const avatar = `<img src="${avatarSrc}" class="avatar">`;
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'bubble';
-
         if (isMarkdown && window.marked) {
             bubbleDiv.innerHTML = marked.parse(text);
             bubbleDiv.querySelectorAll('pre code').forEach((block) => {
-                if(window.hljs) hljs.highlightElement(block);
+                if (window.hljs) hljs.highlightElement(block);
             });
         } else {
             bubbleDiv.textContent = text;
         }
-        
         messageDiv.innerHTML = avatar;
         messageDiv.appendChild(bubbleDiv);
         chatWindow.appendChild(messageDiv);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
     
-    chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll saat halaman dimuat
+    // Render pesan awal dari riwayat
+    const initialMessages = [
+        {% for message in history %}
+        { text: `{{ message.content|tojson|safe }}`, sender: '{{ message.role }}' },
+        {% endfor %}
+    ];
+    chatWindow.innerHTML = '';
+    initialMessages.forEach(msg => {
+        addMessage(msg.text, msg.sender === 'user' ? 'user' : 'ai', msg.sender !== 'user');
+    });
 
     const sendChatMessage = async () => {
         const message = chatInput.value.trim();
         if (!message) return;
         addMessage(message, 'user', false);
         chatInput.value = '';
-        
         try {
             const response = await fetch("{{ url_for('routes.chat_ai', session_id=current_session.id) }}", {
                 method: 'POST',
@@ -98,60 +107,67 @@ document.addEventListener('DOMContentLoaded', () => {
             addMessage('Tidak dapat terhubung ke server.', 'ai', false);
         }
     };
-
-    sendBtn.addEventListener('click', sendChatMessage);
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendChatMessage();
+    
+    const saveNewTitle = async () => {
+        const newTitle = titleInput.value.trim();
+        if (newTitle && newTitle !== titleDisplay.textContent) {
+            try {
+                const response = await fetch("{{ url_for('routes.rename_session', session_id=current_session.id) }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle })
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    titleDisplay.textContent = data.new_title;
+                    document.querySelector(`.session-item.active`).textContent = data.new_title;
+                }
+            } catch (error) { console.error('Gagal menyimpan judul'); }
         }
-    });
-});
-
- // --- LOGIKA BARU UNTUK EDIT JUDUL ---
- const titleContainer = document.getElementById('session-title-container');
- const titleDisplay = document.getElementById('session-title');
- const titleInput = document.getElementById('session-title-input');
- const editBtn = document.getElementById('edit-title-btn');
-
- editBtn.addEventListener('click', () => {
-     titleDisplay.classList.add('hidden');
-     titleInput.classList.remove('hidden');
-     titleInput.focus();
-     titleInput.select();
- });
-
- const saveNewTitle = async () => {
-     const newTitle = titleInput.value.trim();
-     if (newTitle && newTitle !== titleDisplay.textContent) {
-         try {
-             const response = await fetch("{{ url_for('routes.rename_session', session_id=current_session.id) }}", {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ title: newTitle })
-             });
-             const data = await response.json();
-             if (data.status === 'success') {
-                 titleDisplay.textContent = data.new_title;
-                 // Perbarui juga di sidebar
-                 document.querySelector(`.session-item.active`).textContent = data.new_title;
-             }
-         } catch (error) { console.error('Gagal menyimpan judul'); }
-     }
-     titleInput.classList.add('hidden');
-     titleDisplay.classList.remove('hidden');
- };
-
- titleInput.addEventListener('blur', saveNewTitle);
- titleInput.addEventListener('keydown', (e) => {
-     if (e.key === 'Enter') {
-         e.preventDefault();
-         saveNewTitle();
-     } else if (e.key === 'Escape') {
-         titleInput.classList.add('hidden');
-         titleDisplay.classList.remove('hidden');
-     }
- });
+        titleInput.classList.add('hidden');
+        titleDisplay.classList.remove('hidden');
+    };
+    
+    // --- EVENT LISTENERS ---
+    if (sendBtn) sendBtn.addEventListener('click', sendChatMessage);
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+    }
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            titleDisplay.classList.add('hidden');
+            titleInput.classList.remove('hidden');
+            titleInput.focus();
+            titleInput.select();
+        });
+    }
+    if (titleInput) {
+        titleInput.addEventListener('blur', saveNewTitle);
+        titleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); saveNewTitle(); }
+            else if (e.key === 'Escape') {
+                titleInput.value = titleDisplay.textContent;
+                titleInput.classList.add('hidden');
+                titleDisplay.classList.remove('hidden');
+            }
+        });
+    }
+    if (historyToggleBtn && historySidebar) {
+        historyToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            historySidebar.classList.toggle('hidden');
+        });
+        document.addEventListener('click', (e) => {
+            if (!historySidebar.contains(e.target) && !historyToggleBtn.contains(e.target)) {
+                historySidebar.classList.add('hidden');
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
