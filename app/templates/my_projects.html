@@ -17,7 +17,7 @@
                 {% for sub in submissions %}
                 <div class="card project-card">
                     <div class="project-card-header">
-                        <h4>{{ sub.sub.project.title|replace('-', ' ')|title }}</h4>
+                        <h4>{{ sub.project.title }}</h4>
                         {% if sub.interview_score %}
                             <span class="status-badge completed">Selesai</span>
                         {% else %}
@@ -30,9 +30,11 @@
                         <p><strong>Skor Akhir:</strong> <span class="skor-badge">{{ sub.interview_score }}</span></p>
                     {% else %}
                         <div class="sertifikat-actions">
-                            <a href="{{ url_for('routes.interview', path_name=sub.path_name) }}" class="button-primary">Mulai Wawancara</a>
+                            <a href="{{ url_for('routes.interview', submission_id=sub.id) }}" class="button-primary">Mulai Wawancara</a>
                             <a href="{{ url_for('routes.edit_submission', submission_id=sub.id) }}" class="button-secondary">Edit</a>
-                            <form action="{{ url_for('routes.cancel_submission') }}" method="POST"><input type="hidden" name="origin" value="profile"><input type="hidden" name="path_name" value="{{ sub.path_name }}"><button type="submit" class="button-danger js-confirm-cancel">Hapus</button></form>
+                            <form action="{{ url_for('routes.cancel_submission', submission_id=sub.id) }}" method="POST">
+                                <button type="submit" class="button-danger js-confirm-cancel">Hapus</button>
+                            </form>
                         </div>
                     {% endif %}
                 </div>
@@ -43,7 +45,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                 <h3>Portofolio Anda Masih Kosong</h3>
                 <p>Mulai perjalanan Anda dengan memilih jalur karier dan menyelesaikan proyek pertama Anda.</p>
-                <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 20px;">Lihat Jalur Karier</a>
+                <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 20px;">Pilih Proyek Pertama</a>
             </div>
         {% endif %}
     </main>

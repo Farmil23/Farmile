@@ -749,3 +749,76 @@ header.scrolled {
 .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; }
 .stat-card strong { font-size: 2rem; display: block; }
 .stat-card span { color: var(--text-secondary); }
+
+
+/* static/css/style.css -> tambahkan di akhir */
+select {
+    width: 100%; padding: 15px 20px;
+    border: 2px solid var(--border-color);
+    background-color: var(--card-bg-color);
+    border-radius: 12px; font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500; color: var(--text-primary);
+    -webkit-appearance: none; appearance: none;
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+.text-secondary { color: var(--text-secondary); }
+
+/* static/css/style.css -> tambahkan di akhir */
+.chat-page-container { max-width: 800px; margin: auto; display: flex; flex-direction: column; height: calc(100vh - 120px); }
+.chat-header { text-align: center; padding: 20px; }
+.chat-window { flex-grow: 1; overflow-y: auto; padding: 10px; }
+.message { display: flex; gap: 15px; margin-bottom: 20px; align-items: flex-start; }
+.message.user { justify-content: flex-end; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; }
+.message .bubble { padding: 12px 18px; border-radius: 18px; max-width: 85%; }
+.message.user .bubble { background-color: var(--primary-color); color: white; }
+.message.ai .bubble { background-color: var(--card-bg-color); border: 1px solid var(--border-color); }
+.chat-input-area { display: flex; gap: 10px; padding: 15px; border-top: 1px solid var(--border-color); }
+#chat-input { flex-grow: 1; border: none; background: transparent; color: var(--text-primary); resize: none; font-family: 'Poppins', sans-serif; font-size: 1rem; }
+#chat-input:focus { outline: none; }
+#send-chat-btn { flex-shrink: 0; }
+/* Markdown & Code Block Styling */
+.bubble p { margin: 0 0 10px 0; }
+.bubble pre { background-color: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 8px; overflow-x: auto; }
+.bubble code { font-family: 'Courier New', Courier, monospace; }
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+.chat-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.chat-page-layout { display: flex; height: calc(100vh - 80px); }
+.chat-history-sidebar {
+    flex: 0 0 280px;
+    padding: 15px;
+    background-color: var(--card-bg-color);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+.new-chat-btn { width: 100%; margin-bottom: 20px; }
+.session-list { overflow-y: auto; }
+.session-item { display: block; padding: 10px 15px; text-decoration: none; color: var(--text-secondary); border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-item:hover { background-color: var(--border-color); }
+.session-item.active { background-color: var(--primary-color); color: white; }
+.chat-page-container { flex-grow: 1; }
+
+.module-accordion { display: flex; flex-direction: column; gap: 15px; }
+.module-item { padding: 0; }
+.module-item summary { font-size: 1.2rem; font-weight: 600; padding: 20px; cursor: pointer; }
+.lesson-list { list-style-type: none; padding: 0 20px 20px; margin-top: 15px; border-top: 1px solid var(--border-color); }
+.lesson-list li { display: flex; align-items: center; padding: 10px 0; }
+.lesson-list input[type="checkbox"] { margin-right: 15px; }
+.lesson-list .learn-link { margin-left: auto; text-decoration: none; color: var(--primary-color); font-weight: 500; }

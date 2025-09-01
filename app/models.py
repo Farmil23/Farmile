@@ -6,7 +6,25 @@ from flask_login import UserMixin
 # app/models.py
 from app import db
 from flask_login import UserMixin
-from datetime import datetime # <-- Mungkin perlu diimpor jika belum ada
+from datetime import datetime # <-- Mungkin perlu diimpor jika belum adaclass Module(db.Model):
+id = db.Column(db.Integer, primary_key=True)
+title = db.Column(db.String(200), nullable=False)
+order = db.Column(db.Integer, nullable=False)
+career_path = db.Column(db.String(100), nullable=False)
+lessons = db.relationship('Lesson', backref='module', lazy='dynamic', cascade="all, delete-orphan")
+
+class Lesson(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    url = db.Column(db.String(500)) # Link ke artikel/video
+    module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False)
+
+class UserProgress(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class User(UserMixin, db.Model):
     # INI YANG PALING PENTING, PASTIKAN ADA
@@ -20,11 +38,12 @@ class User(UserMixin, db.Model):
 
     # Relasi ke submission
     submissions = db.relationship('ProjectSubmission', backref='author', lazy=True)
-
+    chat_messages = db.relationship('ChatMessage', backref='author', lazy='dynamic')
     semester = db.Column(db.Integer, nullable=True)
 
     has_completed_onboarding = db.Column(db.Boolean, default=False, nullable=False)
     career_path = db.Column(db.String(100), nullable=True)
+    chat_sessions = db.relationship('ChatSession', backref='author', lazy='dynamic', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f'<User {self.name}>'
@@ -57,3 +76,26 @@ class ProjectSubmission(db.Model):
     def __repr__(self):
         return f'<Submission for Project {self.project_id} by User {self.user_id}>'
 
+# Tambahkan class baru ini di akhir file
+class ChatMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    role = db.Column(db.String(10), nullable=False) # 'user' atau 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+    session_id = db.Column(db.Integer, db.ForeignKey('chat_session.id'), nullable=False)
+    def __repr__(self):
+        return f'<ChatMessage {self.id}>'
+    
+# TAMBAHKAN MODEL BARU INI
+# app/models.py
+class ChatSession(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    # --- (baris title, timestamp, messages tetap sama) ---
+    title = db.Column(db.String(150), nullable=False)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    messages = db.relationship('ChatMessage', backref='session', lazy='dynamic', cascade="all, delete-orphan")
+
+    

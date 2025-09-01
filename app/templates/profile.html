@@ -10,13 +10,18 @@
                 <span class="semester-badge">Semester {{ current_user.semester if current_user.semester else 'N/A' }}</span>
             </div>
         </div>
-        <button class="button-secondary">Edit Profil</button>
+        <a href="{{ url_for('routes.edit_profile') }}" class="button-secondary">Edit Profil</a>
     </div>
     <hr>
-    <h3>Statistik Belajar</h3>
-    <div class="stats-grid">
-        <div class="stat-card"><strong>0</strong><span>Proyek Selesai</span></div>
-        <div class="stat-card"><strong>0</strong><span>Lencana Diraih</span></div>
-        <div class="stat-card"><strong>0</strong><span>Jam Belajar</span></div>
+    
+    <div class="profile-grid">
+        <div class="profile-section">
+            <h3>Tentang Saya</h3>
+            <p class="text-secondary">Deskripsi singkat tentang minat dan tujuan karier Anda. (Bisa diisi melalui Edit Profil)</p>
+        </div>
+        <div class="profile-section">
+            <h3>Lencana Pencapaian</h3>
+            <p class="text-secondary">Selesaikan tugas untuk mendapatkan lencana.</p>
+            </div>
     </div>
-    {% endblock %}
+{% endblock %}

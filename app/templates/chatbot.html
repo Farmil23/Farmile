@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="chat-page-layout">
+
+    <aside class="chat-history-sidebar">
+        <form action="{{ url_for('routes.new_chat_session') }}" method="POST">
+            <button type="submit" class="button-primary new-chat-btn">＋ Percakapan Baru</button>
+        </form>
+        <nav class="session-list">
+            {% for session in all_sessions %}
+            <a href="{{ url_for('routes.chatbot_session', session_id=session.id) }}" 
+               class="session-item {% if session.id == current_session.id %}active{% endif %}">
+                {{ session.title }}
+            </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <main class="chat-page-container">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <a href="{{ url_for('routes.dashboard') }}" class="button-secondary" style="padding: 8px 16px;">← Dasbor</a>
+                <div>
+                    <h2>{{ current_session.title }}</h2>
+                    <p class="subtitle">Chat dengan Mentor AI</p>
+                </div>
+            </div>
+            <a href="#" class="button-primary">Mulai Roadmap Belajar 🚀</a>
+        </div>
+        
+        <div id="chat-window" class="chat-window">
+            {% for message in history %}
+                <div class="message {{ 'user' if message.role == 'user' else 'ai' }}">
+                    <img src="{{ current_user.profile_pic if message.role == 'user' else 'https://i.ibb.co/mC9kS26/ai-avatar.png' }}" class="avatar">
+                    <div class="bubble">
+                        {{ message.content | safe }} </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="Ketik pesan Anda di sini... (Shift+Enter untuk baris baru)" rows="1"></textarea>
+            <button id="send-chat-btn" class="button-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-chat-btn');
+    const chatWindow = document.getElementById('chat-window');
+
+    const addMessage = (text, sender, isMarkdown = false) => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        const avatar = `<img src="${sender === 'user' ? '{{ current_user.profile_pic }}' : 'https://i.ibb.co/mC9kS26/ai-avatar.png'}" class="avatar">`;
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'bubble';
+
+        if (isMarkdown && window.marked) {
+            bubbleDiv.innerHTML = marked.parse(text);
+            bubbleDiv.querySelectorAll('pre code').forEach((block) => {
+                if(window.hljs) hljs.highlightElement(block);
+            });
+        } else {
+            bubbleDiv.textContent = text;
+        }
+        
+        messageDiv.innerHTML = avatar;
+        messageDiv.appendChild(bubbleDiv);
+        chatWindow.appendChild(messageDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    };
+    
+    chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll saat halaman dimuat
+
+    const sendChatMessage = async () => {
+        const message = chatInput.value.trim();
+        if (!message) return;
+        addMessage(message, 'user', false);
+        chatInput.value = '';
+        
+        try {
+            const response = await fetch("{{ url_for('routes.chat_ai', session_id=current_session.id) }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+            const data = await response.json();
+            addMessage(data.response || data.error, 'ai', !data.error);
+        } catch (error) {
+            addMessage('Tidak dapat terhubung ke server.', 'ai', false);
+        }
+    };
+
+    sendBtn.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+        }
+    });
+});
+</script>
+{% endblock %}

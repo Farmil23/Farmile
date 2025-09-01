@@ -26,9 +26,27 @@
     <div id="step-3" class="onboarding-step">
         <h3>Terakhir, aktivitas seperti apa yang paling menarik bagimu?</h3>
         <div class="answer-options">
-            <button data-value="frontend"></button>
-            <button data-value="backend"></button>
-            <button data-value="data-analyst"></button>
+            <button data-value="frontend">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                <div>
+                    <strong>Membangun Tampilan Visual</strong>
+                    <span>Saya suka merancang dan melihat hasil nyata di layar.</span>
+                </div>
+            </button>
+            <button data-value="backend">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                <div>
+                    <strong>Mengatur Logika & Data</strong>
+                    <span>Saya menikmati proses berpikir di balik layar dan membuat sistem bekerja.</span>
+                </div>
+            </button>
+            <button data-value="data-analyst">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                <div>
+                    <strong>Menemukan Pola dari Data</strong>
+                    <span>Saya penasaran dengan cerita dan wawasan yang tersembunyi di dalam angka.</span>
+                </div>
+            </button>
         </div>
     </div>
     
@@ -39,50 +57,74 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const steps = document.querySelectorAll('.onboarding-step');
-    const progressBar = document.getElementById('progressBar');
-    const totalSteps = 4; // Sekarang ada 4 langkah
-    let currentStep = 1;
-    let answers = {
-        user_name: document.getElementById('name-input').value // Ambil nama awal dari Google
-    };
-
-    function showStep(stepNum) {
-        currentStep = stepNum;
-        steps.forEach(step => step.classList.remove('active'));
-        document.getElementById(`step-${stepNum}`).classList.add('active');
-        progressBar.style.width = `${((currentStep -1) / (totalSteps -1)) * 100}%`;
-    }
-
-    // Navigasi dari Step 1 ke 2
-    document.querySelector('#step-1 .onboarding-nav button').addEventListener('click', () => {
-        answers['user_name'] = document.getElementById('name-input').value;
-        showStep(2);
-    });
+    document.addEventListener('DOMContentLoaded', () => {
+        const steps = document.querySelectorAll('.onboarding-step');
+        const progressBar = document.getElementById('progressBar');
+        const totalSteps = 4; // Total langkah dalam alur
+        let currentStep = 1;
+        let answers = {
+            user_name: document.getElementById('name-input').value
+        };
     
-    // Navigasi dari Step 2 ke 3
-    document.querySelector('#step-2 .onboarding-nav button').addEventListener('click', () => {
-        answers['semester'] = document.getElementById('semester-input').value;
-        showStep(3);
-    });
-
-    // Navigasi dari Step 3 ke Final
-    document.querySelector('#step-3 .answer-options').addEventListener('click', (e) => {
-        const button = e.target.closest('button');
-        if (button) {
-            const pathValue = button.getAttribute('data-value');
-            answers['career_focus'] = pathValue;
-            const pathText = { 'frontend': 'Frontend', 'backend': 'Backend', 'data-analyst': 'Data Analyst' };
-            document.getElementById('recommended-path').textContent = pathText[pathValue];
-            showStep('final');
+        function showStep(stepNum) {
+            currentStep = stepNum;
+            steps.forEach(step => step.classList.remove('active'));
+            document.getElementById(`step-${stepNum}`).classList.add('active');
+            progressBar.style.width = `${((currentStep - 1) / (totalSteps - 1)) * 100}%`;
         }
+    
+        // Navigasi dari Step 1 (Nama) ke 2 (Semester)
+        document.querySelector('#step-1 .onboarding-nav button').addEventListener('click', () => {
+            const nameInput = document.getElementById('name-input').value.trim();
+            if (nameInput) {
+                answers['user_name'] = nameInput;
+                showStep(2);
+            } else {
+                alert('Nama tidak boleh kosong.');
+            }
+        });
+    
+        // --- PERBAIKAN DI SINI ---
+        // Event listener BARU untuk Step 2 (Tombol Semester)
+        document.querySelector('#step-2 .answer-options').addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button) {
+                answers['semester'] = button.getAttribute('data-value');
+                showStep(3);
+            }
+        });
+    
+        // Navigasi dari Step 3 (Minat) ke Final
+        document.querySelector('#step-3 .answer-options').addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button) {
+                const pathValue = button.getAttribute('data-value');
+                answers['career_focus'] = pathValue;
+                const pathText = {
+                    'frontend': 'Frontend Developer',
+                    'backend': 'Backend Developer',
+                    'data-analyst': 'Data Analyst'
+                };
+                document.getElementById('recommended-path').textContent = pathText[pathValue];
+                showStep('final');
+            }
+        });
+    
+        // Tombol Finish (mengirim semua data)
+        document.getElementById('finishBtn').addEventListener('click', async () => {
+            progressBar.style.width = '100%';
+            try {
+                const response = await fetch("{{ url_for('routes.complete_onboarding') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(answers)
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    window.location.href = data.redirect_url;
+                } else { alert('Terjadi kesalahan.'); }
+            } catch (error) { alert('Tidak dapat terhubung ke server.'); }
+        });
     });
-
-    // Tombol Finish (mengirim semua data)
-    document.getElementById('finishBtn').addEventListener('click', async () => {
-        // ... (fungsi fetch ke '/complete-onboarding' sama seperti sebelumnya) ...
-    });
-});
-</script>
+    </script>
 {% endblock %}

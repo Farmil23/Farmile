@@ -7,7 +7,11 @@
         <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
 
         <label for="semester">Semester</label>
-        <input type="number" id="semester" name="semester" value="{{ current_user.semester }}" required>
+        <select id="semester" name="semester" required>
+            {% for i in range(1, 15) %}
+                <option value="{{ i }}" {% if current_user.semester == i %}selected{% endif %}>Semester {{ i }}</option>
+            {% endfor %}
+        </select>
 
         <div class="form-actions">
             <a href="{{ url_for('routes.profile') }}" class="button-secondary">Batal</a>
