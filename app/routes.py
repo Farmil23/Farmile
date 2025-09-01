@@ -67,7 +67,59 @@ def index():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html', title='Dasbor Anda')
+    try:
+        # Get user statistics
+        completed_lessons_count = current_user.progress.count()
+        total_lessons = 0
+        if current_user.modules.count() > 0:
+            total_lessons = db.session.query(Lesson).join(Module).filter(Module.author == current_user).count()
+        
+        progress_percentage = 0
+        if total_lessons > 0:
+            progress_percentage = int((completed_lessons_count / total_lessons) * 100)
+        
+        # Get recent activities with error handling
+        recent_sessions = []
+        recent_submissions = []
+        recent_progress = []
+        
+        try:
+            recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(3).all()
+        except Exception as e:
+            print(f"Error getting chat sessions: {e}")
+            recent_sessions = []
+        
+        try:
+            recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(3).all()
+        except Exception as e:
+            print(f"Error getting submissions: {e}")
+            recent_submissions = []
+        
+        try:
+            recent_progress = current_user.progress.order_by(UserProgress.completed_at.desc()).limit(3).all()
+        except Exception as e:
+            print(f"Error getting progress: {e}")
+            recent_progress = []
+        
+        return render_template('dashboard.html', 
+                             title='Dasbor Anda',
+                             completed_lessons_count=completed_lessons_count,
+                             total_lessons=total_lessons,
+                             progress_percentage=progress_percentage,
+                             recent_sessions=recent_sessions,
+                             recent_submissions=recent_submissions,
+                             recent_progress=recent_progress)
+    except Exception as e:
+        print(f"Dashboard error: {e}")
+        # Return with empty data if there's an error
+        return render_template('dashboard.html', 
+                             title='Dasbor Anda',
+                             completed_lessons_count=0,
+                             total_lessons=0,
+                             progress_percentage=0,
+                             recent_sessions=[],
+                             recent_submissions=[],
+                             recent_progress=[])
 
 @bp.route('/login')
 def login():
@@ -299,7 +351,24 @@ def new_chat_for_lesson(lesson_id):
 @bp.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', title="Profil Saya")
+    # Get user statistics for profile
+    completed_lessons_count = current_user.progress.count()
+    total_lessons = 50  # Assuming 50 total lessons in roadmap
+    progress_percentage = int((completed_lessons_count / total_lessons) * 100) if total_lessons > 0 else 0
+    
+    # Get recent activities
+    recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(2).all()
+    recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(3).all()
+    recent_progress = current_user.progress.order_by(UserProgress.completed_at.desc()).limit(2).all()
+    
+    return render_template('profile.html', 
+                         title="Profil Saya",
+                         completed_lessons_count=completed_lessons_count,
+                         total_lessons=total_lessons,
+                         progress_percentage=progress_percentage,
+                         recent_sessions=recent_sessions,
+                         recent_submissions=recent_submissions,
+                         recent_progress=recent_progress)
 
 @bp.route('/settings/profile/edit', methods=['GET', 'POST'])
 @login_required

@@ -11,13 +11,32 @@
         </div>
         <nav class="sidebar-nav">
             <a href="{{ url_for('routes.profile') }}" class="nav-link {% if request.endpoint == 'routes.profile' %}active{% endif %}">
-                <span>Profil Publik</span>
+                <span class="nav-icon">👤</span>
+                <span class="nav-text">Profil Publik</span>
+            </a>
+            <a href="{{ url_for('routes.edit_profile') }}" class="nav-link {% if request.endpoint == 'routes.edit_profile' %}active{% endif %}">
+                <span class="nav-icon">✏️</span>
+                <span class="nav-text">Edit Profil</span>
             </a>
             <a href="#" class="nav-link disabled">
-                <span>Akun & Keamanan</span>
+                <span class="nav-icon">🔒</span>
+                <span class="nav-text">Akun & Keamanan</span>
+                <span class="nav-badge">Soon</span>
             </a>
             <a href="#" class="nav-link disabled">
-                <span>Notifikasi</span>
+                <span class="nav-icon">🔔</span>
+                <span class="nav-text">Notifikasi</span>
+                <span class="nav-badge">Soon</span>
+            </a>
+            <a href="#" class="nav-link disabled">
+                <span class="nav-icon">🎨</span>
+                <span class="nav-text">Tema & Tampilan</span>
+                <span class="nav-badge">Soon</span>
+            </a>
+            <a href="#" class="nav-link disabled">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Privasi & Data</span>
+                <span class="nav-badge">Soon</span>
             </a>
         </nav>
         <div class="sidebar-footer">

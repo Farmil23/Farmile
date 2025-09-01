@@ -1,20 +1,345 @@
 {% extends "landing_base.html" %}
 {% block content %}
-<div class="hero">
-    <h1>Platform Cerdas untuk Karier Teknologimu</h1>
-    <p>Bukan hanya belajar, tapi membangun bukti nyata. FARSIGHT adalah rekan AI-mu untuk bertransisi dari mahasiswa menjadi profesional siap kerja.</p>
-    <a href="{{ url_for('routes.login') }}" class="button-primary">Mulai Gratis Sekarang</a>
-</div>
 
-<hr>
-<div id="fitur" class="section">
-    <h2 class="reveal-on-scroll">Semua yang Kamu Butuhkan di Satu Tempat</h2>
-    <div class="features-grid reveal-on-scroll">
-        <div class="card"><h3>📝 Roadmap Belajar Terarah</h3><p>Kurikulum yang relevan dengan industri, membawamu dari nol hingga siap membangun proyek nyata.</p></div>
-        <div class="card"><h3>📦 Proyek Portofolio Terverifikasi</h3><p>Kerjakan tantangan proyek yang dirancang untuk menguji dan membuktikan skill teknis fundamentalmu.</p></div>
-        <div class="card"><h3>💬 Mentor AI 24/7</h3><p>Jangan pernah stuck. Tanyakan apa saja, kapan saja, pada chatbot mentor yang selalu siap membantumu.</p></div>
-        <div class="card"><h3>🎙️ Simulasi Wawancara Realistis</h3><p>Latih mental dan kemampuan menjawab pertanyaan teknis dengan AI Interviewer yang akan memberimu feedback.</p></div>
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-container">
+        <div class="hero-content">
+            <h1 class="hero-title">Platform Cerdas untuk Karier Teknologimu</h1>
+            <p class="hero-subtitle">Bukan hanya belajar, tapi membangun bukti nyata. FARSIGHT adalah rekan AI-mu untuk bertransisi dari mahasiswa menjadi profesional siap kerja.</p>
+            <div class="hero-actions">
+                <a href="{{ url_for('routes.login') }}" class="button-primary hero-cta">Mulai Gratis Sekarang</a>
+                <a href="#fitur" class="button-secondary hero-learn">Pelajari Lebih Lanjut</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-card">
+                <div class="card-header">
+                    <div class="card-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="ai-avatar">🤖</div>
+                    <div class="ai-message">
+                        <p>Halo! Saya AI Mentor FARSIGHT. Siap membantu karier teknologimu!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+</section>
+
+<!-- Features Section -->
+<section id="fitur" class="features-section">
+    <div class="section-container">
+        <div class="section-header">
+            <h2 class="section-title">Semua yang Kamu Butuhkan di Satu Tempat</h2>
+            <p class="section-subtitle">Platform komprehensif untuk mengembangkan skill teknologi dan membangun karier impianmu</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3 class="feature-title">Roadmap Belajar Terarah</h3>
+                <p class="feature-description">Kurikulum yang relevan dengan industri, membawamu dari nol hingga siap membangun proyek nyata.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📦</div>
+                <h3 class="feature-title">Proyek Portofolio Terverifikasi</h3>
+                <p class="feature-description">Kerjakan tantangan proyek yang dirancang untuk menguji dan membuktikan skill teknis fundamentalmu.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3 class="feature-title">Mentor AI 24/7</h3>
+                <p class="feature-description">Jangan pernah stuck. Tanyakan apa saja, kapan saja, pada chatbot mentor yang selalu siap membantumu.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎙️</div>
+                <h3 class="feature-title">Simulasi Wawancara Realistis</h3>
+                <p class="feature-description">Latih mental dan kemampuan menjawab pertanyaan teknis dengan AI Interviewer yang akan memberimu feedback.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about-us" class="about-section">
+    <div class="section-container">
+        <div class="about-content">
+            <div class="about-text">
+                <h2 class="section-title">Mengapa FARSIGHT?</h2>
+                <p class="about-description">
+                    FARSIGHT dirancang khusus untuk mahasiswa dan fresh graduate yang ingin memulai karier di bidang teknologi. 
+                    Kami memahami tantangan yang dihadapi dalam transisi dari dunia akademik ke industri profesional.
+                </p>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">1000+</div>
+                        <div class="stat-label">Mahasiswa Terbantu</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">85%</div>
+                        <div class="stat-label">Tingkat Kesuksesan</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Dukungan AI</div>
+                    </div>
+                </div>
+            </div>
+            <div class="about-visual">
+                <div class="visual-card">
+                    <div class="progress-ring">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span class="progress-percentage">85%</span>
+                        <span class="progress-label">Mahasiswa berhasil mendapatkan pekerjaan</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials-section">
+    <div class="section-container">
+        <div class="section-header">
+            <h2 class="section-title">Kata Mereka Tentang FARSIGHT</h2>
+            <p class="section-subtitle">Cerita sukses dari mahasiswa yang telah merasakan manfaat platform kami</p>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"FARSIGHT membantu saya memahami roadmap yang jelas untuk menjadi Frontend Developer. AI Mentor-nya sangat membantu saat saya stuck!"</p>
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">👨‍💻</div>
+                    <div class="author-info">
+                        <h4>Rizki Pratama</h4>
+                        <span>Frontend Developer di Tokopedia</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Proyek-proyek di FARSIGHT sangat relevan dengan industri. Portfolio yang saya buat di sini membantu saya diterima di startup unicorn!"</p>
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">👩‍💻</div>
+                    <div class="author-info">
+                        <h4>Sari Dewi</h4>
+                        <span>Backend Developer di Gojek</span>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>"Simulasi wawancara AI-nya sangat realistis! Saya jadi lebih percaya diri saat interview dan berhasil dapat kerja di perusahaan impian."</p>
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">👨‍🔬</div>
+                    <div class="author-info">
+                        <h4>Budi Santoso</h4>
+                        <span>Data Analyst di Shopee</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="faq-section">
+    <div class="section-container">
+        <div class="section-header">
+            <h2 class="section-title">Pertanyaan yang Sering Diajukan</h2>
+            <p class="section-subtitle">Temukan jawaban untuk pertanyaan yang mungkin ada di benakmu</p>
+        </div>
+        <div class="faq-container">
+            <div class="faq-item">
+                <div class="faq-question">
+                    <h3>Apakah FARSIGHT benar-benar gratis?</h3>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Ya! FARSIGHT sepenuhnya gratis untuk semua mahasiswa. Kami percaya bahwa pendidikan teknologi berkualitas harus dapat diakses oleh semua orang.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <h3>Berapa lama waktu yang dibutuhkan untuk menyelesaikan roadmap?</h3>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Biasanya 6-8 bulan untuk menyelesaikan satu roadmap lengkap, tergantung pada kecepatan belajar dan komitmen waktu Anda. Kami merekomendasikan 2-3 jam per hari.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <h3>Apakah ada sertifikat setelah menyelesaikan program?</h3>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Ya! Anda akan mendapatkan sertifikat digital yang dapat ditambahkan ke LinkedIn dan CV setelah menyelesaikan roadmap dan proyek portofolio.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    <h3>Bagaimana cara AI Mentor membantu proses belajar?</h3>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer">
+                    <p>AI Mentor kami tersedia 24/7 untuk menjawab pertanyaan, memberikan penjelasan konsep, membantu debug code, dan memberikan feedback pada proyek Anda.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section class="contact-section">
+    <div class="section-container">
+        <div class="contact-content">
+            <div class="contact-info">
+                <h2 class="section-title">Hubungi Kami</h2>
+                <p class="section-subtitle">Ada pertanyaan? Tim kami siap membantu Anda!</p>
+                
+                <div class="contact-methods">
+                    <div class="contact-method">
+                        <div class="contact-icon">📧</div>
+                        <div class="contact-details">
+                            <h4>Email</h4>
+                            <p>support@farsight.id</p>
+                            <span>Respon dalam 24 jam</span>
+                        </div>
+                    </div>
+                    <div class="contact-method">
+                        <div class="contact-icon">💬</div>
+                        <div class="contact-details">
+                            <h4>WhatsApp</h4>
+                            <p>+62 89-609-656-714</p>
+                            <span>Senin - Jumat, 09:00 - 17:00</span>
+                        </div>
+                    </div>
+                    <div class="contact-method">
+                        <div class="contact-icon">🏢</div>
+                        <div class="contact-details">
+                            <h4>Alamat</h4>
+                            <p>Jl. Ciparay<br>Kabupaten Bandung, 40381</p>
+                            <span>Kunjungan dengan appointment</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="social-links">
+                    <h4>Ikuti Kami</h4>
+                    <div class="social-icons">
+                        <a href="www.linkedin.com/in/farhan-kamil-hermansyah-184850328" class="social-icon" title="LinkedIn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                        </a>
+                        <a href="https://github.com/Farmil23" class="social-icon" title="GitHub">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                        <a href="https://www.instagram.com/mashivee/" class="social-icon" title="Instagram">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="contact-form">
+                <h3>Kirim Pesan</h3>
+                <form class="message-form">
+                    <div class="form-group">
+                        <input type="text" placeholder="Nama Lengkap" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <select required>
+                            <option value="">Pilih Subjek</option>
+                            <option value="general">Pertanyaan Umum</option>
+                            <option value="technical">Bantuan Teknis</option>
+                            <option value="partnership">Kemitraan</option>
+                            <option value="feedback">Feedback</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <textarea placeholder="Pesan Anda" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="button-primary">Kirim Pesan</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="section-container">
+        <div class="cta-content">
+            <h2 class="cta-title">Siap Memulai Perjalanan Karier Teknologimu?</h2>
+            <p class="cta-subtitle">Bergabunglah dengan ribuan mahasiswa yang telah merasakan manfaat FARSIGHT</p>
+            <a href="{{ url_for('routes.login') }}" class="button-primary cta-button">Mulai Sekarang - Gratis!</a>
+        </div>
+    </div>
+</section>
+
+<script>
+// FAQ Toggle Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        
+        question.addEventListener('click', () => {
+            // Close other FAQ items
+            faqItems.forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('active');
+                }
+            });
+            
+            // Toggle current item
+            item.classList.toggle('active');
+        });
+    });
+    
+    // Contact form submission (basic validation)
+    const contactForm = document.querySelector('.message-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(this);
+            const name = this.querySelector('input[type="text"]').value;
+            const email = this.querySelector('input[type="email"]').value;
+            const subject = this.querySelector('select').value;
+            const message = this.querySelector('textarea').value;
+            
+            // Basic validation
+            if (!name || !email || !subject || !message) {
+                alert('Mohon lengkapi semua field yang diperlukan.');
+                return;
+            }
+            
+            // Simulate form submission
+            alert('Terima kasih! Pesan Anda telah dikirim. Kami akan menghubungi Anda segera.');
+            this.reset();
+        });
+    }
+});
+</script>
 
 {% endblock %}

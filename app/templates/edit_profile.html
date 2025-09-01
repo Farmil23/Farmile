@@ -1,21 +1,143 @@
 {% extends "settings_base.html" %}
 {% block settings_content %}
-    <h2>Edit Profil</h2>
-    <hr>
-    <form method="POST" class="submission-form">
-        <label for="name">Nama Lengkap</label>
-        <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
+    <div class="edit-profile-header">
+        <h2>Edit Profil</h2>
+        <p class="edit-profile-subtitle">Perbarui informasi profil Anda</p>
+    </div>
+    
+    <div class="edit-profile-content">
+        <form method="POST" class="edit-profile-form">
+            <!-- Personal Information -->
+            <div class="form-section">
+                <h3 class="form-section-title">Informasi Personal</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Nama Lengkap</label>
+                        <input type="text" id="name" name="name" value="{{ current_user.name }}" required class="form-input">
+                        <span class="form-help">Nama yang akan ditampilkan di profil publik</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" value="{{ current_user.email }}" disabled class="form-input disabled">
+                        <span class="form-help">Email tidak dapat diubah (terhubung dengan Google)</span>
+                    </div>
+                </div>
+            </div>
 
-        <label for="semester">Semester</label>
-        <select id="semester" name="semester" required>
-            {% for i in range(1, 15) %}
-                <option value="{{ i }}" {% if current_user.semester == i %}selected{% endif %}>Semester {{ i }}</option>
-            {% endfor %}
-        </select>
+            <!-- Academic Information -->
+            <div class="form-section">
+                <h3 class="form-section-title">Informasi Akademik</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="semester" class="form-label">Semester</label>
+                        <select id="semester" name="semester" required class="form-select">
+                            <option value="">Pilih Semester</option>
+                            {% for i in range(1, 15) %}
+                                <option value="{{ i }}" {% if current_user.semester == i %}selected{% endif %}>Semester {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="form-help">Semester saat ini untuk personalisasi konten</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="career_path" class="form-label">Jalur Karier</label>
+                        <select id="career_path" name="career_path" class="form-select">
+                            <option value="">Pilih Jalur Karier</option>
+                            <option value="frontend" {% if current_user.career_path == 'frontend' %}selected{% endif %}>Frontend Developer</option>
+                            <option value="backend" {% if current_user.career_path == 'backend' %}selected{% endif %}>Backend Developer</option>
+                            <option value="data-analyst" {% if current_user.career_path == 'data-analyst' %}selected{% endif %}>Data Analyst</option>
+                        </select>
+                        <span class="form-help">Jalur karier yang sedang Anda tekuni</span>
+                    </div>
+                </div>
+            </div>
 
-        <div class="form-actions">
-            <a href="{{ url_for('routes.profile') }}" class="button-secondary">Batal</a>
-            <button type="submit" class="button-primary">Simpan Perubahan</button>
-        </div>
-    </form>
+            <!-- Profile Description -->
+            <div class="form-section">
+                <h3 class="form-section-title">Tentang Saya</h3>
+                <div class="form-group">
+                    <label for="bio" class="form-label">Bio Singkat</label>
+                    <textarea id="bio" name="bio" rows="4" class="form-textarea" placeholder="Ceritakan sedikit tentang diri Anda, minat, dan tujuan karier..."></textarea>
+                    <span class="form-help">Deskripsi singkat yang akan muncul di profil publik (opsional)</span>
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            <div class="form-section">
+                <h3 class="form-section-title">Link Sosial</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="linkedin" class="form-label">LinkedIn</label>
+                        <input type="url" id="linkedin" name="linkedin" class="form-input" placeholder="https://linkedin.com/in/username">
+                        <span class="form-help">Link profil LinkedIn Anda</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="github" class="form-label">GitHub</label>
+                        <input type="url" id="github" name="github" class="form-input" placeholder="https://github.com/username">
+                        <span class="form-help">Link profil GitHub Anda</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="portfolio" class="form-label">Portfolio</label>
+                        <input type="url" id="portfolio" name="portfolio" class="form-input" placeholder="https://yourportfolio.com">
+                        <span class="form-help">Link portfolio atau website pribadi</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="twitter" class="form-label">Twitter</label>
+                        <input type="url" id="twitter" name="twitter" class="form-input" placeholder="https://twitter.com/username">
+                        <span class="form-help">Link profil Twitter Anda</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Settings -->
+            <div class="form-section">
+                <h3 class="form-section-title">Pengaturan Privasi</h3>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="public_profile" name="public_profile" checked>
+                        <label for="public_profile" class="checkbox-label">
+                            <span class="checkbox-text">
+                                <strong>Profil Publik</strong>
+                                <span class="checkbox-description">Izinkan orang lain melihat profil dan progress Anda</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show_achievements" name="show_achievements" checked>
+                        <label for="show_achievements" class="checkbox-label">
+                            <span class="checkbox-text">
+                                <strong>Tampilkan Pencapaian</strong>
+                                <span class="checkbox-description">Tampilkan lencana dan pencapaian di profil</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show_projects" name="show_projects" checked>
+                        <label for="show_projects" class="checkbox-label">
+                            <span class="checkbox-text">
+                                <strong>Tampilkan Proyek</strong>
+                                <span class="checkbox-description">Tampilkan proyek yang telah disubmit di profil</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{{ url_for('routes.profile') }}" class="button-secondary">Batal</a>
+                <button type="submit" class="button-primary">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
 {% endblock %}

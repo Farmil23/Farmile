@@ -24,35 +24,135 @@
     </div>
 
     <div id="step-3" class="onboarding-step">
-        <h3>Terakhir, aktivitas seperti apa yang paling menarik bagimu?</h3>
-        <div class="answer-options">
-            <button data-value="frontend">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-                <div>
-                    <strong>Membangun Tampilan Visual</strong>
-                    <span>Saya suka merancang dan melihat hasil nyata di layar.</span>
+        <h3>Mari kita cari tahu passion kamu! Pilih aktivitas yang paling menarik:</h3>
+        <div class="answer-options career-options">
+            <button data-value="frontend" class="career-option">
+                <div class="career-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg>
+                </div>
+                <div class="career-content">
+                    <h4>Frontend Developer</h4>
+                    <p class="career-description">Membangun tampilan visual yang menarik dan interaktif</p>
+                    <div class="career-details">
+                        <span class="career-skill">🎨 UI/UX Design</span>
+                        <span class="career-skill">⚡ React, Vue, Angular</span>
+                        <span class="career-skill">📱 Responsive Design</span>
+                    </div>
+                    <div class="career-salary">💼 Gaji: Rp 8-15 juta/bulan</div>
                 </div>
             </button>
-            <button data-value="backend">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                <div>
-                    <strong>Mengatur Logika & Data</strong>
-                    <span>Saya menikmati proses berpikir di balik layar dan membuat sistem bekerja.</span>
+            
+            <button data-value="backend" class="career-option">
+                <div class="career-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                </div>
+                <div class="career-content">
+                    <h4>Backend Developer</h4>
+                    <p class="career-description">Mengatur logika bisnis dan sistem di balik layar</p>
+                    <div class="career-details">
+                        <span class="career-skill">🔧 API Development</span>
+                        <span class="career-skill">🗄️ Database Design</span>
+                        <span class="career-skill">☁️ Cloud Architecture</span>
+                    </div>
+                    <div class="career-salary">💼 Gaji: Rp 10-20 juta/bulan</div>
                 </div>
             </button>
-            <button data-value="data-analyst">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
-                <div>
-                    <strong>Menemukan Pola dari Data</strong>
-                    <span>Saya penasaran dengan cerita dan wawasan yang tersembunyi di dalam angka.</span>
+            
+            <button data-value="data-analyst" class="career-option">
+                <div class="career-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                        <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                    </svg>
+                </div>
+                <div class="career-content">
+                    <h4>Data Analyst</h4>
+                    <p class="career-description">Menemukan wawasan berharga dari data untuk keputusan bisnis</p>
+                    <div class="career-details">
+                        <span class="career-skill">📊 Data Visualization</span>
+                        <span class="career-skill">🐍 Python, SQL</span>
+                        <span class="career-skill">📈 Business Intelligence</span>
+                    </div>
+                    <div class="career-salary">💼 Gaji: Rp 7-12 juta/bulan</div>
                 </div>
             </button>
         </div>
     </div>
     
+    <div id="step-4" class="onboarding-step">
+        <h3>Roadmap Belajar <span id="roadmap-path"></span> Kamu</h3>
+        <div class="roadmap-preview">
+            <div class="roadmap-phase">
+                <div class="phase-number">1</div>
+                <div class="phase-content">
+                    <h4>Foundation (2-3 bulan)</h4>
+                    <p>Pelajari dasar-dasar programming dan tools yang dibutuhkan</p>
+                    <div class="phase-skills">
+                        <span class="skill-tag">HTML/CSS</span>
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">Git</span>
+                    </div>
+                </div>
+            </div>
+            <div class="roadmap-phase">
+                <div class="phase-number">2</div>
+                <div class="phase-content">
+                    <h4>Specialization (3-4 bulan)</h4>
+                    <p>Fokus pada teknologi dan framework spesifik</p>
+                    <div class="phase-skills" id="specialization-skills">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <div class="roadmap-phase">
+                <div class="phase-number">3</div>
+                <div class="phase-content">
+                    <h4>Projects & Portfolio (2-3 bulan)</h4>
+                    <p>Bangun proyek nyata dan portofolio yang mengesankan</p>
+                    <div class="phase-skills">
+                        <span class="skill-tag">Real Projects</span>
+                        <span class="skill-tag">Portfolio</span>
+                        <span class="skill-tag">Deployment</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="onboarding-nav">
+            <button id="backToCareer" class="button-secondary">Kembali</button>
+            <button id="continueToFinal" class="button-primary">Lanjutkan</button>
+        </div>
+    </div>
+    
     <div id="step-final" class="onboarding-step">
-        <h3>Luar biasa! Berdasarkan pilihanmu, kami merekomendasikan jalur <strong id="recommended-path"></strong>.</h3>
-        <div class="onboarding-nav"><button id="finishBtn" class="button-primary">Mulai Belajar!</button></div>
+        <div class="final-content">
+            <div class="success-icon">🎉</div>
+            <h3>Selamat! Kamu siap memulai perjalanan <span id="final-path"></span></h3>
+            <p class="final-description">Kami telah menyiapkan roadmap personal dan AI Mentor yang akan membimbingmu setiap langkah.</p>
+            <div class="final-benefits">
+                <div class="benefit-item">
+                    <span class="benefit-icon">📚</span>
+                    <span>Roadmap Personal</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">🤖</span>
+                    <span>AI Mentor 24/7</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-icon">💼</span>
+                    <span>Proyek Portofolio</span>
+                </div>
+            </div>
+        </div>
+        <div class="onboarding-nav">
+            <button id="finishBtn" class="button-primary finish-button">Mulai Perjalanan Belajar!</button>
+        </div>
     </div>
 </div>
 
@@ -60,10 +160,26 @@
     document.addEventListener('DOMContentLoaded', () => {
         const steps = document.querySelectorAll('.onboarding-step');
         const progressBar = document.getElementById('progressBar');
-        const totalSteps = 4; // Total langkah dalam alur
+        const totalSteps = 5; // Total langkah dalam alur (updated)
         let currentStep = 1;
         let answers = {
             user_name: document.getElementById('name-input').value
+        };
+        
+        // Career path data
+        const careerData = {
+            'frontend': {
+                name: 'Frontend Developer',
+                skills: ['React', 'Vue.js', 'TypeScript', 'Tailwind CSS']
+            },
+            'backend': {
+                name: 'Backend Developer', 
+                skills: ['Node.js', 'Python', 'PostgreSQL', 'Docker']
+            },
+            'data-analyst': {
+                name: 'Data Analyst',
+                skills: ['Python', 'Pandas', 'Tableau', 'SQL']
+            }
         };
     
         function showStep(stepNum) {
@@ -94,20 +210,40 @@
             }
         });
     
-        // Navigasi dari Step 3 (Minat) ke Final
+        // Navigasi dari Step 3 (Career Choice) ke Step 4 (Roadmap Preview)
         document.querySelector('#step-3 .answer-options').addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (button) {
                 const pathValue = button.getAttribute('data-value');
                 answers['career_focus'] = pathValue;
-                const pathText = {
-                    'frontend': 'Frontend Developer',
-                    'backend': 'Backend Developer',
-                    'data-analyst': 'Data Analyst'
-                };
-                document.getElementById('recommended-path').textContent = pathText[pathValue];
-                showStep('final');
+                
+                // Update roadmap preview
+                const career = careerData[pathValue];
+                document.getElementById('roadmap-path').textContent = career.name;
+                document.getElementById('final-path').textContent = career.name;
+                
+                // Populate specialization skills
+                const skillsContainer = document.getElementById('specialization-skills');
+                skillsContainer.innerHTML = '';
+                career.skills.forEach(skill => {
+                    const skillTag = document.createElement('span');
+                    skillTag.className = 'skill-tag';
+                    skillTag.textContent = skill;
+                    skillsContainer.appendChild(skillTag);
+                });
+                
+                showStep(4);
             }
+        });
+        
+        // Back button from roadmap to career choice
+        document.getElementById('backToCareer').addEventListener('click', () => {
+            showStep(3);
+        });
+        
+        // Continue from roadmap to final
+        document.getElementById('continueToFinal').addEventListener('click', () => {
+            showStep('final');
         });
     
         // Tombol Finish (mengirim semua data)

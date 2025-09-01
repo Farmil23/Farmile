@@ -1,27 +1,288 @@
 {% extends "settings_base.html" %}
 {% block settings_content %}
-    <div class="profile-page-header">
-        <img src="{{ current_user.profile_pic }}" alt="Foto Profil" class="profile-page-avatar">
-        <div class="profile-page-info">
-            <h1>{{ current_user.name }}</h1>
-            <p>{{ current_user.email }}</p>
-            <div class="profile-tags">
-                <span class="path-badge">{{ current_user.career_path|replace('-', ' ')|title if current_user.career_path else 'Explorer' }}</span>
-                <span class="semester-badge">Semester {{ current_user.semester if current_user.semester else 'N/A' }}</span>
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-cover">
+            <div class="cover-gradient"></div>
+        </div>
+        <div class="profile-info">
+            <div class="profile-avatar-section">
+                <img src="{{ current_user.profile_pic }}" alt="Foto Profil" class="profile-avatar">
+                <div class="profile-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">Online</span>
+                </div>
+            </div>
+            <div class="profile-details">
+                <h1 class="profile-name">{{ current_user.name }}</h1>
+                <p class="profile-email">{{ current_user.email }}</p>
+                <div class="profile-badges">
+                    <span class="career-badge">{{ current_user.career_path|replace('-', ' ')|title if current_user.career_path else 'Explorer' }}</span>
+                    <span class="semester-badge">Semester {{ current_user.semester if current_user.semester else 'N/A' }}</span>
+                    <span class="level-badge">Level {{ (current_user.progress.count() // 10) + 1 }}</span>
+                </div>
+                <div class="profile-actions">
+                    <a href="{{ url_for('routes.edit_profile') }}" class="button-primary">Edit Profil</a>
+                    <button class="button-secondary share-profile">Bagikan Profil</button>
+                </div>
             </div>
         </div>
-        <a href="{{ url_for('routes.edit_profile') }}" class="button-secondary">Edit Profil</a>
     </div>
-    <hr>
-    
-    <div class="profile-grid">
-        <div class="profile-section">
-            <h3>Tentang Saya</h3>
-            <p class="text-secondary">Deskripsi singkat tentang minat dan tujuan karier Anda. (Bisa diisi melalui Edit Profil)</p>
+
+    <!-- Profile Stats -->
+    <div class="profile-stats">
+        <div class="stat-item">
+            <div class="stat-number">{{ current_user.progress.count() }}</div>
+            <div class="stat-label">Materi Diselesaikan</div>
         </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ current_user.submissions.count() }}</div>
+            <div class="stat-label">Proyek Disubmit</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ current_user.chat_sessions.count() }}</div>
+            <div class="stat-label">Sesi Chat AI</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ ((current_user.progress.count() / 50) * 100)|round|int }}%</div>
+            <div class="stat-label">Progress Keseluruhan</div>
+        </div>
+    </div>
+
+    <!-- Profile Content -->
+    <div class="profile-content">
+        <!-- About Section -->
         <div class="profile-section">
-            <h3>Lencana Pencapaian</h3>
-            <p class="text-secondary">Selesaikan tugas untuk mendapatkan lencana.</p>
+            <div class="section-header">
+                <h3>Tentang Saya</h3>
+                <button class="edit-section-btn">Edit</button>
             </div>
+            <div class="about-content">
+                <p class="about-text">
+                    {% if current_user.career_path %}
+                        Saya adalah mahasiswa semester {{ current_user.semester }} yang sedang menekuni jalur {{ current_user.career_path|replace('-', ' ')|title }}. 
+                        Saya sangat antusias untuk mengembangkan skill teknologi dan membangun karier di bidang yang saya minati.
+                    {% else %}
+                        Saya adalah mahasiswa yang sedang mengeksplorasi berbagai bidang teknologi untuk menemukan passion dan jalur karier yang tepat.
+                    {% endif %}
+                </p>
+                <div class="about-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Jalur Karier:</span>
+                        <span class="detail-value">{{ current_user.career_path|replace('-', ' ')|title if current_user.career_path else 'Belum dipilih' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Semester:</span>
+                        <span class="detail-value">{{ current_user.semester if current_user.semester else 'Belum diisi' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Bergabung:</span>
+                        <span class="detail-value">{{ current_user.id|string|slice(0,4) }} (Simulasi)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learning Progress -->
+        <div class="profile-section">
+            <div class="section-header">
+                <h3>Progress Pembelajaran</h3>
+                <a href="{{ url_for('routes.roadmap') }}" class="view-all-link">Lihat Semua</a>
+            </div>
+            <div class="progress-overview">
+                <div class="progress-ring-large">
+                    <div class="progress-fill-large" style="--progress: {{ ((current_user.progress.count() / 50) * 100)|round|int }}%"></div>
+                    <div class="progress-text-large">
+                        <span class="progress-percentage">{{ ((current_user.progress.count() / 50) * 100)|round|int }}%</span>
+                        <span class="progress-label">Selesai</span>
+                    </div>
+                </div>
+                <div class="progress-details">
+                    <div class="progress-item">
+                        <div class="progress-icon">📚</div>
+                        <div class="progress-info">
+                            <span class="progress-title">Materi Diselesaikan</span>
+                            <span class="progress-count">{{ current_user.progress.count() }} dari 50</span>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-icon">🎯</div>
+                        <div class="progress-info">
+                            <span class="progress-title">Target Harian</span>
+                            <span class="progress-count">2-3 jam/hari</span>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-icon">⏱️</div>
+                        <div class="progress-info">
+                            <span class="progress-title">Estimasi Selesai</span>
+                            <span class="progress-count">3-4 bulan lagi</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Projects -->
+        <div class="profile-section">
+            <div class="section-header">
+                <h3>Proyek Terbaru</h3>
+                <a href="{{ url_for('routes.my_projects') }}" class="view-all-link">Lihat Semua</a>
+            </div>
+            <div class="projects-grid">
+                {% for submission in recent_submissions %}
+                <div class="project-card">
+                    <div class="project-header">
+                        <h4 class="project-title">{{ submission.project.title }}</h4>
+                        <span class="project-status {{ submission.status }}">{{ submission.status|title }}</span>
+                    </div>
+                    <p class="project-description">{{ submission.project.description[:100] }}...</p>
+                    <div class="project-meta">
+                        <span class="project-date">{{ submission.id }} (Simulasi)</span>
+                        <span class="project-tech">{{ submission.project.tech_stack if submission.project.tech_stack else 'General' }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">📁</div>
+                    <h4>Belum ada proyek</h4>
+                    <p>Mulai kerjakan proyek pertama Anda!</p>
+                    <a href="{{ url_for('routes.roadmap') }}" class="button-primary">Mulai Belajar</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="profile-section">
+            <div class="section-header">
+                <h3>Pencapaian & Lencana</h3>
+            </div>
+            <div class="achievements-grid">
+                <div class="achievement-card earned">
+                    <div class="achievement-icon">🎓</div>
+                    <div class="achievement-info">
+                        <h4>Pemula</h4>
+                        <p>Menyelesaikan materi pertama</p>
+                    </div>
+                    <div class="achievement-date">Earned</div>
+                </div>
+                <div class="achievement-card earned">
+                    <div class="achievement-icon">💬</div>
+                    <div class="achievement-info">
+                        <h4>Chatter</h4>
+                        <p>Menggunakan AI Mentor</p>
+                    </div>
+                    <div class="achievement-date">Earned</div>
+                </div>
+                <div class="achievement-card earned">
+                    <div class="achievement-icon">📝</div>
+                    <div class="achievement-info">
+                        <h4>Developer</h4>
+                        <p>Submit proyek pertama</p>
+                    </div>
+                    <div class="achievement-date">Earned</div>
+                </div>
+                <div class="achievement-card locked">
+                    <div class="achievement-icon">🏆</div>
+                    <div class="achievement-info">
+                        <h4>Expert</h4>
+                        <p>Selesaikan 25 materi</p>
+                    </div>
+                    <div class="achievement-date">Locked</div>
+                </div>
+                <div class="achievement-card locked">
+                    <div class="achievement-icon">🚀</div>
+                    <div class="achievement-info">
+                        <h4>Master</h4>
+                        <p>Selesaikan 50 materi</p>
+                    </div>
+                    <div class="achievement-date">Locked</div>
+                </div>
+                <div class="achievement-card locked">
+                    <div class="achievement-icon">💎</div>
+                    <div class="achievement-info">
+                        <h4>Legend</h4>
+                        <p>Selesaikan semua roadmap</p>
+                    </div>
+                    <div class="achievement-date">Locked</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="profile-section">
+            <div class="section-header">
+                <h3>Aktivitas Terbaru</h3>
+            </div>
+            <div class="activity-timeline">
+                {% set has_activity = false %}
+                
+                <!-- Recent chat sessions -->
+                {% if recent_sessions %}
+                  {% set has_activity = true %}
+                  {% for session in recent_sessions %}
+                  <div class="timeline-item">
+                      <div class="timeline-icon chat">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                          </svg>
+                      </div>
+                      <div class="timeline-content">
+                          <h4>Chat dengan AI Mentor</h4>
+                          <p>{{ session.title }}</p>
+                          <span class="timeline-date">{{ session.timestamp.strftime('%d %b %Y') if session.timestamp else 'Baru saja' }}</span>
+                      </div>
+                  </div>
+                  {% endfor %}
+                {% endif %}
+                
+                <!-- Recent project submissions -->
+                {% if recent_submissions %}
+                  {% set has_activity = true %}
+                  {% for submission in recent_submissions %}
+                  <div class="timeline-item">
+                      <div class="timeline-icon project">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                          </svg>
+                      </div>
+                      <div class="timeline-content">
+                          <h4>Submit Proyek</h4>
+                          <p>{{ submission.project.title }}</p>
+                          <span class="timeline-date">Baru saja</span>
+                      </div>
+                  </div>
+                  {% endfor %}
+                {% endif %}
+                
+                <!-- Recent progress -->
+                {% if recent_progress %}
+                  {% set has_activity = true %}
+                  {% for progress in recent_progress %}
+                  <div class="timeline-item">
+                      <div class="timeline-icon completed">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                      </div>
+                      <div class="timeline-content">
+                          <h4>Menyelesaikan Materi</h4>
+                          <p>{{ progress.lesson.title if progress.lesson else 'Materi' }}</p>
+                          <span class="timeline-date">{{ progress.completed_at.strftime('%d %b %Y') if progress.completed_at else 'Baru saja' }}</span>
+                      </div>
+                  </div>
+                  {% endfor %}
+                {% endif %}
+                
+                {% if not has_activity %}
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <h4>Belum ada aktivitas</h4>
+                    <p>Mulai perjalanan belajar Anda!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 {% endblock %}
