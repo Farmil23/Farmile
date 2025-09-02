@@ -79,7 +79,7 @@
     
         lessonCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', async (e) => {
-                const lessonId = e.target.dataset.lessonId;
+                const lessonId = e.target.data.lessonId;
                 const endpoint = e.target.checked ? `/complete-lesson/${lessonId}` : `/uncomplete-lesson/${lessonId}`;
                 
                 try {

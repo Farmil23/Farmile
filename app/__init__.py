@@ -7,8 +7,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from authlib.integrations.flask_client import OAuth
 from byteplussdkarkruntime import Ark
+from flask_migrate import Migrate  # <-- tambahkan ini
 
 db = SQLAlchemy()
+migrate = Migrate()  # <-- inisialisasi migrate
 login_manager = LoginManager()
 login_manager.login_view = 'routes.login'
 oauth = OAuth()
@@ -30,6 +32,7 @@ def create_app(config_class=Config):
         ark_client = None
 
     db.init_app(app)
+    migrate.init_app(app, db)  # <-- hubungkan db dengan migrate
     login_manager.init_app(app)
     oauth.init_app(app)
 
@@ -45,7 +48,6 @@ def create_app(config_class=Config):
     app.register_blueprint(routes_bp)
     
     # Konfigurasi Logger
-    # (kode logger Anda tetap di sini)
     if not app.debug and not app.testing:
         if not os.path.exists('logs'):
             os.mkdir('logs')

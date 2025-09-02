@@ -17,7 +17,7 @@ bp = Blueprint('routes', __name__)
 def _generate_roadmap_for_user(user):
     """Fungsi internal untuk membuat roadmap menggunakan AI."""
     # Hapus roadmap lama jika ada untuk path yang sama
-    Module.query.filter_by(author=user, career_path=user.career_path).delete()
+    Module.query.filter_by(user_id=user.id, career_path=user.career_path).delete()
     db.session.commit()
     
     prompt = f"""
@@ -39,7 +39,7 @@ def _generate_roadmap_for_user(user):
 
         for module_data in roadmap_data.get('modules', []):
             new_module = Module(title=module_data['title'], order=module_data['order'],
-                                career_path=user.career_path, author=user)
+                                career_path=user.career_path, user_id=user.id)
             db.session.add(new_module)
             db.session.flush() 
             for lesson_data in module_data.get('lessons', []):
@@ -70,11 +70,12 @@ def index():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    # --- LOGIKA PERHITUNGAN STATISTIK ---
-    completed_lessons_count = current_user.progress.count()
+    # --- LOGIKA PERHITUNGAN STATISTIK (DIPERBAIKI) ---
+    completed_lessons_count = current_user.user_progress.count()
     
     # Menghitung total materi dengan cara yang benar
-    modules_for_path = current_user.modules.filter_by(career_path=current_user.career_path)
+    modules_for_path = Module.query.join(User).filter(User.id==current_user.id, User.career_path==current_user.career_path).all()
+
     total_lessons = db.session.query(Lesson).join(Module).filter(Module.id.in_([m.id for m in modules_for_path])).count()
     
     progress_percentage = 0
@@ -84,7 +85,7 @@ def dashboard():
     # Mengambil data untuk kartu "Aktivitas Terbaru"
     recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(1).all()
     recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(1).all()
-    recent_progress = current_user.progress.order_by(UserProgress.completed_at.desc()).limit(1).all()
+    recent_progress = current_user.user_progress.order_by(UserProgress.completed_at.desc()).limit(1).all()
     
     return render_template(
         'dashboard.html', 
@@ -142,14 +143,6 @@ def complete_onboarding():
 
 
 # ===============================================
-# RUTE ROADMAP BELAJAR
-# ===============================================
-# app/routes.py
-
-# GANTI FUNGSI ROADMAP LAMA ANDA DENGAN INI
-# app/routes.py
-
-# ===============================================
 # RUTE ROADMAP BELAJAR (VERSI DIPERBAIKI)
 # ===============================================
 @bp.route('/roadmap')
@@ -169,47 +162,57 @@ def roadmap():
     has_personal_modules = any(module.user_id is not None for module in all_modules)
     show_generate_button = not has_personal_modules
 
-    # Ambil semua ID lesson yang sudah diselesaikan user
-    completed_lessons_query = db.session.query(UserProgress.lesson_id).filter_by(user_id=current_user.id)
-    completed_lesson_ids = {item[0] for item in completed_lessons_query.all()}
+    # Ambil semua progress user untuk modul-modul ini
+    completed_progress_query = current_user.user_progress.filter(
+        UserProgress.module_id.in_([m.id for m in all_modules])
+    )
+    completed_module_ids = {item.module_id for item in completed_progress_query.all()}
     
-    total_lessons = 0
-    if all_modules:
-        module_ids = [m.id for m in all_modules]
-        total_lessons = db.session.query(Lesson).filter(Lesson.module_id.in_(module_ids)).count()
-
-    progress_percentage = int((len(completed_lesson_ids) / total_lessons) * 100) if total_lessons > 0 else 0
+    total_modules = len(all_modules)
+    progress_percentage = int((len(completed_module_ids) / total_modules) * 100) if total_modules > 0 else 0
     
     return render_template('roadmap.html', 
                            title="Roadmap Belajar", 
                            modules=all_modules,
                            show_generate_button=show_generate_button,
-                           completed_lesson_ids=completed_lesson_ids,
+                           completed_module_ids=completed_module_ids,
                            progress=progress_percentage)
-
-# app/routes.py -> Tambahkan di grup RUTE ROADMAP BELAJAR
 
 @bp.route('/lesson/<int:lesson_id>')
 @login_required
 def lesson_detail(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
     # Pastikan lesson ini bagian dari roadmap user
-    if lesson.module.career_path != current_user.career_path and lesson.module.author != current_user:
+    if lesson.module.career_path != current_user.career_path and lesson.module.user_id != current_user.id:
         abort(403)
     return render_template('lesson_detail.html', title=lesson.title, lesson=lesson)
 
 
-# app/routes.py -> Modifikasi fungsi ini
-
+# PERBAIKAN: Sesuaikan dengan struktur UserProgress yang baru
 @bp.route('/complete-lesson/<int:lesson_id>', methods=['POST'])
 @login_required
 def complete_lesson(lesson_id):
-    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
+    lesson = Lesson.query.get_or_404(lesson_id)
+    
+    # Cek apakah modul sudah diselesaikan
+    progress = UserProgress.query.filter_by(
+    user_id=current_user.id,
+    module_id=lesson.module_id,
+    lesson_id=lesson.id
+    ).first()
+
     if not progress:
-        new_progress = UserProgress(user_id=current_user.id, lesson_id=lesson_id)
+        new_progress = UserProgress(
+            user_id=current_user.id,
+            module_id=lesson.module_id,
+            lesson_id=lesson.id
+        )
         db.session.add(new_progress)
         db.session.commit()
         flash('Materi berhasil diselesaikan!', 'success')
+    else:
+        flash('Materi sudah pernah diselesaikan sebelumnya.', 'info')
+
     # Arahkan kembali ke halaman roadmap setelah selesai
     return redirect(url_for('routes.roadmap'))
 
@@ -229,7 +232,7 @@ def generate_roadmap():
 @bp.route('/my-projects')
 @login_required
 def my_projects():
-    submissions = ProjectSubmission.query.filter_by(author=current_user).order_by(ProjectSubmission.id.desc()).all()
+    submissions = ProjectSubmission.query.filter_by(user_id=current_user.id).order_by(ProjectSubmission.id.desc()).all()
     return render_template('my_projects.html', title="Proyek Saya", submissions=submissions)
 
 @bp.route('/select-project')
@@ -240,7 +243,6 @@ def select_project():
         return redirect(url_for('routes.dashboard'))
     submitted_project_ids = [sub.project_id for sub in current_user.submissions]
     available_projects = Project.query.filter(
-        Project.career_path == current_user.career_path, 
         Project.id.notin_(submitted_project_ids)
     ).all()
     return render_template('select_project.html', title="Pilih Proyek Baru", projects=available_projects)
@@ -260,14 +262,16 @@ def submit_project(project_id):
 @login_required
 def interview(submission_id):
     submission = ProjectSubmission.query.get_or_404(submission_id)
-    if submission.author != current_user: abort(403)
+    if submission.user_id != current_user.id: 
+        abort(403)
     return render_template('interview.html', title=f"Wawancara {submission.project.title}", submission=submission)
 
 @bp.route('/cancel-submission/<int:submission_id>', methods=['POST'])
 @login_required
 def cancel_submission(submission_id):
     submission = ProjectSubmission.query.get_or_404(submission_id)
-    if submission.author != current_user: abort(403)
+    if submission.user_id != current_user.id: 
+        abort(403)
     db.session.delete(submission)
     db.session.commit()
     flash('Submission proyek berhasil dibatalkan.', 'success')
@@ -280,24 +284,32 @@ def cancel_submission(submission_id):
 @bp.route('/chatbot')
 @login_required
 def chatbot():
-    latest_session = ChatSession.query.filter_by(author=current_user).order_by(ChatSession.timestamp.desc()).first()
+    latest_session = ChatSession.query.filter_by(user_id=current_user.id)\
+                        .order_by(ChatSession.timestamp.desc()).first()
     if latest_session:
         return redirect(url_for('routes.chatbot_session', session_id=latest_session.id))
     else:
-        new_session = ChatSession(author=current_user, title="Percakapan Pertama")
+        new_session = ChatSession(user_id=current_user.id, title="Percakapan Pertama")
         db.session.add(new_session)
-        welcome_message = ChatMessage(session=new_session, author=current_user, role='assistant', 
-                                      content=f"Hai {current_user.name.split()[0]}! Ada yang bisa saya bantu?")
+        db.session.flush()  # flush agar new_session.id tersedia
+
+        welcome_message = ChatMessage(
+            session_id=new_session.id,
+            user_id=current_user.id,
+            role='assistant',
+            content=f"Hai {current_user.name.split()[0]}! Ada yang bisa saya bantu?"
+        )
         db.session.add(welcome_message)
         db.session.commit()
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
+
 @bp.route('/chatbot/new', methods=['POST'])
 @login_required
 def new_chat_session():
-    new_session = ChatSession(author=current_user, title="Percakapan Baru")
+    new_session = ChatSession(user_id=current_user.id, title="Percakapan Baru")
     db.session.add(new_session)
-    new_topic_message = ChatMessage(session=new_session, author=current_user, role='assistant', 
+    new_topic_message = ChatMessage(session_id=new_session.id, user_id=current_user.id, role='assistant', 
                                     content="Tentu, mari kita mulai topik baru. Apa yang ingin Anda diskusikan?")
     db.session.add(new_topic_message)
     db.session.commit()
@@ -307,9 +319,9 @@ def new_chat_session():
 @login_required
 def chatbot_session(session_id):
     session = ChatSession.query.get_or_404(session_id)
-    if session.author != current_user:
+    if session.user_id != current_user.id:
         abort(403)
-    all_sessions = ChatSession.query.filter_by(author=current_user).order_by(ChatSession.timestamp.desc()).all()
+    all_sessions = ChatSession.query.filter_by(user_id=current_user.id).order_by(ChatSession.timestamp.desc()).all()
     messages = session.messages.order_by(ChatMessage.timestamp.asc()).all()
     return render_template('chatbot.html', title=session.title, 
                            current_session=session, all_sessions=all_sessions, history=messages)
@@ -318,7 +330,7 @@ def chatbot_session(session_id):
 @login_required
 def rename_session(session_id):
     session = ChatSession.query.get_or_404(session_id)
-    if session.author != current_user:
+    if session.user_id != current_user.id:
         abort(403)
     new_title = request.get_json().get('title', '').strip()
     if new_title:
@@ -327,15 +339,13 @@ def rename_session(session_id):
         return jsonify({'status': 'success', 'new_title': session.title})
     return jsonify({'status': 'error', 'message': 'Nama tidak boleh kosong'}), 400
 
-# app/routes.py -> di dalam grup RUTE CHATBOT
-
 @bp.route('/chatbot/new/lesson/<int:lesson_id>', methods=['POST'])
 @login_required
 def new_chat_for_lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
 
     # Buat sesi chat baru dengan judul dari nama materi
-    new_session = ChatSession(author=current_user, title=f"Diskusi: {lesson.title}")
+    new_session = ChatSession(user_id=current_user.id, title=f"Diskusi: {lesson.title}")
     db.session.add(new_session)
 
     # Buat pesan sapaan otomatis dari AI yang sudah berisi konteks
@@ -345,8 +355,8 @@ def new_chat_for_lesson(lesson_id):
         "Apa ada pertanyaan spesifik tentang topik ini yang bisa saya bantu jelaskan?"
     )
     welcome_message = ChatMessage(
-        session=new_session, 
-        author=current_user, 
+        session_id=new_session.id, 
+        user_id=current_user.id, 
         role='assistant', 
         content=welcome_message_content
     )
@@ -355,6 +365,7 @@ def new_chat_for_lesson(lesson_id):
 
     # Arahkan pengguna langsung ke sesi chat yang baru dibuat
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
+
 # ===============================================
 # RUTE PENGATURAN & PROFIL
 # ===============================================
@@ -385,7 +396,7 @@ def chat_ai(session_id):
         return jsonify({'error': 'Layanan AI saat ini tidak tersedia.'}), 503
     
     session = ChatSession.query.get_or_404(session_id)
-    if session.author != current_user:
+    if session.user_id != current_user.id:
         abort(403)
     
     user_message_content = request.get_json().get('message', '').strip()
@@ -398,13 +409,13 @@ def chat_ai(session_id):
             ai_response_content = "Tentu! Saya telah membuatkan roadmap belajar personal baru untukmu. Silakan cek halaman 'Roadmap Belajar' untuk melihat hasilnya."
         else:
             ai_response_content = "Maaf, sepertinya saya gagal membuat roadmap saat ini. Coba lagi beberapa saat."
-        user_message = ChatMessage(session_id=session.id, author=current_user, role='user', content=user_message_content)
-        ai_message = ChatMessage(session_id=session.id, author=current_user, role='assistant', content=ai_response_content)
+        user_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='user', content=user_message_content)
+        ai_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='assistant', content=ai_response_content)
         db.session.add_all([user_message, ai_message])
         db.session.commit()
         return jsonify({'response': ai_response_content})
 
-    user_message = ChatMessage(session_id=session.id, author=current_user, role='user', content=user_message_content)
+    user_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='user', content=user_message_content)
     db.session.add(user_message)
     
     recent_history = session.messages.order_by(ChatMessage.timestamp.desc()).limit(10).all()
@@ -414,7 +425,7 @@ def chat_ai(session_id):
     user_context = (
         f"Nama pengguna: {current_user.name}, seorang mahasiswa semester {current_user.semester}. "
         f"Fokus karier yang ia minati adalah {current_user.career_path}. "
-        f"Progres belajar saat ini: sudah menyelesaikan {completed_lessons_count} materi di roadmap."
+        f"Progres belajar saat ini: sudah menyelesaikan {completed_lessons_count} modul di roadmap."
     )
     system_prompt = (
         "Anda adalah Farmile, seorang mentor karier AI yang ahli, ramah, dan suportif. "
@@ -433,7 +444,7 @@ def chat_ai(session_id):
         )
         ai_response_content = completion.choices[0].message.content
         
-        ai_message = ChatMessage(session_id=session.id, author=current_user, role='assistant', content=ai_response_content)
+        ai_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='assistant', content=ai_response_content)
         db.session.add(ai_message)
         db.session.commit()
         

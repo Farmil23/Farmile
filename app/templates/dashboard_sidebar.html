@@ -17,9 +17,9 @@
        <p class="profile-role" style="font-size: 0.8rem;">{{ current_user.career_path|replace('-', ' ')|title if current_user.career_path else 'Explorer' }}</p>
        <div class="profile-level">
          <div class="level-progress">
-           <div class="level-fill" style="width: {{ ((current_user.progress.count() / 50) * 100)|round|int }}%"></div>
+           <div class="level-fill" style="width: {{ ((current_user.user_progress.count() / 50) * 100)|round|int }}%"></div>
          </div>
-         <span class="level-text">Level {{ (current_user.progress.count() // 10) + 1 }}</span>
+         <span class="level-text">Level {{ (current_user.user_progress.count() // 10) + 1 }}</span>
        </div>
      </div>
    </div>
@@ -98,7 +98,7 @@
    <div class="sidebar-footer">
      <div class="quick-stats">
        <div class="quick-stat">
-         <span class="stat-value">{{ current_user.progress.count() }}</span>
+         <span class="stat-value">{{ current_user.user_progress.count() }}</span>
          <span class="stat-label">Materi</span>
        </div>
        <div class="quick-stat">
@@ -106,7 +106,7 @@
          <span class="stat-label">Proyek</span>
        </div>
        <div class="quick-stat">
-         <span class="stat-value">{{ ((current_user.progress.count() / 50) * 100)|round|int }}%</span>
+         <span class="stat-value">{{ ((current_user.user_progress.count() / 50) * 100)|round|int }}%</span>
          <span class="stat-label">Progress</span>
        </div>
      </div>
