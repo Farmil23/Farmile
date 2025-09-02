@@ -77,6 +77,7 @@ class Module(db.Model):
     career_path = db.Column(db.String(100), nullable=True)
 
     roadmap = db.relationship("Roadmap", back_populates="modules")
+    
     learning_resources = db.relationship(
         "LearningResource",
         backref="module",

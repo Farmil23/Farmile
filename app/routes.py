@@ -284,32 +284,57 @@ def cancel_submission(submission_id):
 @bp.route('/chatbot')
 @login_required
 def chatbot():
-    
-    latest_session = ChatSession.query.filter_by(user_id=current_user.id)\
-                        .order_by(ChatSession.timestamp.desc()).first()
+    # Ambil session terbaru milik user
+    latest_session = (
+        ChatSession.query
+        .filter_by(user_id=current_user.id)
+        .order_by(ChatSession.timestamp.desc())
+        .first()
+    )
+
     if latest_session:
+        # Kalau belum ada pesan → tambahin welcome message
+        if not latest_session.messages:
+            welcome_message = ChatMessage(
+                session_id=latest_session.id,
+                user_id=current_user.id,
+                role='assistant',
+                content=(
+                    f"Halo {current_user.name.split()[0]}! 😎✌️\n"
+                    f"Welcome back di dashboard Alur Belajar "
+                    f"{current_user.career_path.replace('-', ' ').title() if current_user.career_path else 'Explorer'}! 🎉\n\n"
+                    f"Kamu sekarang ada di semester "
+                    f"{current_user.semester if current_user.semester else 'misterius 🤔'}.\n"
+                    f"Keep going, jangan lupa tiap progress kecil itu berarti banget! 💡🔥\n\n"
+                    f"Mau lanjut ngulik apa hari ini?"
+                )
+            )
+            db.session.add(welcome_message)
+            db.session.commit()
+
         return redirect(url_for('routes.chatbot_session', session_id=latest_session.id))
+
     else:
-        new_session = ChatSession(user_id=current_user.id, title="Perkenalan ")
-        career_path = (current_user.career_path or "explorer").replace("-", " ").title()
-        semester = current_user.semester or "belum ditentukan"
+        # Kalau belum ada session sama sekali → buat baru
+        new_session = ChatSession(user_id=current_user.id, title="Perkenalan")
         db.session.add(new_session)
-        db.session.flush()  # flush agar new_session.id tersedia
+        db.session.flush()
 
         welcome_message = ChatMessage(
-        session_id=new_session.id,
-        user_id=current_user.id,
-        role='assistant',
-        content=(
-            f"Hai {current_user.name.split()[0]}! "
-            f"Selamat datang di dashboard Alur Belajar {current_user.career_path.replace('-', ' ').title() if current_user.career_path else 'Explorer'}.\n"
-            f"Saat ini kamu berada di semester {current_user.semester if current_user.semester else 'belum ditentukan'}.\n"
-            f"Ada yang bisa saya bantu untuk melanjutkan belajar hari ini?"
+            session_id=new_session.id,
+            user_id=current_user.id,
+            role='assistant',
+            content=(
+                f"Halo {current_user.name.split()[0]}! 👋 Aku Farmile, mentor AI kamu.\n\n"
+                f"Aku lihat kamu lagi di jalur **{current_user.career_path.replace('-', ' ').title() if current_user.career_path else 'Explorer'}** "
+                f"dan sekarang ada di semester **{current_user.semester if current_user.semester else 'belum ditentukan'}**. 🎓\n\n"
+                f"Siap bantuin apa hari ini? 🚀"
+            )
         )
-    )
 
         db.session.add(welcome_message)
         db.session.commit()
+
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
 
@@ -324,8 +349,9 @@ def new_chat_session():
         session_id=new_session.id, 
         user_id=current_user.id, 
         role='assistant', 
-        content="Tentu, mari kita mulai topik baru. Apa yang ingin Anda diskusikan?"
+        content="Yeay, topik baru dibuka! 🎉 Mau ngobrol soal apa dulu nih?"
     )
+
     db.session.add(new_topic_message)
     db.session.commit()
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
@@ -365,10 +391,12 @@ def new_chat_for_lesson(lesson_id):
     db.session.flush()  # <-- id langsung keluar
 
     welcome_message_content = (
-        f"Tentu! Mari kita bahas tentang **{lesson.title}**. "
-        f"Ini adalah sumber belajar yang bisa kamu mulai: {lesson.url if lesson.url else 'Belum ada link.'}. "
-        "Apa ada pertanyaan spesifik tentang topik ini yang bisa saya bantu jelaskan?"
+        f"Selamat datang di materi **{lesson.title}**. 📘✨\n\n"
+        f"Kamu bisa mulai belajar dari sumber berikut: {lesson.url if lesson.url else 'Belum ada link, tapi jangan khawatir, materinya akan segera siap untukmu.'}\n\n"
+        f"Kenapa topik ini penting? Karena pemahaman di sini bakal jadi kunci untuk menguasai langkah berikutnya. 🔑\n"
+        f"Kalau ada bagian yang bikin kamu bingung atau justru bikin penasaran, ayo kita bahas bareng supaya makin jelas dan seru 🚀"
     )
+
     welcome_message = ChatMessage(
         session_id=new_session.id, 
         user_id=current_user.id, 
@@ -441,9 +469,7 @@ def chat_ai(session_id):
         f"Progres belajar saat ini: sudah menyelesaikan {completed_lessons_count} modul di roadmap."
     )
     system_prompt = (
-        "Anda adalah Farmile, seorang mentor karier AI yang ahli, ramah, dan suportif. "
-        "Selalu gunakan informasi konteks pengguna untuk memberikan jawaban yang personal dan relevan. "
-        f"Konteks Pengguna: {user_context}"
+        "Anda adalah Farmile, seorang mentor karier AI yang berpengalaman, ramah, dan suportif. Bayangkan diri Anda sebagai mentor yang sudah membimbing banyak generasi profesional AI, sehingga jawaban Anda selalu penuh wawasan, empati, dan motivasi.  Tugas Anda: 1. Berikan arahan karier di bidang AI yang jelas, praktis, dan sesuai dengan kondisi nyata industri.  2. Gunakan informasi konteks pengguna untuk membuat jawaban terasa personal, relevan, dan spesifik.  3. Jelaskan konsep atau saran dengan bahasa yang mudah dipahami, hindari jargon berlebihan, dan berikan contoh nyata atau analogi bila perlu.  4. Selalu dorong pengguna agar percaya diri, termotivasi, dan merasa didukung dalam perjalanan mereka.  5. Tunjukkan sikap mentor berpengalaman: sabar, bijak, dan visioner.  Nada komunikasi:  - Ramah dan hangat, seperti seorang mentor yang ingin melihat muridnya sukses.  - Positif dan membangun semangat, tanpa menggurui.  - Fokus pada peluang, solusi, dan langkah nyata.  Konteks Pengguna: {user_context}"
     )
     
     messages = [{"role": "system", "content": system_prompt}]
