@@ -15,7 +15,7 @@
             {% endif %}
         </div>
 
-        <h4>Progres Keseluruhan: {{ progress }}%</h4>
+        <h4 id="progress-text">Progres Keseluruhan: {{ progress }}%</h4>
         <div class="progress-bar" style="margin-bottom: 30px;">
             <div class="progress-bar-inner" style="width: {{ progress }}%;"></div>
         </div>
@@ -62,14 +62,42 @@
     </main>
 </div>
 <script>
-    document.querySelectorAll('.lesson-list input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', async (e) => {
-            if (e.target.checked) {
+    document.addEventListener('DOMContentLoaded', () => {
+        const lessonCheckboxes = document.querySelectorAll('.lesson-list input[type="checkbox"]');
+        const progressBar = document.querySelector('.progress-bar-inner');
+        const progressText = document.getElementById('progress-text');
+    
+        const updateProgressBar = () => {
+            const totalLessons = lessonCheckboxes.length;
+            if (totalLessons === 0) return;
+            const completedLessons = document.querySelectorAll('.lesson-list input[type="checkbox"]:checked').length;
+            const percentage = Math.round((completedLessons / totalLessons) * 100);
+            
+            if (progressBar) progressBar.style.width = `${percentage}%`;
+            if (progressText) progressText.textContent = `Progres Keseluruhan: ${percentage}%`;
+        };
+    
+        lessonCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', async (e) => {
                 const lessonId = e.target.dataset.lessonId;
-                await fetch(`/complete-lesson/${lessonId}`, { method: 'POST' });
-                // Di sini bisa ditambahkan logika untuk update progress bar secara real-time
-            }
+                const endpoint = e.target.checked ? `/complete-lesson/${lessonId}` : `/uncomplete-lesson/${lessonId}`;
+                
+                try {
+                    const response = await fetch(endpoint, { method: 'POST' });
+                    if (!response.ok) {
+                        e.target.checked = !e.target.checked; // Batalkan aksi jika server error
+                    }
+                } catch (error) {
+                    e.target.checked = !e.target.checked; // Batalkan aksi jika ada error jaringan
+                } finally {
+                    updateProgressBar(); // Selalu update UI
+                }
+            });
         });
+    
+        updateProgressBar(); // Panggil saat halaman dimuat
     });
-</script>
+    </script>
 {% endblock %}
+
+

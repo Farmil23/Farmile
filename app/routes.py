@@ -147,46 +147,59 @@ def complete_onboarding():
 # app/routes.py
 
 # GANTI FUNGSI ROADMAP LAMA ANDA DENGAN INI
+# app/routes.py
+
+# ===============================================
+# RUTE ROADMAP BELAJAR (VERSI DIPERBAIKI)
+# ===============================================
 @bp.route('/roadmap')
 @login_required
 def roadmap():
     if not current_user.career_path:
         flash('Selesaikan onboarding untuk menentukan jalur karier Anda.', 'warning')
         return redirect(url_for('routes.onboarding'))
-    
-    # QUERY YANG SUDAH DIPERBAIKI (TANPA .options())
-    modules = Module.query.filter(
+
+    # Mengambil semua modul (statis dan personal) untuk user & path saat ini
+    all_modules = Module.query.filter(
         ((Module.user_id == current_user.id) | (Module.user_id == None)),
         (Module.career_path == current_user.career_path)
     ).order_by(Module.order).all()
     
-    has_personal_modules = any(module.user_id is not None for module in modules)
+    # Cek apakah ada modul personal (buatan AI)
+    has_personal_modules = any(module.user_id is not None for module in all_modules)
     show_generate_button = not has_personal_modules
-    
+
+    # Ambil semua ID lesson yang sudah diselesaikan user
     completed_lessons_query = db.session.query(UserProgress.lesson_id).filter_by(user_id=current_user.id)
     completed_lesson_ids = {item[0] for item in completed_lessons_query.all()}
     
     total_lessons = 0
-    if modules:
-        module_ids = [m.id for m in modules]
+    if all_modules:
+        module_ids = [m.id for m in all_modules]
         total_lessons = db.session.query(Lesson).filter(Lesson.module_id.in_(module_ids)).count()
 
     progress_percentage = int((len(completed_lesson_ids) / total_lessons) * 100) if total_lessons > 0 else 0
     
     return render_template('roadmap.html', 
                            title="Roadmap Belajar", 
-                           modules=modules,
+                           modules=all_modules,
                            show_generate_button=show_generate_button,
                            completed_lesson_ids=completed_lesson_ids,
                            progress=progress_percentage)
-@bp.route('/generate-roadmap', methods=['POST'])
+
+# app/routes.py -> Tambahkan di grup RUTE ROADMAP BELAJAR
+
+@bp.route('/lesson/<int:lesson_id>')
 @login_required
-def generate_roadmap():
-    if _generate_roadmap_for_user(current_user):
-        flash('Roadmap belajar personal Anda berhasil dibuat ulang oleh AI!', 'success')
-    else:
-        flash('Maaf, AI gagal membuat roadmap. Coba lagi.', 'danger')
-    return redirect(url_for('routes.roadmap'))
+def lesson_detail(lesson_id):
+    lesson = Lesson.query.get_or_404(lesson_id)
+    # Pastikan lesson ini bagian dari roadmap user
+    if lesson.module.career_path != current_user.career_path and lesson.module.author != current_user:
+        abort(403)
+    return render_template('lesson_detail.html', title=lesson.title, lesson=lesson)
+
+
+# app/routes.py -> Modifikasi fungsi ini
 
 @bp.route('/complete-lesson/<int:lesson_id>', methods=['POST'])
 @login_required
@@ -196,8 +209,19 @@ def complete_lesson(lesson_id):
         new_progress = UserProgress(user_id=current_user.id, lesson_id=lesson_id)
         db.session.add(new_progress)
         db.session.commit()
-    return jsonify({'status': 'success'})
+        flash('Materi berhasil diselesaikan!', 'success')
+    # Arahkan kembali ke halaman roadmap setelah selesai
+    return redirect(url_for('routes.roadmap'))
 
+
+@bp.route('/generate-roadmap', methods=['POST'])
+@login_required
+def generate_roadmap():
+    if _generate_roadmap_for_user(current_user):
+        flash('Roadmap belajar personal Anda berhasil dibuat ulang oleh AI!', 'success')
+    else:
+        flash('Maaf, AI gagal membuat roadmap. Coba lagi.', 'danger')
+    return redirect(url_for('routes.roadmap'))
 
 # ===============================================
 # RUTE PROYEK & WAWANCARA
