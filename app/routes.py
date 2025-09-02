@@ -284,21 +284,30 @@ def cancel_submission(submission_id):
 @bp.route('/chatbot')
 @login_required
 def chatbot():
+    
     latest_session = ChatSession.query.filter_by(user_id=current_user.id)\
                         .order_by(ChatSession.timestamp.desc()).first()
     if latest_session:
         return redirect(url_for('routes.chatbot_session', session_id=latest_session.id))
     else:
-        new_session = ChatSession(user_id=current_user.id, title="Percakapan Pertama")
+        new_session = ChatSession(user_id=current_user.id, title="Perkenalan ")
+        career_path = (current_user.career_path or "explorer").replace("-", " ").title()
+        semester = current_user.semester or "belum ditentukan"
         db.session.add(new_session)
         db.session.flush()  # flush agar new_session.id tersedia
 
         welcome_message = ChatMessage(
-            session_id=new_session.id,
-            user_id=current_user.id,
-            role='assistant',
-            content=f"Hai {current_user.name.split()[0]}! Ada yang bisa saya bantu?"
+        session_id=new_session.id,
+        user_id=current_user.id,
+        role='assistant',
+        content=(
+            f"Hai {current_user.name.split()[0]}! "
+            f"Selamat datang di dashboard Alur Belajar {current_user.career_path.replace('-', ' ').title() if current_user.career_path else 'Explorer'}.\n"
+            f"Saat ini kamu berada di semester {current_user.semester if current_user.semester else 'belum ditentukan'}.\n"
+            f"Ada yang bisa saya bantu untuk melanjutkan belajar hari ini?"
         )
+    )
+
         db.session.add(welcome_message)
         db.session.commit()
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
@@ -309,11 +318,18 @@ def chatbot():
 def new_chat_session():
     new_session = ChatSession(user_id=current_user.id, title="Percakapan Baru")
     db.session.add(new_session)
-    new_topic_message = ChatMessage(session_id=new_session.id, user_id=current_user.id, role='assistant', 
-                                    content="Tentu, mari kita mulai topik baru. Apa yang ingin Anda diskusikan?")
+    db.session.flush()  # <-- supaya new_session.id tersedia
+
+    new_topic_message = ChatMessage(
+        session_id=new_session.id, 
+        user_id=current_user.id, 
+        role='assistant', 
+        content="Tentu, mari kita mulai topik baru. Apa yang ingin Anda diskusikan?"
+    )
     db.session.add(new_topic_message)
     db.session.commit()
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
+
 
 @bp.route('/chatbot/<int:session_id>')
 @login_required
@@ -344,11 +360,10 @@ def rename_session(session_id):
 def new_chat_for_lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
 
-    # Buat sesi chat baru dengan judul dari nama materi
     new_session = ChatSession(user_id=current_user.id, title=f"Diskusi: {lesson.title}")
     db.session.add(new_session)
+    db.session.flush()  # <-- id langsung keluar
 
-    # Buat pesan sapaan otomatis dari AI yang sudah berisi konteks
     welcome_message_content = (
         f"Tentu! Mari kita bahas tentang **{lesson.title}**. "
         f"Ini adalah sumber belajar yang bisa kamu mulai: {lesson.url if lesson.url else 'Belum ada link.'}. "
@@ -363,9 +378,7 @@ def new_chat_for_lesson(lesson_id):
     db.session.add(welcome_message)
     db.session.commit()
 
-    # Arahkan pengguna langsung ke sesi chat yang baru dibuat
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
-
 # ===============================================
 # RUTE PENGATURAN & PROFIL
 # ===============================================

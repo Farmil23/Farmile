@@ -19,7 +19,7 @@
                 <div class="profile-badges">
                     <span class="career-badge">{{ current_user.career_path|replace('-', ' ')|title if current_user.career_path else 'Explorer' }}</span>
                     <span class="semester-badge">Semester {{ current_user.semester if current_user.semester else 'N/A' }}</span>
-                    <span class="level-badge">Level {{ (current_user.progress.count() // 10) + 1 }}</span>
+                    <span class="level-badge">Level {{ (current_user.user_progress.count() // 10) + 1 }}</span>
                 </div>
                 <div class="profile-actions">
                     <a href="{{ url_for('routes.edit_profile') }}" class="button-primary">Edit Profil</a>
@@ -32,7 +32,7 @@
     <!-- Profile Stats -->
     <div class="profile-stats">
         <div class="stat-item">
-            <div class="stat-number">{{ current_user.progress.count() }}</div>
+            <div class="stat-number">{{ current_user.user_progress.count() }}</div>
             <div class="stat-label">Materi Diselesaikan</div>
         </div>
         <div class="stat-item">
@@ -44,7 +44,7 @@
             <div class="stat-label">Sesi Chat AI</div>
         </div>
         <div class="stat-item">
-            <div class="stat-number">{{ ((current_user.progress.count() / 50) * 100)|round|int }}%</div>
+            <div class="stat-number">{{ ((current_user.user_progress.count() / 50) * 100)|round|int }}%</div>
             <div class="stat-label">Progress Keseluruhan</div>
         </div>
     </div>
@@ -91,9 +91,9 @@
             </div>
             <div class="progress-overview">
                 <div class="progress-ring-large">
-                    <div class="progress-fill-large" style="--progress: {{ ((current_user.progress.count() / 50) * 100)|round|int }}%"></div>
+                    <div class="progress-fill-large" style="--progress: {{ ((current_user.user_progress.count() / 50) * 100)|round|int }}%"></div>
                     <div class="progress-text-large">
-                        <span class="progress-percentage">{{ ((current_user.progress.count() / 50) * 100)|round|int }}%</span>
+                        <span class="progress-percentage">{{ ((current_user.user_progress.count() / 50) * 100)|round|int }}%</span>
                         <span class="progress-label">Selesai</span>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
                         <div class="progress-icon">📚</div>
                         <div class="progress-info">
                             <span class="progress-title">Materi Diselesaikan</span>
-                            <span class="progress-count">{{ current_user.progress.count() }} dari 50</span>
+                            <span class="progress-count">{{ current_user.user_progress.count() }} dari 50</span>
                         </div>
                     </div>
                     <div class="progress-item">

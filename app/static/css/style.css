@@ -1326,15 +1326,6 @@ textarea#chat-input::placeholder {
     border: 2px solid var(--border-color);
 }
 
-.profile-status {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid var(--card-bg-color);
-}
 
 .profile-status.online {
     background: var(--success-color);
@@ -2068,16 +2059,6 @@ textarea#chat-input::placeholder {
     border: 3px solid var(--primary-color);
 }
 
-.profile-status {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 16px;
-    height: 16px;
-    background: #4caf50;
-    border: 3px solid var(--card-bg-color);
-    border-radius: 50%;
-}
 
 .profile-name {
     font-size: 1.2rem;
@@ -2967,8 +2948,8 @@ textarea#chat-input::placeholder {
 
 .profile-status {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
+    bottom: -20px;
+    right: 27px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
