@@ -161,6 +161,15 @@ class ProjectSubmission(db.Model):
     interview_score = db.Column(db.Integer)
     interview_feedback = db.Column(db.Text)
 
+     # --- TAMBAHKAN RELASI INI ---
+    interview_messages = db.relationship(
+        "InterviewMessage",
+        backref="project_submission",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+    
+    
     def __repr__(self):
         return f"<Submission {self.id} for Project {self.project_id}>"
 
@@ -209,3 +218,21 @@ class LearningResource(db.Model):
 
     def __repr__(self):
         return f"<LearningResource {self.title}>"
+
+
+
+
+
+class InterviewMessage(db.Model):
+    __tablename__ = "interview_message"
+
+    id = db.Column(db.Integer, primary_key=True)
+    submission_id = db.Column(db.Integer, db.ForeignKey("project_submission.id"), nullable=False)
+    role = db.Column(db.String(10), nullable=False)  # 'user' atau 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+    submission = db.relationship("ProjectSubmission", back_populates="interview_messages")
+
+    def __repr__(self):
+        return f"<InterviewMessage {self.id}>"

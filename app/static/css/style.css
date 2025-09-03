@@ -4076,3 +4076,183 @@ textarea#chat-input::placeholder {
     background-color: rgba(74, 144, 226, 0.1);
 }
 .module-actions p { font-weight: 600; margin-bottom: 10px; }
+
+
+
+
+
+
+
+
+/* =============================================== */
+/* ===         STYLE UNTUK HALAMAN WAWANCARA         === */
+/* =============================================== */
+
+/* --- 1. Layout Utama Dua Kolom --- */
+.interview-layout {
+    display: flex;
+    gap: 24px;
+    height: calc(100vh - 120px); /* Mengisi sisa tinggi layar dikurangi header */
+    padding: 20px;
+}
+
+/* --- 2. Sidebar Informasi Proyek (Kolom Kiri) --- */
+.interview-sidebar {
+    flex-basis: 320px; /* Lebar kolom kiri */
+    flex-shrink: 0; /* Mencegah kolom menyusut */
+    padding: 24px;
+    background-color: #1e1e1e; /* Warna sedikit lebih gelap dari card biasa */
+    border-radius: 12px;
+    overflow-y: auto; /* Bisa di-scroll jika kontennya panjang */
+}
+
+.interview-sidebar h3 {
+    margin-top: 0;
+    color: #ffffff;
+}
+
+.interview-sidebar h4 {
+    margin-bottom: 8px;
+    color: #e0e0e0;
+}
+
+.interview-sidebar h5 {
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: #a0a0a0;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+
+.interview-sidebar p {
+    color: #b0b0b0;
+    line-height: 1.6;
+}
+
+.interview-sidebar hr {
+    border-color: #333;
+    margin: 24px 0;
+}
+
+.interview-sidebar a {
+    word-break: break-all; /* Agar link panjang tidak merusak layout */
+}
+
+
+/* --- 3. Area Chat (Kolom Kanan) --- */
+.interview-chat {
+    flex-grow: 1; /* Mengisi sisa ruang yang tersedia */
+    display: flex;
+    flex-direction: column;
+    background-color: #161616;
+    border-radius: 12px;
+    overflow: hidden; /* Menyembunyikan konten yang meluber */
+}
+
+/* --- 4. Riwayat Chat (Bagian Atas Chat) --- */
+.chat-history {
+    flex-grow: 1;
+    padding: 24px;
+    overflow-y: auto; /* Ini yang membuat chat bisa di-scroll */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.chat-message {
+    display: flex;
+    width: 100%;
+}
+
+.chat-message .message-bubble {
+    max-width: 80%; /* Pesan tidak akan terlalu lebar */
+    padding: 12px 18px;
+    border-radius: 20px;
+    line-height: 1.5;
+}
+
+/* Pesan dari AI (kiri) */
+.chat-message.assistant {
+    justify-content: flex-start;
+}
+.chat-message.assistant .message-bubble {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border-bottom-left-radius: 4px;
+}
+
+/* Pesan dari User (kanan) */
+.chat-message.user {
+    justify-content: flex-end;
+}
+.chat-message.user .message-bubble {
+    background-color: #007bff; /* Warna biru primer */
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+}
+
+
+/* --- 5. Area Input Pesan (Bagian Bawah Chat) --- */
+.chat-input-area {
+    padding: 16px;
+    border-top: 1px solid #333;
+}
+
+#interview-form {
+    display: flex;
+    align-items: flex-end; /* Diubah agar alignment bagus saat teks multi-baris */
+    gap: 12px;
+    width: 100%;
+    vertical-align: middle;
+}
+
+#message-input {
+    flex-grow: 1;
+    padding: 20px 24px; /* sedikit lebih besar */
+    border: 1px solid #444;
+    border-radius: 32px; /* bulat lebih elegan */
+    background-color: #2a2a2a;
+    color: #fff;
+    resize: none;
+    font-size: 1.1rem; /* font lebih besar */
+    font-family: inherit;
+    min-height: 40px; /* lebih tinggi dari tombol */
+    max-height: 60px;
+    overflow-y: auto;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+
+#message-input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+#send-button {
+    flex-shrink: 0; /* Mencegah tombol menyusut */
+    width: 52px; /* Ukuran tombol dibuat presisi */
+    height: 52px;
+    border: none;
+    border-radius: 50%; /* Membuatnya menjadi lingkaran sempurna */
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    display: flex; /* Untuk menengahkan ikon SVG */
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+#send-button:hover {
+    background-color: #0056b3;
+}
+
+#send-button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+#send-button svg {
+    margin-left: -2px; /* Koreksi posisi ikon agar pas di tengah */
+}

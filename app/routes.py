@@ -5,7 +5,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
-                        ChatSession, Module, Lesson, UserProgress)
+                        ChatSession, Module, Lesson, UserProgress, InterviewMessage) # <-- Tambahkan di sini
 
 
 # app/routes.py -> di bagian atas
@@ -374,13 +374,82 @@ def submit_project(project_id):
     flash(f"Proyek '{project.title}' berhasil disubmit!", 'success')
     return redirect(url_for('routes.my_projects'))
 
+
+
+
 @bp.route('/interview/<int:submission_id>')
 @login_required
 def interview(submission_id):
     submission = ProjectSubmission.query.get_or_404(submission_id)
-    if submission.user_id != current_user.id: 
+    if submission.author != current_user: 
         abort(403)
-    return render_template('interview.html', title=f"Wawancara {submission.project.title}", submission=submission)
+    
+    # Ambil semua riwayat pesan untuk submission ini
+    messages = submission.interview_messages.order_by(InterviewMessage.timestamp.asc()).all()
+
+    return render_template('interview.html', 
+                           title=f"Wawancara {submission.project.title}", 
+                           submission=submission,
+                           messages=messages) # Kirim messages ke template
+# app/routes.py -> Tambahkan ini di bagian RUTE API UNTUK AI
+
+@bp.route('/interview-ai/<int:submission_id>', methods=['POST'])
+@login_required
+def interview_ai(submission_id):
+    submission = ProjectSubmission.query.get_or_404(submission_id)
+    if submission.author != current_user:
+        abort(403)
+
+    user_message_content = request.get_json().get('message', '').strip()
+    if not user_message_content:
+        return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
+
+    # 1. Simpan pesan pengguna ke database
+    user_message = InterviewMessage(submission_id=submission_id, role='user', content=user_message_content)
+    db.session.add(user_message)
+    
+    # 2. Siapkan prompt untuk AI dengan konteks proyek
+    project_context = f"""
+    Judul Proyek: {submission.project.title}
+    Deskripsi Proyek: {submission.project.description}
+    Link Proyek Pengguna: {submission.project_link}
+    """
+
+    system_prompt = (
+        "Anda adalah seorang rekruter teknis senior yang sedang mewawancarai seorang kandidat junior "
+        "mengenai proyek portofolio mereka. Jadilah kritis, tajam, tapi tetap suportif. "
+        "Tujuan Anda adalah untuk menguji pemahaman teknis dan proses berpikir kandidat. "
+        "Selalu ajukan pertanyaan terbuka yang relevan dengan detail proyek di bawah ini. "
+        "Jangan menjawab pertanyaan umum, fokuslah pada wawancara.\n\n"
+        f"--- KONTEKS PROYEK ---\n{project_context}"
+    )
+    
+    # Ambil 5 pesan terakhir untuk histori
+    history = submission.interview_messages.order_by(InterviewMessage.timestamp.desc()).limit(5).all()
+    history.reverse()
+    
+    messages_for_ai = [{"role": "system", "content": system_prompt}]
+    for msg in history:
+        messages_for_ai.append({"role": msg.role, "content": msg.content})
+
+    try:
+        # 3. Panggil API AI
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=messages_for_ai
+        )
+        ai_response_content = completion.choices[0].message.content
+        
+        # 4. Simpan balasan AI ke database
+        ai_message = InterviewMessage(submission_id=submission_id, role='assistant', content=ai_response_content)
+        db.session.add(ai_message)
+        db.session.commit()
+        
+        return jsonify({'response': ai_response_content})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Interview AI Error: {e}")
+        return jsonify({'error': 'Gagal menghubungi layanan AI.'}), 500
 
 @bp.route('/cancel-submission/<int:submission_id>', methods=['POST'])
 @login_required
