@@ -145,6 +145,8 @@ def complete_onboarding():
 # ===============================================
 # RUTE ROADMAP BELAJAR (VERSI DIPERBAIKI)
 # ===============================================
+# app/routes.py
+
 @bp.route('/roadmap')
 @login_required
 def roadmap():
@@ -152,83 +154,124 @@ def roadmap():
         flash('Selesaikan onboarding untuk menentukan jalur karier Anda.', 'warning')
         return redirect(url_for('routes.onboarding'))
 
-    # Mengambil semua modul (statis dan personal) untuk user & path saat ini
-    # app/routes.py -> di dalam fungsi roadmap()
-
-    # Ganti query all_modules menjadi seperti ini:
     all_modules = Module.query.filter(
         ((Module.user_id == current_user.id) | (Module.user_id == None)),
         (Module.career_path == current_user.career_path)
     ).options(
         subqueryload(Module.lessons), 
-        subqueryload(Module.projects)  # Tambahkan ini untuk pre-load proyek
+        subqueryload(Module.projects)
     ).order_by(Module.order).all()
     
+    # --- LOGIKA PROGRES BARU ---
+    all_lesson_ids = {lesson.id for module in all_modules for lesson in module.lessons}
     
-    # --- CETAK HASILNYA ---
-    print(f"Jumlah modul yang ditemukan: {len(all_modules)}")
-    print(f"Data modul: {all_modules}")
-    # -----------------------------------
-    
-    # Cek apakah ada modul personal (buatan AI)
-    has_personal_modules = any(module.user_id is not None for module in all_modules)
-    show_generate_button = not has_personal_modules
+    completed_progress = UserProgress.query.filter(
+        UserProgress.user_id == current_user.id,
+        UserProgress.lesson_id.in_(all_lesson_ids)
+    ).all()
+    completed_lesson_ids = {p.lesson_id for p in completed_progress}
 
-    # Ambil semua progress user untuk modul-modul ini
-    completed_progress_query = current_user.user_progress.filter(
-        UserProgress.module_id.in_([m.id for m in all_modules])
-    )
-    completed_module_ids = {item.module_id for item in completed_progress_query.all()}
-    
-    total_modules = len(all_modules)
-    progress_percentage = int((len(completed_module_ids) / total_modules) * 100) if total_modules > 0 else 0
+    total_lessons = len(all_lesson_ids)
+    progress_percentage = int((len(completed_lesson_ids) / total_lessons) * 100) if total_lessons > 0 else 0
     
     return render_template('roadmap.html', 
                            title="Roadmap Belajar", 
                            modules=all_modules,
-                           show_generate_button=show_generate_button,
-                           completed_module_ids=completed_module_ids,
+                           completed_lesson_ids=completed_lesson_ids, # Kirim ID pelajaran yang selesai
                            progress=progress_percentage)
+# app/routes.py
 
 @bp.route('/lesson/<int:lesson_id>')
 @login_required
 def lesson_detail(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
     # Pastikan lesson ini bagian dari roadmap user
-    if lesson.module.career_path != current_user.career_path and lesson.module.user_id != current_user.id:
+    if lesson.module.career_path != current_user.career_path and (lesson.module.user_id != current_user.id and lesson.module.user_id is not None):
         abort(403)
-    return render_template('lesson_detail.html', title=lesson.title, lesson=lesson)
+        
+    # Cek apakah lesson ini sudah diselesaikan oleh user
+    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson.id).first()
+    is_completed = True if progress else False
+    
+    return render_template('lesson_detail.html', 
+                           title=lesson.title, 
+                           lesson=lesson, 
+                           is_completed=is_completed)
 
+# app/routes.py -> Tambahkan ini di bagian RUTE PROYEK
 
-# PERBAIKAN: Sesuaikan dengan struktur UserProgress yang baru
+@bp.route('/project/<int:project_id>')
+@login_required
+def project_detail(project_id):
+    project = Project.query.get_or_404(project_id)
+    # Pastikan proyek ini bagian dari roadmap user
+    if project.module.career_path != current_user.career_path and (project.module.user_id != current_user.id and project.module.user_id is not None):
+        abort(403)
+    return render_template('project_detail.html', title=project.title, project=project)
+
+# app/routes.py -> Ubah fungsi complete_lesson yang sudah ada
+
+# app/routes.py
+
 @bp.route('/complete-lesson/<int:lesson_id>', methods=['POST'])
 @login_required
 def complete_lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
-    
-    # Cek apakah modul sudah diselesaikan
-    progress = UserProgress.query.filter_by(
-    user_id=current_user.id,
-    module_id=lesson.module_id,
-    lesson_id=lesson.id
-    ).first()
+    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson.id).first()
 
     if not progress:
-        new_progress = UserProgress(
-            user_id=current_user.id,
-            module_id=lesson.module_id,
-            lesson_id=lesson.id
-        )
+        new_progress = UserProgress(user_id=current_user.id, module_id=lesson.module_id, lesson_id=lesson.id)
         db.session.add(new_progress)
         db.session.commit()
-        flash('Materi berhasil diselesaikan!', 'success')
-    else:
-        flash('Materi sudah pernah diselesaikan sebelumnya.', 'info')
+        flash('Materi berhasil ditandai selesai!', 'success')
+    
+    # --- LOGIKA REDIRECT BARU ---
+    source = request.form.get('source')
+    if source == 'roadmap':
+        return redirect(url_for('routes.roadmap'))
+    else: # Default-nya kembali ke halaman detail
+        return redirect(url_for('routes.lesson_detail', lesson_id=lesson_id))
+# app/routes.py -> Tambahkan fungsi baru ini
 
-    # Arahkan kembali ke halaman roadmap setelah selesai
+# app/routes.py
+
+@bp.route('/uncomplete-lesson/<int:lesson_id>', methods=['POST'])
+@login_required
+def uncomplete_lesson(lesson_id):
+    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
+    if progress:
+        db.session.delete(progress)
+        db.session.commit()
+        flash('Materi ditandai belum selesai.', 'info')
+
+    # --- LOGIKA REDIRECT BARU ---
+    source = request.form.get('source')
+    if source == 'roadmap':
+        return redirect(url_for('routes.roadmap'))
+    else: # Default-nya kembali ke halaman detail
+        return redirect(url_for('routes.lesson_detail', lesson_id=lesson_id))
+
+# app/routes.py
+
+# Tambahkan fungsi baru ini di mana saja (misalnya, setelah 'complete_onboarding')
+
+@bp.route('/change-career-path', methods=['POST'])
+@login_required
+def change_career_path():
+    new_path = request.form.get('new_path')
+    
+    # Validasi sederhana
+    if new_path in ['frontend', 'backend', 'data-analyst']:
+        current_user.career_path = new_path
+        db.session.commit()
+        flash(f"Jalur karier berhasil diubah ke {new_path.replace('-', ' ').title()}!", 'success')
+    else:
+        flash("Jalur karier tidak valid.", 'danger')
+        
     return redirect(url_for('routes.roadmap'))
 
 
+"""
 @bp.route('/generate-roadmap', methods=['POST'])
 @login_required
 def generate_roadmap():
@@ -237,6 +280,7 @@ def generate_roadmap():
     else:
         flash('Maaf, AI gagal membuat roadmap. Coba lagi.', 'danger')
     return redirect(url_for('routes.roadmap'))
+""" 
 
 # ===============================================
 # RUTE PROYEK & WAWANCARA

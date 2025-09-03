@@ -119,6 +119,12 @@ class Lesson(db.Model):
     lesson_type = db.Column(db.String(50), default="article")
     estimated_time = db.Column(db.Integer)
 
+    # --- TAMBAHKAN DUA KOLOM INI ---
+    description = db.Column(db.Text, nullable=True)  # Untuk deskripsi lengkap
+    video_url = db.Column(db.String(500), nullable=True) # Khusus untuk link video
+    # --------------------------------
+    
+    
     user_progress = db.relationship('UserProgress', back_populates='lesson', lazy='dynamic')
 
     def __repr__(self):

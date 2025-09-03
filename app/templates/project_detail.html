@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="content-layout">
+    <div class="page-header">
+        <div>
+            <a href="{{ url_for('routes.roadmap') }}" class="back-link">‹ Kembali ke Roadmap</a>
+            <h1>🚀 Proyek: {{ project.title }}</h1>
+            <p class="subtitle">Tingkat Kesulitan: {{ project.difficulty or 'N/A' }}</p>
+        </div>
+    </div>
+
+    <div class="card project-brief">
+        <h3>Studi Kasus (Client Brief)</h3>
+        <p>Bayangkan kamu adalah seorang developer yang mendapatkan brief dari klien sebagai berikut:</p>
+        <div class="brief-text">
+            {{ project.description or 'Deskripsi proyek belum tersedia.' }}
+        </div>
+    </div>
+
+    <div class="lesson-actions">
+        <a href="{{ url_for('routes.roadmap') }}" class="button-secondary">Kembali</a>
+        <a href="{{ url_for('routes.select_project') }}" class="button-primary">Kerjakan & Submit Proyek</a>
+    </div>
+</div>
+{% endblock %}

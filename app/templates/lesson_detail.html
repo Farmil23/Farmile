@@ -1,34 +1,49 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="lesson-container card">
+<div class="content-layout">
     <div class="page-header">
         <div>
-            <h2>{{ lesson.title }}</h2>
+            <a href="{{ url_for('routes.roadmap') }}" class="back-link">‹ Kembali ke Roadmap</a>
+            <h1>{{ lesson.title }}</h1>
             <p class="subtitle">Modul: {{ lesson.module.title }}</p>
         </div>
     </div>
 
-    <div class="lesson-content">
-        {% if lesson.url and 'youtube.com' in lesson.url %}
-            <div class="video-container">
-                <iframe src="https://www.youtube.com/embed/{{ lesson.url.split('v=')[-1].split('&')[0] }}" 
-                        frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen></iframe>
-            </div>
-        {% elif lesson.url %}
-            <p>Silakan pelajari materi dari sumber berikut:</p>
-            <a href="{{ lesson.url }}" target="_blank" rel="noopener noreferrer">{{ lesson.url }}</a>
-        {% else %}
-            <p>Konten untuk materi ini sedang disiapkan.</p>
+    <div class="card lesson-content">
+        <h3>Tentang Materi Ini</h3>
+        <p>{{ lesson.description or 'Deskripsi belum tersedia.' }}</p>
+
+        {% if lesson.video_url %}
+        <h3>Video Pembelajaran</h3>
+        <div class="video-container">
+            {# Mengubah link YouTube biasa menjadi link embed #}
+            <iframe width="560" height="315" src="{{ lesson.video_url.replace('watch?v=', 'embed/') }}" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+            </iframe>
+        </div>
+        {% endif %}
+
+        {% if lesson.url %}
+        <h3>Artikel Pendukung</h3>
+        <p>Untuk pemahaman lebih dalam, kunjungi artikel berikut:</p>
+        <a href="{{ lesson.url }}" target="_blank" class="button-secondary">Baca Artikel Eksternal ↗</a>
         {% endif %}
     </div>
 
-    <hr>
-
-    <div class="lesson-completion">
-        <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST">
-            <button type="submit" class="button-primary">Tandai Selesai & Kembali ke Roadmap</button>
-        </form>
+    <div class="lesson-actions">
+        {% if is_completed %}
+            <form action="{{ url_for('routes.uncomplete_lesson', lesson_id=lesson.id) }}" method="POST">
+                <input type="hidden" name="source" value="detail">
+                <button type="submit" class="button-secondary">Batal Tandai Selesai</button>
+            </form>
+        {% else %}
+            <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST">
+                <input type="hidden" name="source" value="detail">
+                <button type="submit" class="button-primary">Tandai Sudah Selesai ✔</button>
+            </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
