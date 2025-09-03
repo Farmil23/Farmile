@@ -251,6 +251,38 @@ def uncomplete_lesson(lesson_id):
     else: # Default-nya kembali ke halaman detail
         return redirect(url_for('routes.lesson_detail', lesson_id=lesson_id))
 
+
+
+@bp.route('/edit-submission/<int:submission_id>', methods=['GET', 'POST'])
+@login_required
+def edit_submission(submission_id):
+    # Ambil data submission dari database
+    submission = ProjectSubmission.query.get_or_404(submission_id)
+
+    # Pastikan pengguna hanya bisa mengedit submission miliknya sendiri
+    if submission.author != current_user:
+        abort(403)
+
+    # Jika pengguna mengirimkan form (metode POST)
+    if request.method == 'POST':
+        new_link = request.form.get('project_link')
+        if new_link:
+            submission.project_link = new_link
+            db.session.commit()
+            flash('Link proyek berhasil diperbarui!', 'success')
+            return redirect(url_for('routes.my_projects'))
+        else:
+            flash('Link proyek tidak boleh kosong.', 'danger')
+
+    # Jika pengguna hanya membuka halaman (metode GET)
+    return render_template('edit_submission.html', 
+                           title=f"Edit Proyek: {submission.project.title}", 
+                           submission=submission)
+
+
+
+
+
 # app/routes.py
 
 # Tambahkan fungsi baru ini di mana saja (misalnya, setelah 'complete_onboarding')

@@ -315,7 +315,7 @@
         </div>
         <div class="card-content">
           {% if current_user.submissions.count() > 0 %}
-            {% for submission in current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(1) %}
+          {% for submission in recent_submissions %}
             <div class="project-item">
               <div class="project-info">
                 <h4 class="project-name">{{ submission.project.title }}</h4>
