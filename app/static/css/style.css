@@ -4198,7 +4198,7 @@ textarea#chat-input::placeholder {
     border-top: 1px solid #333;
 }
 
-#interview-form {
+#interview-form, #chat-form{
     display: flex;
     align-items: flex-end; /* Diubah agar alignment bagus saat teks multi-baris */
     gap: 12px;
@@ -4255,4 +4255,24 @@ textarea#chat-input::placeholder {
 
 #send-button svg {
     margin-left: -2px; /* Koreksi posisi ikon agar pas di tengah */
+}
+
+
+
+
+/* app/static/css/style.css -> Tambahkan di paling bawah */
+
+/* Style untuk blok kode di dalam chat bubble */
+.message-bubble pre {
+    background-color: #111; /* Warna latar lebih gelap */
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto; /* Bisa di-scroll horizontal jika kode panjang */
+    border: 1px solid #444;
+}
+
+.message-bubble code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    color: #c9d1d9; /* Warna teks kode */
 }

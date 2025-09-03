@@ -29,33 +29,33 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     # --- MULAI KONFIGURASI FLASK-ADMIN ---
-
-    # (OPSIONAL TAPI DIANJURKAN) Impor Model di sini agar lebih rapi
-    from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission
-
-    # 1. Buat class View yang aman
+    
+    # 1. Buat class View yang aman untuk memastikan hanya user terautentikasi yang bisa akses
     class SecureModelView(ModelView):
         def is_accessible(self):
-            # Cek apakah user sudah login DAN memiliki peran admin
-            # (Lihat cara menambahkan is_admin di bawah)
-            return current_user.is_authenticated and current_user.is_admin
+            # Kembalikan True jika user sudah login
+            return current_user.is_authenticated
 
         def inaccessible_callback(self, name, **kwargs):
-            # Jika user tidak punya akses, redirect ke halaman login
-            return redirect(url_for('routes.login'))
+            # Redirect ke halaman login jika user belum login
+            return redirect(url_for('routes.login', next=request.url))
 
     # 2. Inisialisasi Admin Panel
+    # Ganti template_mode ke 'bootstrap4' agar tampilannya lebih modern
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4')
 
-    # 3. Tambahkan setiap model ke Admin Panel
+    # 3. Impor semua model yang ingin kamu kelola
+    from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission
+
+    # 4. Tambahkan setiap model ke Admin Panel menggunakan SecureModelView
     admin.add_view(SecureModelView(User, db.session))
     admin.add_view(SecureModelView(Roadmap, db.session))
     admin.add_view(SecureModelView(Module, db.session))
     admin.add_view(SecureModelView(Lesson, db.session))
     admin.add_view(SecureModelView(Project, db.session))
-    admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions"))
+    admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions")) # Kita bisa custom nama
 
-    # --- SELESAI KONFIGURASI FLASK-ADMIN ---
+    # --- SELESAI KONFIGURASI FLASK-ADMIN ---`
     
     global ark_client
     try:

@@ -107,19 +107,30 @@
             // Jika Shift + Enter, pengguna bisa membuat baris baru (default behavior)
         });
     
-        const addMessageToHistory = (role, content) => {
-            // ... (fungsi addMessageToHistory tetap sama seperti sebelumnya)
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${role}`;
-            const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = 'message-bubble';
-            const p = document.createElement('p');
+        // templates/interview.html -> <script>
+
+    const addMessageToHistory = (role, content) => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${role}`;
+        
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble';
+        
+        const p = document.createElement('p');
+        
+        if (role === 'assistant') {
+            // Untuk pesan dari AI, terjemahkan Markdown ke HTML
+            p.innerHTML = marked.parse(content); 
+        } else {
+            // Untuk pesan dari user, tetap gunakan textContent demi keamanan
             p.textContent = content;
-            bubbleDiv.appendChild(p);
-            messageDiv.appendChild(bubbleDiv);
-            history.appendChild(messageDiv);
-            history.scrollTop = history.scrollHeight;
-        };
+        }
+        
+        bubbleDiv.appendChild(p);
+        messageDiv.appendChild(bubbleDiv);
+        history.appendChild(messageDiv);
+        history.scrollTop = history.scrollHeight;
+    };
         
         // Panggil sekali saat load untuk set tinggi awal
         adjustTextareaHeight();

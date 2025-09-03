@@ -200,18 +200,46 @@ def lesson_detail(lesson_id):
 
 # app/routes.py -> Tambahkan ini di bagian RUTE PROYEK
 
+# app/routes.py
+
 @bp.route('/project/<int:project_id>')
 @login_required
 def project_detail(project_id):
     project = Project.query.get_or_404(project_id)
-    # Pastikan proyek ini bagian dari roadmap user
     if project.module.career_path != current_user.career_path and (project.module.user_id != current_user.id and project.module.user_id is not None):
         abort(403)
-    return render_template('project_detail.html', title=project.title, project=project)
 
-# app/routes.py -> Ubah fungsi complete_lesson yang sudah ada
+    # Cek atau buat sesi chat untuk proyek ini
+    if not project.chat_session:
+        # Buat sesi chat baru
+        new_session = ChatSession(
+            user_id=current_user.id,
+            title=f"Diskusi Proyek: {project.title}"
+        )
+        db.session.add(new_session)
+        
+        # Buat pesan pembuka dari AI
+        welcome_message = ChatMessage(
+            session=new_session,
+            user_id=current_user.id,
+            role='assistant',
+            content=f"Halo! Selamat datang di ruang diskusi untuk proyek '{project.title}'. Aku di sini untuk membantumu. Apa ada bagian dari brief proyek ini yang ingin kamu diskusikan lebih dulu?"
+        )
+        db.session.add(welcome_message)
+        
+        # Hubungkan sesi baru ini dengan proyek
+        project.chat_session = new_session
+        db.session.commit()
 
-# app/routes.py
+    # Ambil sesi dan semua pesannya
+    session = project.chat_session
+    messages = session.messages.order_by(ChatMessage.timestamp.asc()).all()
+
+    return render_template('project_detail.html', 
+                           title=project.title, 
+                           project=project,
+                           session=session,
+                           messages=messages)
 
 @bp.route('/complete-lesson/<int:lesson_id>', methods=['POST'])
 @login_required

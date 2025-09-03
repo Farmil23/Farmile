@@ -1,25 +1,121 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="content-layout">
-    <div class="page-header">
-        <div>
-            <a href="{{ url_for('routes.roadmap') }}" class="back-link">‹ Kembali ke Roadmap</a>
-            <h1>🚀 Proyek: {{ project.title }}</h1>
-            <p class="subtitle">Tingkat Kesulitan: {{ project.difficulty or 'N/A' }}</p>
-        </div>
-    </div>
-
-    <div class="card project-brief">
+<div class="interview-layout">
+    
+    <aside class="interview-sidebar card">
         <h3>Studi Kasus (Client Brief)</h3>
-        <p>Bayangkan kamu adalah seorang developer yang mendapatkan brief dari klien sebagai berikut:</p>
+        <hr>
+        <h4>🚀 Proyek: {{ project.title }}</h4>
+        <p class="subtitle" style="margin-top: -10px; font-size: 0.9rem;">
+            Tingkat Kesulitan: {{ project.difficulty or 'N/A' }}
+        </p>
         <div class="brief-text">
             {{ project.description or 'Deskripsi proyek belum tersedia.' }}
         </div>
-    </div>
-
-    <div class="lesson-actions">
-        <a href="{{ url_for('routes.roadmap') }}" class="button-secondary">Kembali</a>
+        <hr>
         <a href="{{ url_for('routes.select_project') }}" class="button-primary">Kerjakan & Submit Proyek</a>
-    </div>
+        <a href="{{ url_for('routes.roadmap') }}" class="button-secondary" style="margin-top: 10px;">Kembali ke Roadmap</a>
+    </aside>
+
+    <main class="interview-chat">
+        <div id="chat-history" class="chat-history">
+            {% for message in messages %}
+            <div class="chat-message {{ message.role }}">
+                <div class="message-bubble">
+                    <p>{{ message.content | safe }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="chat-input-area">
+            <form id="chat-form">
+                <textarea id="message-input" placeholder="Tanya AI Mentor tentang proyek ini..." rows="1"></textarea>
+                <button type="submit" id="send-button" title="Kirim Pesan">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </form>
+        </div>
+    </main>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('message-input');
+    const history = document.getElementById('chat-history');
+    const sendButton = document.getElementById('send-button');
+    const sessionId = {{ session.id }};
+
+    // templates/interview.html -> <script>
+
+    const addMessageToHistory = (role, content) => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${role}`;
+        
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble';
+        
+        const p = document.createElement('p');
+        
+        if (role === 'assistant') {
+            // Untuk pesan dari AI, terjemahkan Markdown ke HTML
+            p.innerHTML = marked.parse(content); 
+        } else {
+            // Untuk pesan dari user, tetap gunakan textContent demi keamanan
+            p.textContent = content;
+        }
+        
+        bubbleDiv.appendChild(p);
+        messageDiv.appendChild(bubbleDiv);
+        history.appendChild(messageDiv);
+        history.scrollTop = history.scrollHeight;
+    };
+    const adjustTextareaHeight = () => {
+        input.style.height = 'auto';
+        input.style.height = (input.scrollHeight) + 'px'; 
+    };
+
+    const sendMessage = async () => {
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessageToHistory('user', message);
+        input.value = '';
+        adjustTextareaHeight();
+        input.disabled = true;
+        sendButton.disabled = true;
+
+        try {
+            const response = await fetch(`/chat-ai/${sessionId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+            if (!response.ok) throw new Error('Gagal mendapatkan balasan.');
+            const data = await response.json();
+            addMessageToHistory('assistant', data.response);
+        } catch (error) {
+            addMessageToHistory('assistant', 'Maaf, terjadi kesalahan.');
+        } finally {
+            input.disabled = false;
+            sendButton.disabled = false;
+            input.focus();
+        }
+    };
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    input.addEventListener('input', adjustTextareaHeight);
+});
+</script>
 {% endblock %}

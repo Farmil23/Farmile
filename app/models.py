@@ -145,6 +145,11 @@ class Project(db.Model):
     is_challenge = db.Column(db.Boolean, default=False, nullable=False)
     # --------------------------------
     
+    # --- TAMBAHKAN INI ---
+    chat_session_id = db.Column(db.Integer, db.ForeignKey("chat_session.id"), nullable=True)
+    chat_session = db.relationship("ChatSession", backref="project", uselist=False)
+    # ---------------------
+    
     submissions = db.relationship("ProjectSubmission", backref="project", lazy="dynamic")
 
     def __repr__(self):
@@ -161,10 +166,9 @@ class ProjectSubmission(db.Model):
     interview_score = db.Column(db.Integer)
     interview_feedback = db.Column(db.Text)
 
-     # --- TAMBAHKAN RELASI INI ---
     interview_messages = db.relationship(
         "InterviewMessage",
-        backref="project_submission",
+        back_populates="submission", # <-- Ganti dengan back_populates
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
