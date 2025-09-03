@@ -5,6 +5,8 @@ from datetime import datetime
 class User(UserMixin, db.Model):
     __tablename__ = "user"
 
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    
     id = db.Column(db.Integer, primary_key=True)
     google_id = db.Column(db.String(100), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
@@ -85,7 +87,7 @@ class Module(db.Model):
         cascade="all, delete-orphan",
     )
     projects = db.relationship(
-        "Project", backref="module", lazy="dynamic", cascade="all, delete-orphan"
+        "Project", backref="module", lazy=True, cascade="all, delete-orphan"
     )
     user_progress = db.relationship(
         "UserProgress",
@@ -93,6 +95,14 @@ class Module(db.Model):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+        # --- TAMBAHKAN RELASI INI ---
+    lessons = db.relationship(
+        "Lesson",
+        backref="module", # backref ini praktis untuk akses lesson.module
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
+    # -----------------------------
 
     def __repr__(self):
         return f"<Module {self.title}>"
@@ -123,7 +133,12 @@ class Project(db.Model):
     module_id = db.Column(db.Integer, db.ForeignKey("module.id"), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
-
+    
+    # --- TAMBAHKAN DUA KOLOM INI ---
+    difficulty = db.Column(db.String(50), nullable=True) # Contoh: 'Beginner', 'Intermediate'
+    is_challenge = db.Column(db.Boolean, default=False, nullable=False)
+    # --------------------------------
+    
     submissions = db.relationship("ProjectSubmission", backref="project", lazy="dynamic")
 
     def __repr__(self):

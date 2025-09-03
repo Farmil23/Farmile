@@ -27,33 +27,55 @@
                     <div class="summary-title">
                         <span class="module-order">Bagian {{ module.order }}</span>
                         {{ module.title }}
+
                     </div>
                 </summary>
                 <ul class="lesson-list">
                     {% for lesson in module.lessons %}
-                    <ul class="lesson-list">
-                        {% for lesson in module.lessons %}
-                        <li class="lesson-item">
-                            <div class="lesson-top">
-                                <input type="checkbox" id="lesson-{{ lesson.id }}" data-lesson-id="{{ lesson.id }}" 
-                                       {% if lesson.id in completed_lesson_ids %}checked{% endif %}>
-                                <label for="lesson-{{ lesson.id }}" class="lesson-label">
-                                    <div class="lesson-info">
-                                        <strong>{{ lesson.title }}</strong>
-                                        <span>Estimasi: {{ lesson.estimated_time or '30' }} menit</span>
-                                    </div>
-                                </label>
-                            </div>
-                    
-                            <div class="lesson-bottom">
-                                <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST">
-                                    <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
-                                </form>
-                                <a href="{{ lesson.url or '#' }}" target="_blank" class="learn-link button-primary">Mulai Belajar</a>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                    <li class="lesson-item">
+                        <div class="lesson-top">
+                            <input type="checkbox" id="lesson-{{ lesson.id }}" data-lesson-id="{{ lesson.id }}" 
+                                   {% if lesson.id in completed_lesson_ids %}checked{% endif %}>
+                            <label for="lesson-{{ lesson.id }}" class="lesson-label">
+                                <div class="lesson-info">
+                                    <strong>{{ lesson.title }}</strong>
+                                    <span>Estimasi: {{ lesson.estimated_time or '30' }} menit</span>
+                                </div>
+                            </label>
+                        </div>
+                
+                        <div class="lesson-bottom">
+                            <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST">
+                                <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
+                            </form>
+                            <a href="{{ lesson.url or '#' }}" target="_blank" class="learn-link button-primary">Mulai Belajar</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+
+                    {% for project in module.projects %}
+                    <li class="lesson-item project-item"> {# Beri class berbeda jika perlu #}
+                        <div class="lesson-top">
+                            {# Checkbox bisa dinonaktifkan atau digunakan untuk menandai 'dikerjakan' #}
+                            <input type="checkbox" id="project-{{ project.id }}" disabled> 
+                            <label for="project-{{ project.id }}" class="lesson-label">
+                                <div class="lesson-info">
+                                    <strong>
+                                        🚀 Proyek: {{ project.title }}
+                                        {# Tampilkan label difficulty jika ada #}
+                                        {% if project.difficulty %}
+                                            <span class="difficulty-badge">{{ project.difficulty }}</span>
+                                        {% endif %}
+                                    </strong>
+                                    <span>{{ project.description|truncate(80) }}</span>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="lesson-bottom">
+                            {# Tombol ini langsung mengarah ke halaman 'Proyek Saya' #}
+                            <a href="{{ url_for('routes.my_projects') }}" class="button-primary">Kerjakan Proyek</a>
+                        </div>
+                    </li>
                     {% endfor %}
                 </ul>
             </details>

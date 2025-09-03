@@ -153,10 +153,22 @@ def roadmap():
         return redirect(url_for('routes.onboarding'))
 
     # Mengambil semua modul (statis dan personal) untuk user & path saat ini
+    # app/routes.py -> di dalam fungsi roadmap()
+
+    # Ganti query all_modules menjadi seperti ini:
     all_modules = Module.query.filter(
         ((Module.user_id == current_user.id) | (Module.user_id == None)),
         (Module.career_path == current_user.career_path)
+    ).options(
+        subqueryload(Module.lessons), 
+        subqueryload(Module.projects)  # Tambahkan ini untuk pre-load proyek
     ).order_by(Module.order).all()
+    
+    
+    # --- CETAK HASILNYA ---
+    print(f"Jumlah modul yang ditemukan: {len(all_modules)}")
+    print(f"Data modul: {all_modules}")
+    # -----------------------------------
     
     # Cek apakah ada modul personal (buatan AI)
     has_personal_modules = any(module.user_id is not None for module in all_modules)
@@ -235,17 +247,45 @@ def my_projects():
     submissions = ProjectSubmission.query.filter_by(user_id=current_user.id).order_by(ProjectSubmission.id.desc()).all()
     return render_template('my_projects.html', title="Proyek Saya", submissions=submissions)
 
+# app/routes.py
+
 @bp.route('/select-project')
 @login_required
 def select_project():
     if not current_user.career_path:
         flash('Selesaikan onboarding untuk menentukan jalur karier.', 'warning')
         return redirect(url_for('routes.dashboard'))
+    
+    # Ambil ID proyek yang sudah disubmit oleh user
     submitted_project_ids = [sub.project_id for sub in current_user.submissions]
-    available_projects = Project.query.filter(
+    
+    # --- LOGIKA BARU ---
+    # Ambil proyek yang ada di roadmap user, BUKAN challenge, dan belum disubmit
+    available_projects = Project.query.join(Module).filter(
+        Module.career_path == current_user.career_path,
+        Project.is_challenge == False,  # Hanya tampilkan proyek roadmap biasa
         Project.id.notin_(submitted_project_ids)
     ).all()
-    return render_template('select_project.html', title="Pilih Proyek Baru", projects=available_projects)
+    
+    return render_template('select_project.html', title="Pilih Proyek dari Roadmap", projects=available_projects)
+
+
+# app/routes.py
+
+@bp.route('/challenges')
+@login_required
+def challenge_projects():
+    # Ambil ID proyek yang sudah disubmit oleh user
+    submitted_project_ids = [sub.project_id for sub in current_user.submissions]
+
+    # Ambil semua proyek yang ditandai sebagai challenge dan belum disubmit
+    challenge_projects = Project.query.filter(
+        Project.is_challenge == True,
+        Project.id.notin_(submitted_project_ids)
+    ).order_by(Project.difficulty).all() # Urutkan berdasarkan kesulitan
+
+    return render_template('challenge_projects.html', title="Tantangan Proyek", projects=challenge_projects)
+
 
 @bp.route('/submit-project/<int:project_id>', methods=['POST'])
 @login_required

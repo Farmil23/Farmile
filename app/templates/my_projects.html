@@ -9,7 +9,10 @@
                 <h2>Proyek Saya</h2>
                 <p class="subtitle">Ini adalah portofolio terverifikasi Anda. Teruslah berkarya!</p>
             </div>
-            <a href="{{ url_for('routes.select_project') }}" class="button-primary">Tambah Proyek Baru</a>
+            <div class="header-actions">
+                <a href="{{ url_for('routes.challenge_projects') }}" class="button-secondary">Tantangan Proyek 🏆</a>
+                <a href="{{ url_for('routes.select_project') }}" class="button-primary">Tambah Proyek Baru</a>
+            </div>
         </div>
         
         {% if submissions %}

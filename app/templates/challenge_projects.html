@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboard_sidebar.html' %}
+    <main class="dashboard-content">
+        <div class="page-header">
+            <div>
+                <h2>Tantangan Proyek 🏆</h2>
+                <p class="subtitle">Buktikan skill-mu dengan proyek berstandar industri.</p>
+            </div>
+        </div>
+
+        {% if projects %}
+            <div class="projects-grid">
+                {% for project in projects %}
+                <div class="card project-card">
+                    <div class="project-card-header">
+                        <h4>{{ project.title }}</h4>
+                        {% if project.difficulty %}
+                           <span class="difficulty-badge">{{ project.difficulty }}</span>
+                        {% endif %}
+                    </div>
+                    <p>{{ project.description }}</p>
+                    
+                    <div class="sertifikat-actions">
+                        <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST">
+                            <div class="form-group">
+                               <label for="project_link_{{ project.id }}">Link Proyek (GitHub/Live):</label>
+                               <input type="url" id="project_link_{{ project.id }}" name="project_link" class="form-control" placeholder="https://github.com/user/repo" required>
+                            </div>
+                            <button type="submit" class="button-primary">Submit Proyek Ini</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card empty-state">
+                <h3>Hebat!</h3>
+                <p>Kamu sudah menyelesaikan semua tantangan yang tersedia saat ini. Nantikan tantangan berikutnya!</p>
+            </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}
