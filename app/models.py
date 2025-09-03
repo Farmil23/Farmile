@@ -86,23 +86,15 @@ class Module(db.Model):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
-    projects = db.relationship(
-        "Project", backref="module", lazy=True, cascade="all, delete-orphan"
-    )
+
     user_progress = db.relationship(
         "UserProgress",
         backref="module",
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
-        # --- TAMBAHKAN RELASI INI ---
-    lessons = db.relationship(
-        "Lesson",
-        backref="module", # backref ini praktis untuk akses lesson.module
-        lazy=True,
-        cascade="all, delete-orphan",
-    )
-    # -----------------------------
+    lessons = db.relationship('Lesson', backref='module', lazy='subquery')
+    projects = db.relationship('Project', backref='module', lazy='subquery', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Module {self.title}>"
@@ -123,6 +115,8 @@ class Lesson(db.Model):
     description = db.Column(db.Text, nullable=True)  # Untuk deskripsi lengkap
     video_url = db.Column(db.String(500), nullable=True) # Khusus untuk link video
     # --------------------------------
+    
+    module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False)
     
     
     user_progress = db.relationship('UserProgress', back_populates='lesson', lazy='dynamic')
@@ -146,12 +140,20 @@ class Project(db.Model):
     # --------------------------------
     
     # --- TAMBAHKAN INI ---
-    chat_session_id = db.Column(db.Integer, db.ForeignKey("chat_session.id"), nullable=True)
-    chat_session = db.relationship("ChatSession", backref="project", uselist=False)
+    ## chat_session_id = db.Column(db.Integer, db.ForeignKey("chat_session.id"), nullable=True)
+    chat_session = db.relationship("ChatSession", back_populates="project", uselist=False)
     # ---------------------
     
     submissions = db.relationship("ProjectSubmission", backref="project", lazy="dynamic")
 
+     # Kolom-kolom baru untuk detail proyek yang lebih kaya
+    description = db.Column(db.Text, nullable=True)
+    project_goals = db.Column(db.Text, nullable=True)
+    tech_stack = db.Column(db.Text, nullable=True)
+    evaluation_criteria = db.Column(db.Text, nullable=True)
+    resources = db.Column(db.Text, nullable=True) # Tambahkan resources
+    
+    
     def __repr__(self):
         return f"<Project {self.title}>"
 
@@ -185,6 +187,9 @@ class ChatSession(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     title = db.Column(db.String(150), nullable=False)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    
+    # TAMBAHKAN foreign key project_id
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
 
     messages = db.relationship(
         "ChatMessage",
@@ -192,6 +197,10 @@ class ChatSession(db.Model):
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
+    
+     # TAMBAHKAN relasi ini untuk menautkan sesi ke project
+    project = db.relationship('Project', back_populates='chat_session')
+    
 
     def __repr__(self):
         return f"<ChatSession {self.title}>"

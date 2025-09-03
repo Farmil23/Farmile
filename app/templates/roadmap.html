@@ -9,9 +9,9 @@
                 <p class="subtitle">Ikuti alur belajar ini untuk menguasai skill yang dibutuhkan.</p>
             </div>
             
-            <form action="{{ url_for('routes.change_career_path') }}" method="POST" class="career-path-selector">
+            <form action="{{ url_for('routes.change_career_path') }}" method="POST" class="career-path-selector" >
                 <label for="career_path_select">Ganti Jalur:</label>
-                <select name="new_path" id="career_path_select">
+                <select name="new_path" id="career_path_select" class="form-select" style= "margin: 0px 20px">
                     <option value="frontend" {% if current_user.career_path == 'frontend' %}selected{% endif %}>
                         Frontend Developer
                     </option>

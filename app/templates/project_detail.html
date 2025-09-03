@@ -1,121 +1,50 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="interview-layout">
-    
-    <aside class="interview-sidebar card">
-        <h3>Studi Kasus (Client Brief)</h3>
-        <hr>
-        <h4>🚀 Proyek: {{ project.title }}</h4>
-        <p class="subtitle" style="margin-top: -10px; font-size: 0.9rem;">
-            Tingkat Kesulitan: {{ project.difficulty or 'N/A' }}
-        </p>
-        <div class="brief-text">
-            {{ project.description or 'Deskripsi proyek belum tersedia.' }}
-        </div>
-        <hr>
-        <a href="{{ url_for('routes.select_project') }}" class="button-primary">Kerjakan & Submit Proyek</a>
-        <a href="{{ url_for('routes.roadmap') }}" class="button-secondary" style="margin-top: 10px;">Kembali ke Roadmap</a>
-    </aside>
+<main class="project-page-container">
+    <div class="project-info-panel">
+        <h1>{{ project.title }}</h1>
+        <p>{{ project.description }}</p>
 
-    <main class="interview-chat">
-        <div id="chat-history" class="chat-history">
-            {% for message in messages %}
-            <div class="chat-message {{ message.role }}">
-                <div class="message-bubble">
-                    <p>{{ message.content | safe }}</p>
-                </div>
+        <div class="project-details-grid">
+            <div class="detail-item">
+                <h4>Tujuan Proyek</h4>
+                <p>{{ project.project_goals }}</p>
             </div>
-            {% endfor %}
+            <div class="detail-item">
+                <h4>Teknologi</h4>
+                <p>{{ project.tech_stack }}</p>
+            </div>
+            <div class="detail-item">
+                <h4>Kriteria Penilaian</h4>
+                <p>{{ project.evaluation_criteria }}</p>
+            </div>
+            <div class="detail-item">
+                <h4>Sumber Daya</h4>
+                <p>{{ project.resources }}</p>
+            </div>
         </div>
-        <div class="chat-input-area">
-            <form id="chat-form">
-                <textarea id="message-input" placeholder="Tanya AI Mentor tentang proyek ini..." rows="1"></textarea>
-                <button type="submit" id="send-button" title="Kirim Pesan">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                </button>
+
+        <hr>
+
+        <div class="submission-section">
+            <h3>Ajukan Proyek Anda</h3>
+            <p>Silakan masukkan tautan proyek yang sudah Anda selesaikan.</p>
+            <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST">
+                <input type="url" name="project_link" placeholder="Masukkan link proyek Anda (GitHub, Figma, dsb.)" required>
+                <button type="submit" class="button-primary">Ajukan Proyek</button>
             </form>
         </div>
-    </main>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('chat-form');
-    const input = document.getElementById('message-input');
-    const history = document.getElementById('chat-history');
-    const sendButton = document.getElementById('send-button');
-    const sessionId = {{ session.id }};
-
-    // templates/interview.html -> <script>
-
-    const addMessageToHistory = (role, content) => {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${role}`;
+        <hr>
         
-        const bubbleDiv = document.createElement('div');
-        bubbleDiv.className = 'message-bubble';
-        
-        const p = document.createElement('p');
-        
-        if (role === 'assistant') {
-            // Untuk pesan dari AI, terjemahkan Markdown ke HTML
-            p.innerHTML = marked.parse(content); 
-        } else {
-            // Untuk pesan dari user, tetap gunakan textContent demi keamanan
-            p.textContent = content;
-        }
-        
-        bubbleDiv.appendChild(p);
-        messageDiv.appendChild(bubbleDiv);
-        history.appendChild(messageDiv);
-        history.scrollTop = history.scrollHeight;
-    };
-    const adjustTextareaHeight = () => {
-        input.style.height = 'auto';
-        input.style.height = (input.scrollHeight) + 'px'; 
-    };
-
-    const sendMessage = async () => {
-        const message = input.value.trim();
-        if (!message) return;
-
-        addMessageToHistory('user', message);
-        input.value = '';
-        adjustTextareaHeight();
-        input.disabled = true;
-        sendButton.disabled = true;
-
-        try {
-            const response = await fetch(`/chat-ai/${sessionId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message })
-            });
-            if (!response.ok) throw new Error('Gagal mendapatkan balasan.');
-            const data = await response.json();
-            addMessageToHistory('assistant', data.response);
-        } catch (error) {
-            addMessageToHistory('assistant', 'Maaf, terjadi kesalahan.');
-        } finally {
-            input.disabled = false;
-            sendButton.disabled = false;
-            input.focus();
-        }
-    };
-
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        sendMessage();
-    });
-
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-    
-    input.addEventListener('input', adjustTextareaHeight);
-});
-</script>
+        <div class="chat-section">
+            <h3>Butuh Bantuan?</h3>
+            {% if chat_session %}
+            <a href="{{ url_for('routes.chatbot_session', session_id=chat_session.id) }}" class="button-secondary">Lanjutkan Diskusi dengan AI Mentor</a>
+            {% else %}
+            <a href="{{ url_for('routes.create_project_chat', project_id=project.id) }}" class="button-secondary">Mulai Diskusi dengan AI Mentor</a>
+            {% endif %}
+        </div>
+    </div>
+</main>
 {% endblock %}

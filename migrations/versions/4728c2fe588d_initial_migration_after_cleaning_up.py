@@ -1,8 +1,8 @@
-"""Initial migration from existing models
+"""Initial migration after cleaning up
 
-Revision ID: 5810dceafc98
+Revision ID: 4728c2fe588d
 Revises: 
-Create Date: 2025-09-03 08:13:57.934540
+Create Date: 2025-09-03 21:09:15.242882
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5810dceafc98'
+revision = '4728c2fe588d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,6 +26,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('user',
+    sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('google_id', sa.String(length=100), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
@@ -38,17 +39,6 @@ def upgrade():
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('google_id')
     )
-    op.create_table('chat_session',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('title', sa.String(length=150), nullable=False),
-    sa.Column('timestamp', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('chat_session', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_chat_session_timestamp'), ['timestamp'], unique=False)
-
     op.create_table('module',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=True),
@@ -61,20 +51,6 @@ def upgrade():
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('chat_message',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('session_id', sa.Integer(), nullable=False),
-    sa.Column('role', sa.String(length=10), nullable=False),
-    sa.Column('content', sa.Text(), nullable=False),
-    sa.Column('timestamp', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['session_id'], ['chat_session.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('chat_message', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_chat_message_timestamp'), ['timestamp'], unique=False)
-
     op.create_table('learning_resource',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('module_id', sa.Integer(), nullable=False),
@@ -92,6 +68,8 @@ def upgrade():
     sa.Column('url', sa.String(length=500), nullable=True),
     sa.Column('lesson_type', sa.String(length=50), nullable=True),
     sa.Column('estimated_time', sa.Integer(), nullable=True),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('video_url', sa.String(length=500), nullable=True),
     sa.ForeignKeyConstraint(['module_id'], ['module.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -105,6 +83,19 @@ def upgrade():
     sa.ForeignKeyConstraint(['module_id'], ['module.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('chat_session',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('title', sa.String(length=150), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.Column('project_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('chat_session', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_chat_session_timestamp'), ['timestamp'], unique=False)
+
     op.create_table('project_submission',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('project_id', sa.Integer(), nullable=False),
@@ -130,28 +121,58 @@ def upgrade():
     with op.batch_alter_table('user_progress', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_user_progress_completed_at'), ['completed_at'], unique=False)
 
+    op.create_table('chat_message',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.Integer(), nullable=False),
+    sa.Column('role', sa.String(length=10), nullable=False),
+    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['session_id'], ['chat_session.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('chat_message', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_chat_message_timestamp'), ['timestamp'], unique=False)
+
+    op.create_table('interview_message',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('submission_id', sa.Integer(), nullable=False),
+    sa.Column('role', sa.String(length=10), nullable=False),
+    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['submission_id'], ['project_submission.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('interview_message', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_interview_message_timestamp'), ['timestamp'], unique=False)
+
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
+    with op.batch_alter_table('interview_message', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_interview_message_timestamp'))
+
+    op.drop_table('interview_message')
+    with op.batch_alter_table('chat_message', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_chat_message_timestamp'))
+
+    op.drop_table('chat_message')
     with op.batch_alter_table('user_progress', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_user_progress_completed_at'))
 
     op.drop_table('user_progress')
     op.drop_table('project_submission')
-    op.drop_table('project')
-    op.drop_table('lesson')
-    op.drop_table('learning_resource')
-    with op.batch_alter_table('chat_message', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_chat_message_timestamp'))
-
-    op.drop_table('chat_message')
-    op.drop_table('module')
     with op.batch_alter_table('chat_session', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_chat_session_timestamp'))
 
     op.drop_table('chat_session')
+    op.drop_table('project')
+    op.drop_table('lesson')
+    op.drop_table('learning_resource')
+    op.drop_table('module')
     op.drop_table('user')
     op.drop_table('roadmap')
     # ### end Alembic commands ###

@@ -3,18 +3,16 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, redirect, url_for, request # <-- Tambahkan url_for & request
+from flask import Flask, redirect, url_for, request
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, current_user # <-- Tambahkan current_user
+from flask_login import LoginManager, current_user
 from authlib.integrations.flask_client import OAuth
 from byteplussdkarkruntime import Ark
 from flask_migrate import Migrate
-
-# --- TAMBAHKAN IMPORT UNTUK FLASK-ADMIN ---
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-# -----------------------------------------
+from markupsafe import Markup
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -28,34 +26,50 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    from flask import redirect, url_for, request
+
     # --- MULAI KONFIGURASI FLASK-ADMIN ---
     
-    # 1. Buat class View yang aman untuk memastikan hanya user terautentikasi yang bisa akses
     class SecureModelView(ModelView):
         def is_accessible(self):
-            # Kembalikan True jika user sudah login
-            return current_user.is_authenticated
+            return current_user.is_authenticated and current_user.is_admin
 
         def inaccessible_callback(self, name, **kwargs):
-            # Redirect ke halaman login jika user belum login
-            return redirect(url_for('routes.login', next=request.url))
+            return redirect(url_for('routes.login'))
+    
+    class LessonView(SecureModelView):
+        column_list = ('id', 'title', 'order', 'module', 'module_id')
+        column_labels = {
+            'module': 'Modul',
+            'module_id': 'ID Modul'
+        }
+        
+    class ModuleView(SecureModelView):
+        column_list = ('id', 'title', 'description', 'order', 'career_path')
+        column_exclude_list = ['lessons', 'projects']
+        
+        def _list_formatter_lessons(view, context, model, name):
+            count = len(model.lessons) 
+            return Markup(f'<a href="{url_for("lesson.index_view", search=model.title)}">{count} pelajaran</a>')
+        
+        column_formatters = {
+            'lessons': _list_formatter_lessons
+        }
 
-    # 2. Inisialisasi Admin Panel
-    # Ganti template_mode ke 'bootstrap4' agar tampilannya lebih modern
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4')
 
-    # 3. Impor semua model yang ingin kamu kelola
     from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission
 
-    # 4. Tambahkan setiap model ke Admin Panel menggunakan SecureModelView
     admin.add_view(SecureModelView(User, db.session))
     admin.add_view(SecureModelView(Roadmap, db.session))
-    admin.add_view(SecureModelView(Module, db.session))
-    admin.add_view(SecureModelView(Lesson, db.session))
+    
+    admin.add_view(ModuleView(Module, db.session, name='Modules'))
+    admin.add_view(LessonView(Lesson, db.session))
+    
     admin.add_view(SecureModelView(Project, db.session))
-    admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions")) # Kita bisa custom nama
+    admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions"))
 
-    # --- SELESAI KONFIGURASI FLASK-ADMIN ---`
+    # --- SELESAI KONFIGURASI FLASK-ADMIN ---
     
     global ark_client
     try:
@@ -81,10 +95,16 @@ def create_app(config_class=Config):
         client_kwargs={'scope': 'openid email profile'}
     )
 
+    with app.app_context():
+        admin_user = User.query.filter_by(email='farmiljobs@gmail.com').first()
+        if admin_user and not admin_user.is_admin:
+            admin_user.is_admin = True
+            db.session.commit()
+            app.logger.info("User 'farmiljobs@gmail.com' berhasil diatur sebagai admin.")
+
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)
     
-    # Konfigurasi Logger
     if not app.debug and not app.testing:
         if not os.path.exists('logs'):
             os.mkdir('logs')
@@ -95,7 +115,6 @@ def create_app(config_class=Config):
         app.logger.addHandler(file_handler)
         app.logger.setLevel(logging.INFO)
         app.logger.info('Farsight app startup')
-
 
     return app
 

@@ -202,44 +202,33 @@ def lesson_detail(lesson_id):
 
 # app/routes.py
 
+# app/routes.py
+
+# app/routes.py
+# app/routes.py
+
 @bp.route('/project/<int:project_id>')
 @login_required
 def project_detail(project_id):
     project = Project.query.get_or_404(project_id)
+
+    # Logika otorisasi
     if project.module.career_path != current_user.career_path and (project.module.user_id != current_user.id and project.module.user_id is not None):
         abort(403)
-
-    # Cek atau buat sesi chat untuk proyek ini
-    if not project.chat_session:
-        # Buat sesi chat baru
-        new_session = ChatSession(
-            user_id=current_user.id,
-            title=f"Diskusi Proyek: {project.title}"
-        )
-        db.session.add(new_session)
         
-        # Buat pesan pembuka dari AI
-        welcome_message = ChatMessage(
-            session=new_session,
-            user_id=current_user.id,
-            role='assistant',
-            content=f"Halo! Selamat datang di ruang diskusi untuk proyek '{project.title}'. Aku di sini untuk membantumu. Apa ada bagian dari brief proyek ini yang ingin kamu diskusikan lebih dulu?"
-        )
-        db.session.add(welcome_message)
-        
-        # Hubungkan sesi baru ini dengan proyek
-        project.chat_session = new_session
-        db.session.commit()
+    # Ambil sesi chat yang sudah ada, tapi jangan alihkan
+    chat_session = ChatSession.query.filter_by(
+        user_id=current_user.id,
+        project_id=project.id
+    ).first()
 
-    # Ambil sesi dan semua pesannya
-    session = project.chat_session
-    messages = session.messages.order_by(ChatMessage.timestamp.asc()).all()
+    # Perubahan utama: Render halaman detail proyek dan lewati data
+    return render_template(
+        'project_detail.html',
+        project=project,
+        chat_session=chat_session # Lewatkan sesi chat jika sudah ada
+    )
 
-    return render_template('project_detail.html', 
-                           title=project.title, 
-                           project=project,
-                           session=session,
-                           messages=messages)
 
 @bp.route('/complete-lesson/<int:lesson_id>', methods=['POST'])
 @login_required
@@ -391,16 +380,77 @@ def challenge_projects():
     return render_template('challenge_projects.html', title="Tantangan Proyek", projects=challenge_projects)
 
 
+# app/routes.py
+
 @bp.route('/submit-project/<int:project_id>', methods=['POST'])
 @login_required
 def submit_project(project_id):
     project = Project.query.get_or_404(project_id)
     project_link = request.form.get('project_link')
+    
+    # Cek apakah pengguna sudah submit proyek ini
+    existing_submission = ProjectSubmission.query.filter_by(
+        user_id=current_user.id,
+        project_id=project.id
+    ).first()
+
+    if existing_submission:
+        flash(f"Anda sudah mengajukan proyek '{project.title}' sebelumnya.", 'warning')
+        return redirect(url_for('routes.my_projects'))
+        
     submission = ProjectSubmission(project_id=project.id, user_id=current_user.id, project_link=project_link)
     db.session.add(submission)
     db.session.commit()
     flash(f"Proyek '{project.title}' berhasil disubmit!", 'success')
     return redirect(url_for('routes.my_projects'))
+
+
+
+
+@bp.route('/create-project-chat/<int:project_id>', methods=['GET'])
+@login_required
+def create_project_chat(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check if a chat session for this project already exists for the user
+    chat_session = ChatSession.query.filter_by(
+        user_id=current_user.id,
+        project_id=project.id
+    ).first()
+
+    # If not, create a new one
+    if not chat_session:
+        new_session = ChatSession(
+            user_id=current_user.id,
+            title=f"Diskusi Proyek: {project.title}",
+            project_id=project.id
+        )
+        
+        # Buat pesan sambutan yang lengkap
+        welcome_content = (
+            f"Halo! Selamat datang di ruang diskusi untuk proyek '{project.title}'.\n\n"
+            f"**Deskripsi Proyek:**\n{project.description if project.description else 'Tidak ada deskripsi.'}\n\n"
+            f"**Tujuan Proyek:**\n{project.project_goals if project.project_goals else 'Tidak ada tujuan.'}\n\n"
+            f"**Teknologi:**\n{project.tech_stack if project.tech_stack else 'Tidak disebutkan.'}\n\n"
+            f"**Kriteria Penilaian:**\n{project.evaluation_criteria if project.evaluation_criteria else 'Tidak disebutkan.'}\n\n"
+            f"**Sumber Daya:**\n{project.resources if project.resources else 'Tidak disebutkan.'}\n\n"
+            f"Aku di sini untuk membantumu. Apa ada bagian dari brief proyek ini yang ingin kamu diskusikan lebih dulu?"
+        )
+        
+        welcome_message = ChatMessage(
+            session=new_session,
+            user_id=current_user.id,
+            role='assistant',
+            content=welcome_content
+        )
+        
+        db.session.add(new_session)
+        db.session.add(welcome_message)
+        db.session.commit()
+        chat_session = new_session
+
+    # Redirect to the main chatbot session page
+    return redirect(url_for('routes.chatbot_session', session_id=chat_session.id))
 
 
 
@@ -494,63 +544,49 @@ def cancel_submission(submission_id):
 # ===============================================
 # RUTE CHATBOT
 # ===============================================
+# app/routes.py
+
+# app/routes.py
+
 @bp.route('/chatbot')
 @login_required
 def chatbot():
-    # Ambil session terbaru milik user
-    latest_session = (
+    # Cari sesi chat umum terbaru milik user (project_id = None)
+    latest_general_session = (
         ChatSession.query
-        .filter_by(user_id=current_user.id)
+        .filter_by(user_id=current_user.id, project_id=None)
         .order_by(ChatSession.timestamp.desc())
         .first()
     )
 
-    if latest_session:
-        # Kalau belum ada pesan → tambahin welcome message
-        if not latest_session.messages:
-            welcome_message = ChatMessage(
-                session_id=latest_session.id,
-                user_id=current_user.id,
-                role='assistant',
-                content=(
-                    f"Halo {current_user.name.split()[0]}! 😎✌️\n"
-                    f"Welcome back di dashboard Alur Belajar "
-                    f"{current_user.career_path.replace('-', ' ').title() if current_user.career_path else 'Explorer'}! 🎉\n\n"
-                    f"Kamu sekarang ada di semester "
-                    f"{current_user.semester if current_user.semester else 'misterius 🤔'}.\n"
-                    f"Keep going, jangan lupa tiap progress kecil itu berarti banget! 💡🔥\n\n"
-                    f"Mau lanjut ngulik apa hari ini?"
-                )
-            )
-            db.session.add(welcome_message)
-            db.session.commit()
-
-        return redirect(url_for('routes.chatbot_session', session_id=latest_session.id))
-
+    if latest_general_session:
+        # Jika ada, arahkan ke sesi tersebut
+        return redirect(url_for('routes.chatbot_session', session_id=latest_general_session.id))
     else:
-        # Kalau belum ada session sama sekali → buat baru
-        new_session = ChatSession(user_id=current_user.id, title="Perkenalan")
+        # Jika belum ada, buat sesi umum baru
+        new_session = ChatSession(
+            user_id=current_user.id, 
+            title="Percakapan Umum",
+            project_id=None # <-- Penting: tandai sebagai sesi umum
+        )
         db.session.add(new_session)
         db.session.flush()
 
+        # Tambahkan pesan pembuka
         welcome_message = ChatMessage(
             session_id=new_session.id,
             user_id=current_user.id,
             role='assistant',
             content=(
                 f"Halo {current_user.name.split()[0]}! 👋 Aku Farmile, mentor AI kamu.\n\n"
-                f"Aku lihat kamu lagi di jalur **{current_user.career_path.replace('-', ' ').title() if current_user.career_path else 'Explorer'}** "
-                f"dan sekarang ada di semester **{current_user.semester if current_user.semester else 'belum ditentukan'}**. 🎓\n\n"
                 f"Siap bantuin apa hari ini? 🚀"
             )
         )
-
         db.session.add(welcome_message)
         db.session.commit()
 
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
-
-
+    
 @bp.route('/chatbot/new', methods=['POST'])
 @login_required
 def new_chat_session():
