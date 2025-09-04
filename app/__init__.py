@@ -1,5 +1,3 @@
-# app/__init__.py
-
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -95,12 +93,9 @@ def create_app(config_class=Config):
         client_kwargs={'scope': 'openid email profile'}
     )
 
-    with app.app_context():
-        admin_user = User.query.filter_by(email='farmiljobs@gmail.com').first()
-        if admin_user and not admin_user.is_admin:
-            admin_user.is_admin = True
-            db.session.commit()
-            app.logger.info("User 'farmiljobs@gmail.com' berhasil diatur sebagai admin.")
+    # Daftarkan perintah CLI kustom yang telah kita buat
+    from app import commands
+    app.cli.add_command(commands.ensure_admin)
 
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)

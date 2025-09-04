@@ -1,8 +1,8 @@
-"""Initial migration after cleaning up
+"""empty message
 
-Revision ID: 4728c2fe588d
+Revision ID: 418e1433ae72
 Revises: 
-Create Date: 2025-09-03 21:09:15.242882
+Create Date: 2025-09-04 13:48:29.576170
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '4728c2fe588d'
+revision = '418e1433ae72'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -80,6 +80,10 @@ def upgrade():
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('difficulty', sa.String(length=50), nullable=True),
     sa.Column('is_challenge', sa.Boolean(), nullable=False),
+    sa.Column('project_goals', sa.Text(), nullable=True),
+    sa.Column('tech_stack', sa.Text(), nullable=True),
+    sa.Column('evaluation_criteria', sa.Text(), nullable=True),
+    sa.Column('resources', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['module_id'], ['module.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -95,6 +99,19 @@ def upgrade():
     )
     with op.batch_alter_table('chat_session', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_chat_session_timestamp'), ['timestamp'], unique=False)
+
+    op.create_table('coding_session',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('project_id', sa.Integer(), nullable=False),
+    sa.Column('title', sa.String(length=200), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('coding_session', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_coding_session_timestamp'), ['timestamp'], unique=False)
 
     op.create_table('project_submission',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -135,6 +152,19 @@ def upgrade():
     with op.batch_alter_table('chat_message', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_chat_message_timestamp'), ['timestamp'], unique=False)
 
+    op.create_table('code_file',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('session_id', sa.Integer(), nullable=False),
+    sa.Column('filename', sa.String(length=100), nullable=False),
+    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('language', sa.String(length=50), nullable=True),
+    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['session_id'], ['coding_session.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('code_file', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_code_file_timestamp'), ['timestamp'], unique=False)
+
     op.create_table('interview_message',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('submission_id', sa.Integer(), nullable=False),
@@ -156,6 +186,10 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_interview_message_timestamp'))
 
     op.drop_table('interview_message')
+    with op.batch_alter_table('code_file', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_code_file_timestamp'))
+
+    op.drop_table('code_file')
     with op.batch_alter_table('chat_message', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_chat_message_timestamp'))
 
@@ -165,6 +199,10 @@ def downgrade():
 
     op.drop_table('user_progress')
     op.drop_table('project_submission')
+    with op.batch_alter_table('coding_session', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_coding_session_timestamp'))
+
+    op.drop_table('coding_session')
     with op.batch_alter_table('chat_session', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_chat_session_timestamp'))
 

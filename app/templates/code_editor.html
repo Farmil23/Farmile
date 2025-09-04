@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="code-editor-container">
+    <div class="code-editor-header">
+        <h2>{{ coding_session.title }}</h2>
+        <div class="editor-actions">
+            <form id="submitForm" action="{{ url_for('routes.submit_from_editor', session_id=coding_session.id) }}" method="POST">
+                <button type="submit" class="button-primary">Ajukan Proyek</button>
+            </form>
+            <button id="saveFileBtn" class="button-secondary">Simpan</button>
+        </div>
+    </div>
+
+    <div class="code-editor-main">
+        <div class="file-tree-panel">
+            <h3>File Explorer</h3>
+            <ul id="fileList">
+                {% for file in files %}
+                <li data-id="{{ file.id }}" data-filename="{{ file.filename }}" data-content="{{ file.content | e }}" class="file-item">
+                    <span class="filename">{{ file.filename }}</span>
+                    <button class="delete-btn" title="Hapus file">&times;</button>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="file-actions">
+                <input type="text" id="newFilenameInput" placeholder="nama_file.py">
+                <button id="addFileBtn" class="button-secondary">+</button>
+            </div>
+        </div>
+        <div class="editor-panel">
+            <textarea id="codeEditor"></textarea>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/codemirror.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/codemirror.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/mode/python/python.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/mode/javascript/javascript.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/mode/htmlmixed/htmlmixed.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        lineNumbers: true,
+        mode: "python",
+        theme: "default"
+    });
+
+    const fileList = document.getElementById('fileList');
+    const addFileBtn = document.getElementById('addFileBtn');
+    const newFilenameInput = document.getElementById('newFilenameInput');
+    const saveFileBtn = document.getElementById('saveFileBtn');
+    
+    let currentFile = null;
+    let currentFileId = null;
+
+    const loadFileContent = (liElement) => {
+        const filename = liElement.dataset.filename;
+        const content = liElement.dataset.content;
+        const fileId = liElement.dataset.id;
+        
+        editor.setValue(content);
+        currentFile = filename;
+        currentFileId = fileId;
+
+        document.querySelectorAll('.file-item').forEach(item => item.classList.remove('active'));
+        liElement.classList.add('active');
+        
+        const ext = filename.split('.').pop();
+        if (ext === 'py') editor.setOption('mode', 'python');
+        else if (ext === 'js') editor.setOption('mode', 'javascript');
+        else if (ext === 'html') editor.setOption('mode', 'htmlmixed');
+        else editor.setOption('mode', 'default');
+    };
+    
+    // --- EVENT LISTENERS ---
+
+    // Menangani klik pada daftar file (pilih file ATAU hapus file)
+    fileList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const fileItem = e.target.closest('.file-item');
+            handleDeleteFile(fileItem);
+        } else {
+            const fileItem = e.target.closest('.file-item');
+            if(fileItem) loadFileContent(fileItem);
+        }
+    });
+
+    // Menangani double click untuk RENAME
+    fileList.addEventListener('dblclick', (e) => {
+        const fileItem = e.target.closest('.file-item');
+        if (fileItem) handleRenameFile(fileItem);
+    });
+
+    // Menambah file baru
+    addFileBtn.addEventListener('click', async () => {
+        const newFilename = newFilenameInput.value.trim();
+        if (!newFilename) {
+            alert("Nama file tidak boleh kosong.");
+            return;
+        }
+        await handleSaveFile(newFilename, "", true); // isNewFile = true
+    });
+
+    // Menyimpan file yang sedang aktif
+    saveFileBtn.addEventListener('click', async () => {
+        if (currentFile) {
+            await handleSaveFile(currentFile, editor.getValue());
+        } else {
+            alert("Silakan pilih atau buat file terlebih dahulu.");
+        }
+    });
+    
+    // --- ACTION HANDLERS ---
+
+    const handleSaveFile = async (filename, content, isNewFile = false) => {
+        const saveUrl = "{{ url_for('routes.save_code', session_id=coding_session.id) }}";
+        saveFileBtn.disabled = true;
+        saveFileBtn.textContent = 'Menyimpan...';
+
+        try {
+            const response = await fetch(saveUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename, content })
+            });
+            const result = await response.json();
+            if (response.ok && result.status === 'success') {
+                if (isNewFile) {
+                    location.reload();
+                } else {
+                    document.querySelector(`[data-id='${currentFileId}']`).dataset.content = content;
+                    alert("Perubahan berhasil disimpan!");
+                }
+            } else {
+                alert(`Gagal: ${result.message || 'Error tidak diketahui'}`);
+            }
+        } catch (error) {
+            console.error('Error saat menyimpan:', error);
+            alert('Terjadi kesalahan jaringan.');
+        } finally {
+            saveFileBtn.disabled = false;
+            saveFileBtn.textContent = 'Simpan';
+        }
+    };
+
+    const handleDeleteFile = async (fileItem) => {
+        const fileId = fileItem.dataset.id;
+        const filename = fileItem.dataset.filename;
+
+        if (confirm(`Anda yakin ingin menghapus file "${filename}"?`)) {
+            try {
+                const response = await fetch(`{{ url_for('routes.delete_file', file_id=0) }}`.replace('0', fileId), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (response.ok && result.status === 'success') {
+                    location.reload();
+                } else {
+                    alert(`Gagal menghapus: ${result.message || 'Error tidak diketahui'}`);
+                }
+            } catch (error) {
+                console.error('Error saat menghapus:', error);
+                alert('Terjadi kesalahan jaringan.');
+            }
+        }
+    };
+
+    const handleRenameFile = async (fileItem) => {
+        const fileId = fileItem.dataset.id;
+        const currentFilename = fileItem.dataset.filename;
+        const newFilename = prompt("Masukkan nama file baru:", currentFilename);
+
+        if (newFilename && newFilename.trim() !== currentFilename) {
+            try {
+                const response = await fetch(`{{ url_for('routes.rename_file', file_id=0) }}`.replace('0', fileId), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: newFilename.trim() })
+                });
+                const result = await response.json();
+                 if (response.ok && result.status === 'success') {
+                    location.reload();
+                } else {
+                    alert(`Gagal mengubah nama: ${result.message || 'Error tidak diketahui'}`);
+                }
+            } catch (error) {
+                console.error('Error saat mengubah nama:', error);
+                alert('Terjadi kesalahan jaringan.');
+            }
+        }
+    };
+    
+    // Muat file pertama secara default saat halaman dibuka
+    const firstFile = fileList.querySelector('.file-item');
+    if (firstFile) {
+        loadFileContent(firstFile);
+    }
+});
+</script>
+
+<style>
+/* CSS Sederhana untuk Code Editor */
+.code-editor-container { display: flex; flex-direction: column; height: 85vh; padding: 20px; background-color: #f4f7f9; }
+.code-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.editor-actions { display: flex; gap: 10px; }
+.code-editor-main { display: flex; flex: 1; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+.file-tree-panel { width: 250px; background-color: #fff; border-right: 1px solid #ddd; padding: 15px; flex-shrink: 0; display: flex; flex-direction: column; }
+.file-tree-panel h3 { margin-top: 0; }
+.file-tree-panel ul { list-style: none; padding: 0; margin: 0; flex-grow: 1; overflow-y: auto; }
+.file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; border-radius: 4px; transition: background-color 0.2s; }
+.file-item:hover { background-color: #eef; }
+.file-item.active { background-color: #e0eaff; font-weight: bold; }
+.filename { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.delete-btn { background: none; border: none; color: #aaa; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 5px; display: none; }
+.file-item:hover .delete-btn { display: inline-block; }
+.delete-btn:hover { color: #f00; }
+.file-actions { margin-top: 15px; display: flex; gap: 5px; }
+#newFilenameInput { flex-grow: 1; }
+.editor-panel { flex: 1; position: relative; }
+.CodeMirror { height: 100%; border-radius: 0 8px 8px 0; font-size: 16px; }
+</style>
+
+{% endblock %}

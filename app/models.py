@@ -100,6 +100,51 @@ class Module(db.Model):
         return f"<Module {self.title}>"
 
 
+
+
+
+
+
+
+
+class CodingSession(db.Model):
+    __tablename__ = 'coding_session'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='coding_sessions', lazy=True)
+    project = db.relationship('Project', backref='coding_sessions', lazy=True)
+    files = db.relationship('CodeFile', backref='session', lazy='dynamic', cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<CodingSession {self.title}>"
+
+class CodeFile(db.Model):
+    __tablename__ = 'code_file'
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('coding_session.id'), nullable=False)
+    filename = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    language = db.Column(db.String(50), nullable=True)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<CodeFile {self.filename}>"
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
 class Lesson(db.Model):
     __tablename__ = "lesson"
 

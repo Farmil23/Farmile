@@ -4260,19 +4260,30 @@ textarea#chat-input::placeholder {
 
 
 
-/* app/static/css/style.css -> Tambahkan di paling bawah */
 
-/* Style untuk blok kode di dalam chat bubble */
-.message-bubble pre {
-    background-color: #111; /* Warna latar lebih gelap */
-    padding: 16px;
-    border-radius: 8px;
-    overflow-x: auto; /* Bisa di-scroll horizontal jika kode panjang */
-    border: 1px solid #444;
-}
 
-.message-bubble code {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.9rem;
-    color: #c9d1d9; /* Warna teks kode */
-}
+.input-link-project {
+    width: 100%;
+    max-width: 500px;
+    padding: 12px 16px;
+    margin: 8px 12px;
+    border: 1.5px solid #374151;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: system-ui, sans-serif;
+    transition: all 0.25s ease;
+    outline: none;
+    background: #1f2937; /* abu gelap */
+    color: #f9fafb;       /* putih keabu-abuan */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  
+  .input-link-project:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.35);
+  }
+  
+  .input-link-project::placeholder {
+    color: #9ca3af;
+    font-size: 14px;
+  }

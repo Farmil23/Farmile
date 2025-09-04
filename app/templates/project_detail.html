@@ -30,10 +30,20 @@
             <h3>Ajukan Proyek Anda</h3>
             <p>Silakan masukkan tautan proyek yang sudah Anda selesaikan.</p>
             <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST">
-                <input type="url" name="project_link" placeholder="Masukkan link proyek Anda (GitHub, Figma, dsb.)" required>
+                <input class="input-link-project" type="url" name="project_link" placeholder="Masukkan link proyek Anda (GitHub, Figma, dsb.)" required>
                 <button type="submit" class="button-primary">Ajukan Proyek</button>
             </form>
         </div>
+
+        <div class="coding-section">
+            <h3>Kerjakan Proyek Langsung</h3>
+            {% if coding_session %}
+            <a href="{{ url_for('routes.code_editor', session_id=coding_session.id) }}" class="button-primary">Lanjutkan Coding</a>
+            {% else %}
+            <a href="{{ url_for('routes.start_coding', project_id=project.id) }}" class="button-primary">Mulai Sesi Coding</a>
+            {% endif %}
+        </div>
+        
 
         <hr>
         

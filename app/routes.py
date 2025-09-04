@@ -1,12 +1,24 @@
-# app/routes.py (Versi Final, Lengkap, dan Terstruktur)
+# app/routes.py
 from flask import (render_template, redirect, url_for, request, Blueprint, 
                    abort, flash, jsonify, current_app)
-from flask_login import current_user, login_required, login_user, logout_user
+from flask_login import current_user, login_required, logout_user
 import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
-                        ChatSession, Module, Lesson, UserProgress, InterviewMessage) # <-- Tambahkan di sini
+                        ChatSession, Module, Lesson, UserProgress, 
+                        InterviewMessage, CodingSession, CodeFile) # <-- HARUS ADA INI
+from sqlalchemy.orm import subqueryload
 
+
+
+
+from flask import Blueprint, render_template, redirect, url_for, flash
+from flask_login import current_user, login_user, logout_user 
+
+
+bp = Blueprint('routes', __name__)
+# ... sisa kode routes.py ...
+from datetime import datetime
 
 # app/routes.py -> di bagian atas
 from sqlalchemy.orm import subqueryload
@@ -212,10 +224,18 @@ def lesson_detail(lesson_id):
 def project_detail(project_id):
     project = Project.query.get_or_404(project_id)
 
+    
     # Logika otorisasi
     if project.module.career_path != current_user.career_path and (project.module.user_id != current_user.id and project.module.user_id is not None):
         abort(403)
-        
+    
+    
+    # Dapatkan sesi coding yang sudah ada
+    coding_session = CodingSession.query.filter_by(
+        user_id=current_user.id,
+        project_id=project.id
+    ).first()
+    
     # Ambil sesi chat yang sudah ada, tapi jangan alihkan
     chat_session = ChatSession.query.filter_by(
         user_id=current_user.id,
@@ -223,10 +243,12 @@ def project_detail(project_id):
     ).first()
 
     # Perubahan utama: Render halaman detail proyek dan lewati data
+    # Perubahan utama: kirim data coding_session juga
     return render_template(
         'project_detail.html',
         project=project,
-        chat_session=chat_session # Lewatkan sesi chat jika sudah ada
+        chat_session=chat_session,
+        coding_session=coding_session # <-- Lewatkan sesi coding jika sudah ada
     )
 
 
@@ -486,6 +508,16 @@ def interview_ai(submission_id):
     user_message = InterviewMessage(submission_id=submission_id, role='user', content=user_message_content)
     db.session.add(user_message)
     
+    submitted_code_content = ""
+    if 'code_submission' in submission.project_link:
+        session_id = int(submission.project_link.split('/')[4])
+        coding_session = CodingSession.query.get(session_id)
+        if coding_session:
+            files = coding_session.files.all()
+            for file in files:
+                submitted_code_content += f"\n--- {file.filename} ---\n{file.content}\n"
+    
+    
     # 2. Siapkan prompt untuk AI dengan konteks proyek
     project_context = f"""
     Judul Proyek: {submission.project.title}
@@ -741,3 +773,143 @@ def chat_ai(session_id):
         db.session.rollback()
         current_app.logger.error(f"BytePlus API Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI, silakan coba lagi.'}), 500
+    
+    
+    
+
+# ===============================================
+# RUTE CODE EDITOR (VERSI LENGKAP)
+# ===============================================
+
+@bp.route('/start-coding/<int:project_id>', methods=['GET'])
+@login_required
+def start_coding(project_id):
+    project = Project.query.get_or_404(project_id)
+    coding_session = CodingSession.query.filter_by(user_id=current_user.id, project_id=project.id).first()
+
+    if not coding_session:
+        coding_session = CodingSession(
+            user_id=current_user.id,
+            project_id=project.id,
+            title=f"Sesi Coding: {project.title}"
+        )
+        db.session.add(coding_session)
+        db.session.commit()
+        flash('Sesi coding baru telah dimulai!', 'success')
+
+    return redirect(url_for('routes.code_editor', session_id=coding_session.id))
+
+
+@bp.route('/code-editor/<int:session_id>')
+@login_required
+def code_editor(session_id):
+    coding_session = CodingSession.query.get_or_404(session_id)
+    if coding_session.user_id != current_user.id:
+        abort(403)
+    
+    files = coding_session.files.order_by(CodeFile.filename).all()
+
+    return render_template(
+        'code_editor.html',
+        title=f"Coding: {coding_session.project.title}",
+        coding_session=coding_session,
+        files=files
+    )
+
+
+@bp.route('/save-code/<int:session_id>', methods=['POST'])
+@login_required
+def save_code(session_id):
+    coding_session = CodingSession.query.get_or_404(session_id)
+    if coding_session.user_id != current_user.id:
+        abort(403)
+
+    data = request.get_json()
+    filename = data.get('filename')
+    content = data.get('content')
+
+    if not filename:
+        return jsonify({'status': 'error', 'message': 'Nama file dibutuhkan'}), 400
+
+    code_file = CodeFile.query.filter_by(session_id=session_id, filename=filename).first()
+
+    if code_file:
+        code_file.content = content
+    else:
+        code_file = CodeFile(session_id=session_id, filename=filename, content=content)
+        db.session.add(code_file)
+    
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': f'File {filename} berhasil disimpan!'})
+
+
+@bp.route('/rename-file/<int:file_id>', methods=['POST'])
+@login_required
+def rename_file(file_id):
+    code_file = CodeFile.query.get_or_404(file_id)
+    if code_file.session.user_id != current_user.id:
+        abort(403)
+
+    new_filename = request.get_json().get('filename', '').strip()
+    if not new_filename:
+        return jsonify({'status': 'error', 'message': 'Nama file baru tidak boleh kosong'}), 400
+
+    # Cek duplikat
+    existing_file = CodeFile.query.filter(
+        CodeFile.session_id == code_file.session_id,
+        CodeFile.filename == new_filename,
+        CodeFile.id != file_id
+    ).first()
+    if existing_file:
+        return jsonify({'status': 'error', 'message': f'Nama file "{new_filename}" sudah ada.'}), 400
+
+    code_file.filename = new_filename
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': 'Nama file berhasil diubah.'})
+
+
+@bp.route('/delete-file/<int:file_id>', methods=['POST'])
+@login_required
+def delete_file(file_id):
+    code_file = CodeFile.query.get_or_404(file_id)
+    if code_file.session.user_id != current_user.id:
+        abort(403)
+    
+    db.session.delete(code_file)
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': 'File berhasil dihapus.'})
+
+# Pastikan fungsi ini ADA di dalam app/routes.py
+
+@bp.route('/submit-from-editor/<int:session_id>', methods=['POST'])
+@login_required
+def submit_from_editor(session_id):
+    coding_session = CodingSession.query.get_or_404(session_id)
+    if coding_session.user_id != current_user.id:
+        abort(403)
+
+    project = coding_session.project
+
+    # Cek apakah sudah ada submission untuk proyek ini
+    existing_submission = ProjectSubmission.query.filter_by(
+        user_id=current_user.id,
+        project_id=project.id
+    ).first()
+
+    if existing_submission:
+        flash(f"Anda sudah pernah submit proyek '{project.title}'.", 'warning')
+        return redirect(url_for('routes.my_projects'))
+
+    # Buat link internal yang menunjuk ke sesi coding
+    internal_link = url_for('routes.code_editor', session_id=session_id, _external=True)
+
+    submission = ProjectSubmission(
+        project_id=project.id,
+        user_id=current_user.id,
+        project_link=internal_link
+    )
+    db.session.add(submission)
+    db.session.commit()
+
+    flash(f"Kode untuk proyek '{project.title}' berhasil disubmit!", 'success')
+    return redirect(url_for('routes.my_projects'))
