@@ -778,7 +778,10 @@ def event_to_dict(event):
         'description': event.description,
         'start': event.start_time.isoformat(),
         'end': event.end_time.isoformat() if event.end_time else None,
-        'link': event.link
+        'link': event.link,
+        
+        'color': event.color # <-- TAMBAHKAN INI
+        
     }
 
 # --- API Endpoints untuk TASK ---
@@ -882,7 +885,8 @@ def create_event():
         description=data.get('description'),
         start_time=datetime.fromisoformat(data['start']),
         end_time=datetime.fromisoformat(data['end']) if data.get('end') else None,
-        link=data.get('link')
+        link=data.get('link'),
+        color=data.get('color', '#3788d8')
     )
     db.session.add(event)
     db.session.commit()
@@ -897,13 +901,13 @@ def personal_hub():
 @bp.route('/api/hub/events/<int:event_id>', methods=['PUT'])
 @login_required
 def update_event(event_id):
-    """Mengedit acara yang sudah ada."""
     event = Event.query.filter_by(id=event_id, author=current_user).first_or_404()
     data = request.get_json()
-
+    
     event.title = data.get('title', event.title)
     event.description = data.get('description', event.description)
     event.link = data.get('link', event.link)
+    event.color = data.get('color', event.color) # <-- TAMBAHKAN INI
     if data.get('start'):
         event.start_time = datetime.fromisoformat(data['start'])
     if data.get('end'):

@@ -140,6 +140,7 @@ class Event(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=True)
     link = db.Column(db.String(500), nullable=True) # Untuk link Zoom/GMeet
+    color = db.Column(db.String(7), nullable=True, default='#3788d8') # Warna default biru FullCalendar
 
     def __repr__(self):
         return f"<Event {self.title}>"

@@ -4334,3 +4334,48 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 /* STYLING CODEMIRROR & BUTTON */
 .CodeMirror { height: 100%; background-color: #1e1e1e; font-size: 15px; }
 .button-primary, .button-secondary { font-size: 13px; }
+
+
+/* File: app/templates/personal_hub.html */
+
+/* ================================================= */
+/* === CSS KHUSUS UNTUK FLATPCIKR DARK THEME === */
+/* ================================================= */
+.flatpickr-calendar {
+    background-color: #2d2d2d;
+    border-radius: 5px;
+    border: 1px solid #444;
+    color: #000000;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+    background: #094771;
+    border-color: #094771;
+}
+.flatpickr-day:hover {
+    background: #3a3d3e;
+}
+.flatpickr-day.today {
+    border-color: #569ff7;
+}
+.flatpickr-time, .flatpickr-months .flatpickr-month, .flatpickr-weekdays {
+    background-color: #2d2d2d;
+}
+span.flatpickr-weekday {
+    color: #aaa;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months, .numInputWrapper .numInput {
+    background-color: transparent;
+    color: #d4d4d4;
+}
+.flatpickr-time .flatpickr-time-separator, .flatpickr-time .flatpickr-am-pm {
+    color: #d4d4d4;
+}
+.flatpickr-time input.flatpickr-hour, .flatpickr-time input.flatpickr-minute {
+    color: #d4d4d4;
+}
+.flatpickr-input {
+    background-color: #252526 !important;
+    color: #d4d4d4 !important;
+    border: 1px solid #444 !important;
+}

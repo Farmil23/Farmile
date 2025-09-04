@@ -8,8 +8,8 @@
 
     <div class="details-sidebar-panel card">
         <div class="sidebar-header">
-            <h3 id="sidebar-date">Pilih Tanggal</h3>
-            <button id="add-event-btn" class="button-primary" style="display: none;">+ Acara Baru</button>
+            <h3>Agenda Hari Ini</h3>
+            <span id="sidebar-date-today" class="text-secondary"></span>
         </div>
         <div class="sidebar-content">
             <div id="sidebar-events" class="sidebar-section">
@@ -24,41 +24,46 @@
     </div>
 </div>
 
-<div id="taskModal" class="modal-overlay">
-    <div class="modal-box card">
-        <h3 id="taskModalTitle">Tugas Baru</h3>
-        <form id="taskForm">
-            <input type="hidden" id="taskId">
-            <div class="form-group"><label for="taskTitle">Judul Tugas</label><input type="text" id="taskTitle" required></div>
-            <div class="form-group"><label for="taskDescription">Deskripsi</label><textarea id="taskDescription"></textarea></div>
-            <div class="form-group"><label for="taskDueDate">Tenggat Waktu</label><input type="datetime-local" id="taskDueDate"></div>
-            <div class="form-group">
-                <label for="taskPriority">Prioritas</label>
-                <select id="taskPriority">
-                    <option value="medium">Medium</option><option value="low">Low</option><option value="high">High</option><option value="urgent">Urgent</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="modal-close-btn button-secondary">Batal</button>
-                <button type="submit" class="button-primary">Simpan</button>
-                <button type="button" id="taskDeleteBtn" class="button-danger" style="display: none;">Hapus</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <div id="eventModal" class="modal-overlay">
     <div class="modal-box card">
         <h3 id="eventModalTitle">Acara Baru</h3>
         <form id="eventForm">
             <input type="hidden" id="eventId">
-            <div class="form-group"><label for="eventTitle">Judul Acara</label><input type="text" id="eventTitle" required></div>
-            <div class="form-group"><label for="eventDescription">Deskripsi</label><textarea id="eventDescription"></textarea></div>
-            <div class="form-group-row">
-                <div class="form-group"><label for="eventStartTime">Waktu Mulai</label><input type="datetime-local" id="eventStartTime" required></div>
-                <div class="form-group"><label for="eventEndTime">Waktu Selesai</label><input type="datetime-local" id="eventEndTime"></div>
+            
+            <div class="form-field">
+                <span class="field-icon">✏️</span>
+                <input type="text" id="eventTitle" placeholder="Tambahkan judul acara" required>
             </div>
-            <div class="form-group"><label for="eventLink">Link (opsional)</label><input type="url" id="eventLink" placeholder="https://zoom.us/j/..."></div>
+            <hr class="modal-divider">
+            <div class="form-field">
+                <span class="field-icon">⏰</span>
+                <div class="datetime-group">
+                    <input type="text" id="eventStartDate" class="flatpickr-date" placeholder="Tanggal Mulai" required>
+                    <input type="text" id="eventStartTime" class="flatpickr-time" placeholder="Jam Mulai">
+                    <span>-</span>
+                    <input type="text" id="eventEndTime" class="flatpickr-time" placeholder="Jam Selesai">
+                    <input type="text" id="eventEndDate" class="flatpickr-date" placeholder="Tanggal Selesai">
+                </div>
+            </div>
+            <div class="form-field">
+                <span class="field-icon">📋</span>
+                <textarea id="eventDescription" placeholder="Tambahkan deskripsi..."></textarea>
+            </div>
+            <div class="form-field">
+                <span class="field-icon">🔗</span>
+                <input type="url" id="eventLink" placeholder="Tambahkan link (misal: Zoom/GMeet)">
+            </div>
+            <div class="form-field">
+                <span class="field-icon">🎨</span>
+                 <div class="color-picker">
+                    <div class="color-option" data-color="#5484ed" style="background: #5484ed;" title="Biru"></div>
+                    <div class="color-option" data-color="#51b749" style="background: #51b749;" title="Hijau"></div>
+                    <div class="color-option" data-color="#fbd75b" style="background: #fbd75b;" title="Kuning"></div>
+                    <div class="color-option" data-color="#dc2127" style="background: #dc2127;" title="Merah"></div>
+                    <div class="color-option" data-color="#7b17cc" style="background: #7b17cc;" title="Ungu"></div>
+                </div>
+                <input type="hidden" id="eventColor" value="#5484ed">
+            </div>
             <div class="modal-actions">
                 <button type="button" class="modal-close-btn button-secondary">Batal</button>
                 <button type="submit" class="button-primary">Simpan</button>
@@ -68,90 +73,112 @@
     </div>
 </div>
 
+
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // --- API ENDPOINTS ---
-    const TASKS_API_URL = "{{ url_for('routes.get_tasks') }}";
+    // --- API ENDPOINTS & Variabel Global ---
     const EVENTS_API_URL = "{{ url_for('routes.get_events') }}";
-
+    const TASKS_API_URL = "{{ url_for('routes.get_tasks') }}";
+    
     // --- Referensi Elemen DOM ---
     const calendarEl = document.getElementById('calendar');
-    const sidebarDateEl = document.getElementById('sidebar-date');
+    const sidebarDateEl = document.getElementById('sidebar-date-today');
     const sidebarEventsList = document.querySelector('#sidebar-events .item-list');
     const sidebarTasksList = document.querySelector('#sidebar-tasks .item-list');
-    const addEventBtn = document.getElementById('add-event-btn');
-    const addTaskBtn = document.getElementById('add-task-btn'); // Mungkin perlu ditambahkan di HTML jika ingin
     
-    // Elemen Modal Acara
     const eventModal = document.getElementById('eventModal');
     const eventForm = document.getElementById('eventForm');
     const eventModalTitle = document.getElementById('eventModalTitle');
     const eventIdInput = document.getElementById('eventId');
     const eventDeleteBtn = document.getElementById('eventDeleteBtn');
+    const eventColorInput = document.getElementById('eventColor');
 
-    // Elemen Modal Tugas
-    // (Anda bisa tambahkan ini jika Anda punya tombol +Tugas Baru di sidebar)
+    // --- Inisialisasi Flatpickr ---
+    const fpDateConfig = { dateFormat: "Y-m-d", locale: "id" };
+    const fpTimeConfig = { enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true };
+    const startDatePicker = flatpickr("#eventStartDate", fpDateConfig);
+    const endDatePicker = flatpickr("#eventEndDate", fpDateConfig);
+    const startTimePicker = flatpickr("#eventStartTime", fpTimeConfig);
+    const endTimePicker = flatpickr("#eventEndTime", fpTimeConfig);
 
-    let selectedDate = new Date(); 
-
-    // --- KALENDER (FULLCALENDAR) ---
+    // --- Inisialisasi Kalender ---
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
         events: EVENTS_API_URL,
         editable: true,
         selectable: true,
-        dateClick: (info) => {
-            selectedDate = info.date;
-            updateSidebar(selectedDate);
-        },
-        eventClick: (info) => {
-            openEventModal(info.event);
-        }
+        dateClick: (info) => openEventModal(null, info.date),
+        eventClick: (info) => openEventModal(info.event),
+        eventDrop: (info) => handleEventDrop(info.event)
     });
     calendar.render();
 
     // --- Event Listeners ---
-    addEventBtn.addEventListener('click', () => openEventModal(null));
-
-    // Menutup semua modal
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal || e.target.classList.contains('modal-close-btn')) {
-                modal.classList.remove('visible');
-            }
+    eventModal.addEventListener('click', (e) => {
+        if (e.target === eventModal || e.target.classList.contains('modal-close-btn')) {
+            eventModal.classList.remove('visible');
+        }
+    });
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', function() {
+            document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+            this.classList.add('selected');
+            eventColorInput.value = this.dataset.color;
         });
     });
-
-    // Submit form Acara
     eventForm.addEventListener('submit', handleEventFormSubmit);
     eventDeleteBtn.addEventListener('click', handleDeleteEvent);
 
-    // --- Logika Modal & Form ---
-    function toLocalISOString(date) {
-        const d = new Date(date);
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        return d.toISOString().slice(0, 16);
+    // --- Fungsi Logika ---
+    function combineDateTime(dateStr, timeStr) {
+        if (!dateStr) return null;
+        return `${dateStr} ${timeStr || '00:00'}`;
     }
 
-    function openEventModal(event) {
+    function openEventModal(event, date = null) {
         eventForm.reset();
+        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+
         if (event) { // Mode Edit
             eventModalTitle.textContent = "Edit Acara";
             eventIdInput.value = event.id;
             document.getElementById('eventTitle').value = event.title;
             document.getElementById('eventDescription').value = event.extendedProps.description || '';
             document.getElementById('eventLink').value = event.extendedProps.link || '';
-            document.getElementById('eventStartTime').value = toLocalISOString(event.start);
-            document.getElementById('eventEndTime').value = event.end ? toLocalISOString(event.end) : '';
+            
+            const start = new Date(event.start);
+            const end = event.end ? new Date(event.end) : null;
+
+            startDatePicker.setDate(start, true);
+            startTimePicker.setDate(start, true);
+            if (end) {
+                endDatePicker.setDate(end, true);
+                endTimePicker.setDate(end, true);
+            } else {
+                endDatePicker.clear();
+                endTimePicker.clear();
+            }
+
+            const eventColor = event.backgroundColor || event.color || '#5484ed';
+            eventColorInput.value = eventColor;
+            const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
+            if(selectedColorEl) selectedColorEl.classList.add('selected');
             eventDeleteBtn.style.display = 'inline-block';
         } else { // Mode Tambah Baru
             eventModalTitle.textContent = "Acara Baru";
             eventIdInput.value = '';
-            document.getElementById('eventStartTime').value = toLocalISOString(selectedDate);
+            startDatePicker.setDate(date || new Date(), true);
+            startTimePicker.clear();
+            endDatePicker.clear();
+            endTimePicker.clear();
+            eventColorInput.value = '#5484ed';
+            document.querySelector(".color-option[data-color='#5484ed']").classList.add('selected');
             eventDeleteBtn.style.display = 'none';
         }
         eventModal.classList.add('visible');
@@ -163,29 +190,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const eventData = {
             title: document.getElementById('eventTitle').value,
             description: document.getElementById('eventDescription').value,
-            start: document.getElementById('eventStartTime').value,
-            end: document.getElementById('eventEndTime').value || null,
-            link: document.getElementById('eventLink').value
+            start: combineDateTime(startDatePicker.input.value, startTimePicker.input.value),
+            end: combineDateTime(endDatePicker.input.value, endTimePicker.input.value),
+            link: document.getElementById('eventLink').value,
+            color: eventColorInput.value
         };
 
         const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
         const method = eventId ? 'PUT' : 'POST';
-
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(eventData)
-            });
-            if (!response.ok) throw new Error('Gagal menyimpan acara');
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Gagal menyimpan acara');
             eventModal.classList.remove('visible');
             calendar.refetchEvents();
-            updateSidebar(selectedDate);
+            loadTodaysAgenda();
         } catch (error) {
             alert(error.message);
         }
     }
-
+    
     async function handleDeleteEvent() {
         const eventId = eventIdInput.value;
         if (eventId && confirm("Anda yakin ingin menghapus acara ini?")) {
@@ -194,21 +218,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) throw new Error('Gagal menghapus acara');
                 eventModal.classList.remove('visible');
                 calendar.refetchEvents();
-                updateSidebar(selectedDate);
+                loadTodaysAgenda();
             } catch (error) {
                 alert(error.message);
             }
         }
     }
+    
+    async function handleEventDrop(info) {
+        const eventData = {
+            start: info.event.start.toISOString(),
+            end: info.event.end ? info.event.end.toISOString() : null,
+            title: info.event.title,
+            description: info.event.extendedProps.description,
+            link: info.event.extendedProps.link,
+            color: info.event.backgroundColor
+        };
+        try {
+            const response = await fetch(`${EVENTS_API_URL}/${info.event.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(eventData)
+            });
+            if (!response.ok) throw new Error('Gagal update waktu acara');
+            loadTodaysAgenda(); // Update sidebar setelah drop
+        } catch (error) {
+            alert(error.message);
+            info.revert();
+        }
+    }
+    
+    async function loadTodaysAgenda() {
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        sidebarDateEl.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
 
-    // --- Fungsi Render & Muat Data ---
-    async function updateSidebar(dateObj) {
-        const dateStr = dateObj.toISOString().split('T')[0];
-        sidebarDateEl.textContent = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        addEventBtn.style.display = 'inline-block';
-        sidebarEventsList.innerHTML = '<li>Memuat...</li>';
-        sidebarTasksList.innerHTML = '<li>Memuat...</li>';
-
+        sidebarEventsList.innerHTML = '<li class="empty-item">Memuat...</li>';
+        sidebarTasksList.innerHTML = '<li class="empty-item">Memuat...</li>';
         try {
             const [eventsResponse, tasksResponse] = await Promise.all([
                 fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}`),
@@ -220,8 +266,8 @@ document.addEventListener('DOMContentLoaded', function() {
             renderItems(sidebarTasksList, tasks, 'task');
         } catch (error) {
             console.error("Gagal memuat data agenda:", error);
-            sidebarEventsList.innerHTML = '<li>Gagal memuat acara.</li>';
-            sidebarTasksList.innerHTML = '<li>Gagal memuat tugas.</li>';
+            sidebarEventsList.innerHTML = '<li class="empty-item">Gagal memuat acara.</li>';
+            sidebarTasksList.innerHTML = '<li class="empty-item">Gagal memuat tugas.</li>';
         }
     }
 
@@ -235,45 +281,226 @@ document.addEventListener('DOMContentLoaded', function() {
             const li = document.createElement('li');
             li.className = 'sidebar-item';
             const timeString = type === 'event' ? new Date(item.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
-            li.innerHTML = `<div class="item-time">${timeString}</div><div class="item-title">${item.title}</div>`;
+            li.innerHTML = `<div class="item-color-dot" style="background-color: ${item.color || '#3788d8'}"></div><div class="item-time">${timeString}</div><div class="item-title">${item.title}</div>`;
+            li.addEventListener('click', () => {
+                if (type === 'event') {
+                    // Temukan event di kalender dan buka modal edit
+                    const calEvent = calendar.getEventById(item.id);
+                    if (calEvent) openEventModal(calEvent);
+                }
+            });
             listElement.appendChild(li);
         });
     }
     
     // Inisialisasi
-    updateSidebar(selectedDate);
-    
-    // (Kode untuk Papan Tugas bisa ditambahkan kembali di sini jika diperlukan)
+    loadTodaysAgenda();
 });
 </script>
 
 <style>
-    /* CSS BARU UNTUK LAYOUT ALA GOOGLE CALENDAR */
-    .hub-container-v2 { display: grid; grid-template-columns: 1fr 350px; gap: 20px; height: 88vh; }
-    .calendar-main-panel { padding: 20px; display: flex; flex-direction: column; }
-    .details-sidebar-panel { padding: 20px; display: flex; flex-direction: column; }
-    .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
-    .sidebar-header h3 { margin: 0; font-size: 16px; }
-    .sidebar-content { flex-grow: 1; overflow-y: auto; }
-    .sidebar-section h4 { margin-top: 20px; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; color: #777; }
-    .item-list { list-style: none; padding: 0; margin: 0; }
-    .sidebar-item, .empty-item { display: flex; align-items: center; padding: 10px; border-radius: 5px; margin-bottom: 5px; background-color: #f9f9f9; cursor: pointer; transition: background-color 0.2s; }
-    .sidebar-item:hover { background-color: #f0f0f0; }
-    .empty-item { color: #999; cursor: default; }
-    .item-time { font-size: 13px; font-weight: bold; color: #555; width: 60px; }
-    .item-title { font-size: 14px; }
-    :root { --fc-border-color: #ddd; --fc-daygrid-event-dot-width: 8px; --fc-list-event-dot-width: 10px; }
-    .fc .fc-toolbar-title { font-size: 1.5em; }
-    .fc .fc-button { text-transform: capitalize; }
+    /* ======================================================= */
+    /* === DESAIN FINAL (v4) - TEMA GELAP & INPUT KONSISTEN === */
+    /* ======================================================= */
 
-    /* Modal styles */
-    .modal-overlay { align-items: flex-start; padding-top: 10vh; }
-    .modal-box { max-width: 500px; }
-    .modal-box .form-group, .modal-box .form-group-row { margin-bottom: 15px; }
-    .modal-box label { display: block; margin-bottom: 5px; font-weight: bold; }
-    .modal-box input, .modal-box textarea, .modal-box select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-    .modal-box textarea { min-height: 80px; }
-    .form-group-row { display: flex; gap: 15px; }
-    .form-group-row .form-group { flex: 1; }
+    /* FONT & BODY */
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        background-color: #1e1e1e; 
+        color: #cccccc;
+    }
+
+    /* LAYOUT UTAMA */
+    .hub-container-v2 { 
+        display: grid; 
+        grid-template-columns: 1fr 340px;
+        gap: 20px; 
+        height: 88vh; 
+    }
+    .calendar-main-panel, .details-sidebar-panel {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        background-color: #252526; /* PERBAIKAN: Warna latar gelap untuk card */
+        border: 1px solid #333333;
+        border-radius: 8px;
+    }
+    #calendar {
+        flex-grow: 1;
+        min-height: 0;
+    }
+
+    /* SIDEBAR */
+    .sidebar-header { border-bottom: 1px solid #333333; }
+    .sidebar-header h3 { color: #ffffff; }
+    .sidebar-section h4 { color: #888888; }
+    .item-title { color: #cccccc; }
+    .sidebar-item:hover { background-color: #37373d; }
+    .empty-item { color: #888; }
+    .item-time { color: #bbbbbb; }
+
+    /* STYLING FULLCALENDAR (TEMA GELAP) */
+    :root { --fc-border-color: #333333; --fc-today-bg-color: rgba(86, 159, 247, 0.1); }
+    .fc-theme-standard { color: #cccccc; }
+    .fc .fc-toolbar-title { color: #ffffff; }
+    .fc .fc-button { background: #37373d !important; color: #cccccc !important; border: 1px solid #444 !important; }
+    .fc .fc-button-primary:not(:disabled).fc-button-active, .fc .fc-button-primary:not(:disabled):active { background: #094771 !important; }
+    .fc-day-other .fc-daygrid-day-top { color: #666; }
+    .fc-col-header-cell-cushion { color: #bbbbbb; }
+    .fc-daygrid-event { border: none !important; }
+
+    /* DESAIN MODAL GELAP */
+    .modal-box { background-color: #2d2d2d; color: #cccccc; max-width: 800px; max-height: 1500px;}
+    .modal-box h3 { border-bottom: 1px solid #444; }
+    .modal-actions { border-top: 1px solid #444; }
+    .modal-box label { color: #bbbbbb; }
+
+    /* === PERBAIKAN UTAMA: DESAIN INPUT YANG KONSISTEN & RAPI === */
+    .form-field {
+        display: flex;
+        align-items: center; /* Membuat ikon dan input sejajar di tengah */
+        gap: 16px;
+        margin-bottom: 20px;
+        padding: 20px 10px;
+        /* Hapus border di sini, kita pindahkan ke inputnya langsung */
+    }
+    .form-field .field-icon {
+        font-size: 20px;
+        color: #888;
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    
+    /* GAYA DASAR UNTUK SEMUA INPUT DI DALAM FORM */
+    .form-field input[type="text"],
+    .form-field input[type="url"],
+    .form-field textarea,
+    .datetime-group input.flatpickr-input {
+        flex-grow: 1;
+        width: 100%;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 2px solid #555 !important;
+        border-radius: 0 !important; /* Hapus radius agar lurus */
+        padding: 12px 6px !important;
+        font-size: 15px;
+        color: #cccccc !important;
+        transition: border-color 0.2s;
+    }
+
+    /* EFEK FOKUS UNTUK SEMUA INPUT */
+    .form-field input[type="text"]:focus,
+    .form-field input[type="url"]:focus,
+    .form-field textarea:focus,
+    .datetime-group input.flatpickr-input:focus {
+        outline: none;
+        border-bottom-color: #569ff7 !important;
+    }
+    
+    /* PERBAIKAN: Buat area deskripsi bisa di-resize */
+    .form-field textarea {
+        resize: vertical;
+        min-height: 60px;
+    }
+    
+    .form-field .datetime-group {
+        display: flex;
+        flex-grow: 1;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* ======================================================= */
+/* === DESAIN DARK THEME UNTUK FLATPCIKR (VERSI BARU) === */
+/* ======================================================= */
+.flatpickr-calendar {
+    background-color: #2d2d2d;
+    border: 1px solid #444;
+    color: #d4d4d4;
+    border-radius: 6px;
+}
+/* Header: Bulan, Tahun, dan Panah Navigasi */
+.flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months {
+    color: #ffffff;
+    font-weight: bold;
+}
+.flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-months .flatpickr-next-month svg {
+    fill: #bbbbbb;
+    transition: fill 0.2s;
+}
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg {
+    fill: #ffffff;
+}
+/* Nama Hari (Senin, Selasa, dst.) */
+span.flatpickr-weekday {
+    color: #8ab4f8; /* Warna biru muda untuk aksen */
+    font-weight: 500;
+}
+/* Angka Tanggal */
+.flatpickr-day {
+    color: #d4d4d4;
+    transition: background-color 0.2s, color 0.2s;
+}
+.flatpickr-day.today {
+    border-color: #8ab4f8;
+    color: #8ab4f8; /* Teks tanggal hari ini juga berwarna biru */
+    font-weight: bold;
+}
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange {
+    background: #094771;
+    border-color: #094771;
+    color: #ffffff; /* Teks putih cerah saat dipilih */
+}
+.flatpickr-day:hover {
+    background: #3a3d3e;
+}
+.flatpickr-day.disabled {
+    color: #555;
+}
+/* Pemilih Waktu (Jam & Menit) */
+.flatpickr-time {
+    background-color: #2d2d2d;
+    border-top: 1px solid #444;
+}
+.flatpickr-time .numInputWrapper:hover {
+    background: #3a3d3e;
+}
+.numInputWrapper .numInput,
+.flatpickr-time .flatpickr-time-separator, 
+.flatpickr-time .flatpickr-am-pm {
+    color: #d4d4d4;
+}
+.flatpickr-time input.flatpickr-hour, .flatpickr-time input.flatpickr-minute {
+    color: #d4d4d4;
+    background: transparent;
+}
+
+    /* ========================================= */
+/* === PERBAIKAN: CSS UNTUK PALET WARNA === */
+/* ========================================= */
+.color-picker { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    padding-top: 5px; 
+    flex-grow: 1;
+}
+.color-option { 
+    width: 28px; 
+    height: 28px; 
+    border-radius: 50%; 
+    cursor: pointer; 
+    border: 3px solid transparent; 
+    transition: all 0.2s; 
+}
+.color-option.selected { 
+    border-color: #569ff7; 
+    transform: scale(1.15); 
+    box-shadow: 0 0 5px rgba(86,159,247,0.5); 
+}
+
 </style>
 {% endblock %}
