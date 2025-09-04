@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hub-container-v2">
+    <div class="calendar-main-panel card">
+        <div id="calendar"></div>
+    </div>
+
+    <div class="details-sidebar-panel card">
+        <div class="sidebar-header">
+            <h3 id="sidebar-date">Pilih Tanggal</h3>
+            <button id="add-event-btn" class="button-primary" style="display: none;">+ Acara Baru</button>
+        </div>
+        <div class="sidebar-content">
+            <div id="sidebar-events" class="sidebar-section">
+                <h4>Acara</h4>
+                <ul class="item-list"></ul>
+            </div>
+            <div id="sidebar-tasks" class="sidebar-section">
+                <h4>Tugas dengan Tenggat Waktu</h4>
+                <ul class="item-list"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="taskModal" class="modal-overlay">
+    <div class="modal-box card">
+        <h3 id="taskModalTitle">Tugas Baru</h3>
+        <form id="taskForm">
+            <input type="hidden" id="taskId">
+            <div class="form-group"><label for="taskTitle">Judul Tugas</label><input type="text" id="taskTitle" required></div>
+            <div class="form-group"><label for="taskDescription">Deskripsi</label><textarea id="taskDescription"></textarea></div>
+            <div class="form-group"><label for="taskDueDate">Tenggat Waktu</label><input type="datetime-local" id="taskDueDate"></div>
+            <div class="form-group">
+                <label for="taskPriority">Prioritas</label>
+                <select id="taskPriority">
+                    <option value="medium">Medium</option><option value="low">Low</option><option value="high">High</option><option value="urgent">Urgent</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modal-close-btn button-secondary">Batal</button>
+                <button type="submit" class="button-primary">Simpan</button>
+                <button type="button" id="taskDeleteBtn" class="button-danger" style="display: none;">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="eventModal" class="modal-overlay">
+    <div class="modal-box card">
+        <h3 id="eventModalTitle">Acara Baru</h3>
+        <form id="eventForm">
+            <input type="hidden" id="eventId">
+            <div class="form-group"><label for="eventTitle">Judul Acara</label><input type="text" id="eventTitle" required></div>
+            <div class="form-group"><label for="eventDescription">Deskripsi</label><textarea id="eventDescription"></textarea></div>
+            <div class="form-group-row">
+                <div class="form-group"><label for="eventStartTime">Waktu Mulai</label><input type="datetime-local" id="eventStartTime" required></div>
+                <div class="form-group"><label for="eventEndTime">Waktu Selesai</label><input type="datetime-local" id="eventEndTime"></div>
+            </div>
+            <div class="form-group"><label for="eventLink">Link (opsional)</label><input type="url" id="eventLink" placeholder="https://zoom.us/j/..."></div>
+            <div class="modal-actions">
+                <button type="button" class="modal-close-btn button-secondary">Batal</button>
+                <button type="submit" class="button-primary">Simpan</button>
+                <button type="button" id="eventDeleteBtn" class="button-danger" style="display: none;">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- API ENDPOINTS ---
+    const TASKS_API_URL = "{{ url_for('routes.get_tasks') }}";
+    const EVENTS_API_URL = "{{ url_for('routes.get_events') }}";
+
+    // --- Referensi Elemen DOM ---
+    const calendarEl = document.getElementById('calendar');
+    const sidebarDateEl = document.getElementById('sidebar-date');
+    const sidebarEventsList = document.querySelector('#sidebar-events .item-list');
+    const sidebarTasksList = document.querySelector('#sidebar-tasks .item-list');
+    const addEventBtn = document.getElementById('add-event-btn');
+    const addTaskBtn = document.getElementById('add-task-btn'); // Mungkin perlu ditambahkan di HTML jika ingin
+    
+    // Elemen Modal Acara
+    const eventModal = document.getElementById('eventModal');
+    const eventForm = document.getElementById('eventForm');
+    const eventModalTitle = document.getElementById('eventModalTitle');
+    const eventIdInput = document.getElementById('eventId');
+    const eventDeleteBtn = document.getElementById('eventDeleteBtn');
+
+    // Elemen Modal Tugas
+    // (Anda bisa tambahkan ini jika Anda punya tombol +Tugas Baru di sidebar)
+
+    let selectedDate = new Date(); 
+
+    // --- KALENDER (FULLCALENDAR) ---
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+        events: EVENTS_API_URL,
+        editable: true,
+        selectable: true,
+        dateClick: (info) => {
+            selectedDate = info.date;
+            updateSidebar(selectedDate);
+        },
+        eventClick: (info) => {
+            openEventModal(info.event);
+        }
+    });
+    calendar.render();
+
+    // --- Event Listeners ---
+    addEventBtn.addEventListener('click', () => openEventModal(null));
+
+    // Menutup semua modal
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.classList.contains('modal-close-btn')) {
+                modal.classList.remove('visible');
+            }
+        });
+    });
+
+    // Submit form Acara
+    eventForm.addEventListener('submit', handleEventFormSubmit);
+    eventDeleteBtn.addEventListener('click', handleDeleteEvent);
+
+    // --- Logika Modal & Form ---
+    function toLocalISOString(date) {
+        const d = new Date(date);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 16);
+    }
+
+    function openEventModal(event) {
+        eventForm.reset();
+        if (event) { // Mode Edit
+            eventModalTitle.textContent = "Edit Acara";
+            eventIdInput.value = event.id;
+            document.getElementById('eventTitle').value = event.title;
+            document.getElementById('eventDescription').value = event.extendedProps.description || '';
+            document.getElementById('eventLink').value = event.extendedProps.link || '';
+            document.getElementById('eventStartTime').value = toLocalISOString(event.start);
+            document.getElementById('eventEndTime').value = event.end ? toLocalISOString(event.end) : '';
+            eventDeleteBtn.style.display = 'inline-block';
+        } else { // Mode Tambah Baru
+            eventModalTitle.textContent = "Acara Baru";
+            eventIdInput.value = '';
+            document.getElementById('eventStartTime').value = toLocalISOString(selectedDate);
+            eventDeleteBtn.style.display = 'none';
+        }
+        eventModal.classList.add('visible');
+    }
+
+    async function handleEventFormSubmit(e) {
+        e.preventDefault();
+        const eventId = eventIdInput.value;
+        const eventData = {
+            title: document.getElementById('eventTitle').value,
+            description: document.getElementById('eventDescription').value,
+            start: document.getElementById('eventStartTime').value,
+            end: document.getElementById('eventEndTime').value || null,
+            link: document.getElementById('eventLink').value
+        };
+
+        const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
+        const method = eventId ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(eventData)
+            });
+            if (!response.ok) throw new Error('Gagal menyimpan acara');
+            eventModal.classList.remove('visible');
+            calendar.refetchEvents();
+            updateSidebar(selectedDate);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function handleDeleteEvent() {
+        const eventId = eventIdInput.value;
+        if (eventId && confirm("Anda yakin ingin menghapus acara ini?")) {
+            try {
+                const response = await fetch(`${EVENTS_API_URL}/${eventId}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Gagal menghapus acara');
+                eventModal.classList.remove('visible');
+                calendar.refetchEvents();
+                updateSidebar(selectedDate);
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+    }
+
+    // --- Fungsi Render & Muat Data ---
+    async function updateSidebar(dateObj) {
+        const dateStr = dateObj.toISOString().split('T')[0];
+        sidebarDateEl.textContent = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        addEventBtn.style.display = 'inline-block';
+        sidebarEventsList.innerHTML = '<li>Memuat...</li>';
+        sidebarTasksList.innerHTML = '<li>Memuat...</li>';
+
+        try {
+            const [eventsResponse, tasksResponse] = await Promise.all([
+                fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}`),
+                fetch(`${TASKS_API_URL}?date=${dateStr}`)
+            ]);
+            const events = await eventsResponse.json();
+            const tasks = await tasksResponse.json();
+            renderItems(sidebarEventsList, events, 'event');
+            renderItems(sidebarTasksList, tasks, 'task');
+        } catch (error) {
+            console.error("Gagal memuat data agenda:", error);
+            sidebarEventsList.innerHTML = '<li>Gagal memuat acara.</li>';
+            sidebarTasksList.innerHTML = '<li>Gagal memuat tugas.</li>';
+        }
+    }
+
+    function renderItems(listElement, items, type) {
+        listElement.innerHTML = '';
+        if (items.length === 0) {
+            listElement.innerHTML = `<li class="empty-item">Tidak ada ${type} hari ini.</li>`;
+            return;
+        }
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'sidebar-item';
+            const timeString = type === 'event' ? new Date(item.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+            li.innerHTML = `<div class="item-time">${timeString}</div><div class="item-title">${item.title}</div>`;
+            listElement.appendChild(li);
+        });
+    }
+    
+    // Inisialisasi
+    updateSidebar(selectedDate);
+    
+    // (Kode untuk Papan Tugas bisa ditambahkan kembali di sini jika diperlukan)
+});
+</script>
+
+<style>
+    /* CSS BARU UNTUK LAYOUT ALA GOOGLE CALENDAR */
+    .hub-container-v2 { display: grid; grid-template-columns: 1fr 350px; gap: 20px; height: 88vh; }
+    .calendar-main-panel { padding: 20px; display: flex; flex-direction: column; }
+    .details-sidebar-panel { padding: 20px; display: flex; flex-direction: column; }
+    .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+    .sidebar-header h3 { margin: 0; font-size: 16px; }
+    .sidebar-content { flex-grow: 1; overflow-y: auto; }
+    .sidebar-section h4 { margin-top: 20px; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; color: #777; }
+    .item-list { list-style: none; padding: 0; margin: 0; }
+    .sidebar-item, .empty-item { display: flex; align-items: center; padding: 10px; border-radius: 5px; margin-bottom: 5px; background-color: #f9f9f9; cursor: pointer; transition: background-color 0.2s; }
+    .sidebar-item:hover { background-color: #f0f0f0; }
+    .empty-item { color: #999; cursor: default; }
+    .item-time { font-size: 13px; font-weight: bold; color: #555; width: 60px; }
+    .item-title { font-size: 14px; }
+    :root { --fc-border-color: #ddd; --fc-daygrid-event-dot-width: 8px; --fc-list-event-dot-width: 10px; }
+    .fc .fc-toolbar-title { font-size: 1.5em; }
+    .fc .fc-button { text-transform: capitalize; }
+
+    /* Modal styles */
+    .modal-overlay { align-items: flex-start; padding-top: 10vh; }
+    .modal-box { max-width: 500px; }
+    .modal-box .form-group, .modal-box .form-group-row { margin-bottom: 15px; }
+    .modal-box label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .modal-box input, .modal-box textarea, .modal-box select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .modal-box textarea { min-height: 80px; }
+    .form-group-row { display: flex; gap: 15px; }
+    .form-group-row .form-group { flex: 1; }
+</style>
+{% endblock %}
