@@ -3,225 +3,277 @@
 {% block content %}
 <div class="code-editor-container">
     <div class="code-editor-header">
-        <h2>{{ coding_session.title }}</h2>
+        <h2>{{ coding_session.project.title }}</h2>
         <div class="editor-actions">
+            <button id="saveFileBtn" class="button-secondary">Simpan File</button>
             <form id="submitForm" action="{{ url_for('routes.submit_from_editor', session_id=coding_session.id) }}" method="POST">
                 <button type="submit" class="button-primary">Ajukan Proyek</button>
             </form>
-            <button id="saveFileBtn" class="button-secondary">Simpan</button>
         </div>
     </div>
 
     <div class="code-editor-main">
         <div class="file-tree-panel">
-            <h3>File Explorer</h3>
-            <ul id="fileList">
-                {% for file in files %}
-                <li data-id="{{ file.id }}" data-filename="{{ file.filename }}" data-content="{{ file.content | e }}" class="file-item">
-                    <span class="filename">{{ file.filename }}</span>
-                    <button class="delete-btn" title="Hapus file">&times;</button>
-                </li>
-                {% endfor %}
-            </ul>
-            <div class="file-actions">
-                <input type="text" id="newFilenameInput" placeholder="nama_file.py">
-                <button id="addFileBtn" class="button-secondary">+</button>
+            <div class="file-explorer-header">
+                <h3>File Explorer</h3>
+                <div class="file-explorer-actions">
+                    <button id="addFileBtn" title="Tambah File Baru">📄</button>
+                    <button id="addFolderBtn" title="Tambah Folder Baru">📁</button>
+                </div>
             </div>
+            <div id="fileTreeContainer"></div>
         </div>
         <div class="editor-panel">
-            <textarea id="codeEditor"></textarea>
+            <div id="editor-placeholder">Pilih file untuk mulai mengedit...</div>
+            <textarea id="codeEditor" style="display: none;"></textarea>
         </div>
     </div>
 </div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/jstree.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/codemirror.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/codemirror.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/mode/python/python.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/mode/javascript/javascript.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.11/mode/htmlmixed/htmlmixed.js"></script>
-
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    let editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
-        lineNumbers: true,
-        mode: "python",
-        theme: "default"
-    });
-
-    const fileList = document.getElementById('fileList');
-    const addFileBtn = document.getElementById('addFileBtn');
-    const newFilenameInput = document.getElementById('newFilenameInput');
-    const saveFileBtn = document.getElementById('saveFileBtn');
+    $(function () { // jQuery document ready
     
-    let currentFile = null;
-    let currentFileId = null;
-
-    const loadFileContent = (liElement) => {
-        const filename = liElement.dataset.filename;
-        const content = liElement.dataset.content;
-        const fileId = liElement.dataset.id;
-        
-        editor.setValue(content);
-        currentFile = filename;
-        currentFileId = fileId;
-
-        document.querySelectorAll('.file-item').forEach(item => item.classList.remove('active'));
-        liElement.classList.add('active');
-        
-        const ext = filename.split('.').pop();
-        if (ext === 'py') editor.setOption('mode', 'python');
-        else if (ext === 'js') editor.setOption('mode', 'javascript');
-        else if (ext === 'html') editor.setOption('mode', 'htmlmixed');
-        else editor.setOption('mode', 'default');
-    };
+        // --- Inisialisasi Variabel & Editor ---
+        const fileData = {{ files_json | safe }};
+        const createUrl = "{{ url_for('routes.create_node', session_id=coding_session.id) }}";
+        const updateContentUrl = "{{ url_for('routes.update_file_content', file_id=0) }}";
+        const renameUrl = "{{ url_for('routes.rename_file', file_id=0) }}";
+        const deleteUrl = "{{ url_for('routes.delete_file', file_id=0) }}";
+        const moveUrl = "{{ url_for('routes.move_node', file_id=0) }}"; // <-- URL BARU
+        let currentFileId = null;
     
-    // --- EVENT LISTENERS ---
-
-    // Menangani klik pada daftar file (pilih file ATAU hapus file)
-    fileList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('delete-btn')) {
-            const fileItem = e.target.closest('.file-item');
-            handleDeleteFile(fileItem);
-        } else {
-            const fileItem = e.target.closest('.file-item');
-            if(fileItem) loadFileContent(fileItem);
-        }
-    });
-
-    // Menangani double click untuk RENAME
-    fileList.addEventListener('dblclick', (e) => {
-        const fileItem = e.target.closest('.file-item');
-        if (fileItem) handleRenameFile(fileItem);
-    });
-
-    // Menambah file baru
-    addFileBtn.addEventListener('click', async () => {
-        const newFilename = newFilenameInput.value.trim();
-        if (!newFilename) {
-            alert("Nama file tidak boleh kosong.");
-            return;
-        }
-        await handleSaveFile(newFilename, "", true); // isNewFile = true
-    });
-
-    // Menyimpan file yang sedang aktif
-    saveFileBtn.addEventListener('click', async () => {
-        if (currentFile) {
-            await handleSaveFile(currentFile, editor.getValue());
-        } else {
-            alert("Silakan pilih atau buat file terlebih dahulu.");
-        }
-    });
+        const editorElement = document.getElementById('codeEditor');
+        const placeholder = document.getElementById('editor-placeholder');
+        let editor = CodeMirror.fromTextArea(editorElement, { lineNumbers: true, mode: "python", theme: "default" });
+        editor.getWrapperElement().style.display = 'none';
     
-    // --- ACTION HANDLERS ---
-
-    const handleSaveFile = async (filename, content, isNewFile = false) => {
-        const saveUrl = "{{ url_for('routes.save_code', session_id=coding_session.id) }}";
-        saveFileBtn.disabled = true;
-        saveFileBtn.textContent = 'Menyimpan...';
-
-        try {
-            const response = await fetch(saveUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename, content })
-            });
-            const result = await response.json();
-            if (response.ok && result.status === 'success') {
-                if (isNewFile) {
-                    location.reload();
-                } else {
-                    document.querySelector(`[data-id='${currentFileId}']`).dataset.content = content;
-                    alert("Perubahan berhasil disimpan!");
+        // --- Inisialisasi jsTree (File Explorer) ---
+        $('#fileTreeContainer').jstree({
+            'core': {
+                'data': fileData,
+                'check_callback': function(operation, node, node_parent, node_position, more) {
+                    if (operation === "move_node") {
+                        if (node_parent.id !== '#' && ( !node_parent.original || !node_parent.original.is_folder)) {
+                            return false;
+                        }
+                    }
+                    return true;
                 }
-            } else {
-                alert(`Gagal: ${result.message || 'Error tidak diketahui'}`);
-            }
-        } catch (error) {
-            console.error('Error saat menyimpan:', error);
-            alert('Terjadi kesalahan jaringan.');
-        } finally {
-            saveFileBtn.disabled = false;
-            saveFileBtn.textContent = 'Simpan';
+            },
+            'types': { 'default': { 'icon': 'jstree-folder' }, 'file': { 'icon': 'jstree-file' } },
+            'plugins': ['dnd', 'contextmenu', 'wholerow', 'types'],
+            'contextmenu': { /* ... (tidak ada perubahan di sini) ... */ }
+        })
+        .on('select_node.jstree', (e, data) => !data.node.original.is_folder && handleSelectFile(data.node))
+        .on('rename_node.jstree', (e, data) => handleRename(data.node, data.text))
+        // EVENT LISTENER BARU UNTUK MENANGANI DRAG-AND-DROP
+        .on('move_node.jstree', (e, data) => {
+            handleMoveNode(data.node.id, data.parent);
+        });
+    
+        // --- Event Listeners untuk Tombol Aksi ---
+        $('#addFileBtn').on('click', () => handleCreateNode(false));
+        $('#addFolderBtn').on('click', () => handleCreateNode(true));
+        $('#saveFileBtn').on('click', handleSaveFile);
+    
+        // --- Fungsi Logika Aksi ---
+    
+        function handleSelectFile(node) {
+            // ... (tidak ada perubahan di sini)
+            currentFileId = node.id;
+            editor.setValue(node.original.content || "");
+            placeholder.style.display = 'none';
+            editor.getWrapperElement().style.display = 'block';
+            editor.refresh();
+            const ext = node.text.split('.').pop();
+            if (ext === 'py') editor.setOption('mode', 'python');
+            else if (ext === 'js') editor.setOption('mode', 'javascript');
+            else if (ext === 'html') editor.setOption('mode', 'htmlmixed');
+            else editor.setOption('mode', 'default');
         }
-    };
-
-    const handleDeleteFile = async (fileItem) => {
-        const fileId = fileItem.dataset.id;
-        const filename = fileItem.dataset.filename;
-
-        if (confirm(`Anda yakin ingin menghapus file "${filename}"?`)) {
+    
+        async function handleSaveFile() {
+            // ... (tidak ada perubahan di sini)
+            if (!currentFileId) { alert("Pilih file yang ingin disimpan."); return; }
+            const content = editor.getValue();
+            saveFileBtn.disabled = true;
+            saveFileBtn.textContent = 'Menyimpan...';
             try {
-                const response = await fetch(`{{ url_for('routes.delete_file', file_id=0) }}`.replace('0', fileId), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const result = await response.json();
-                if (response.ok && result.status === 'success') {
-                    location.reload();
-                } else {
-                    alert(`Gagal menghapus: ${result.message || 'Error tidak diketahui'}`);
-                }
-            } catch (error) {
-                console.error('Error saat menghapus:', error);
-                alert('Terjadi kesalahan jaringan.');
-            }
-        }
-    };
-
-    const handleRenameFile = async (fileItem) => {
-        const fileId = fileItem.dataset.id;
-        const currentFilename = fileItem.dataset.filename;
-        const newFilename = prompt("Masukkan nama file baru:", currentFilename);
-
-        if (newFilename && newFilename.trim() !== currentFilename) {
-            try {
-                const response = await fetch(`{{ url_for('routes.rename_file', file_id=0) }}`.replace('0', fileId), {
+                const response = await fetch(updateContentUrl.replace('0', currentFileId), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: newFilename.trim() })
+                    body: JSON.stringify({ content: content })
                 });
                 const result = await response.json();
-                 if (response.ok && result.status === 'success') {
-                    location.reload();
+                if (response.ok) {
+                    $('#fileTreeContainer').jstree(true).get_node(currentFileId).original.content = content;
+                    alert('File berhasil disimpan!');
                 } else {
-                    alert(`Gagal mengubah nama: ${result.message || 'Error tidak diketahui'}`);
+                    alert(`Gagal menyimpan: ${result.message}`);
                 }
             } catch (error) {
-                console.error('Error saat mengubah nama:', error);
-                alert('Terjadi kesalahan jaringan.');
+                console.error("Error saving file:", error);
+                alert('Terjadi kesalahan jaringan saat menyimpan.');
+            } finally {
+                saveFileBtn.disabled = false;
+                saveFileBtn.textContent = 'Simpan File';
             }
         }
-    };
+        
+        // PERBAIKAN: Logika penentuan folder induk yang lebih akurat dan konsisten
+        function handleCreateNode(isFolder) {
+            const tree = $('#fileTreeContainer').jstree(true);
+            let selectedNode = tree.get_selected(true)[0];
+            
+            let parentNode;
+            if (selectedNode) {
+                parentNode = selectedNode.original.is_folder ? selectedNode : tree.get_node(selectedNode.parent);
+            } else {
+                parentNode = tree.get_node('#');
+            }
     
-    // Muat file pertama secara default saat halaman dibuka
-    const firstFile = fileList.querySelector('.file-item');
-    if (firstFile) {
-        loadFileContent(firstFile);
-    }
-});
-</script>
-
+            const newNodeData = { text: isFolder ? 'Folder Baru' : 'file_baru.py', type: isFolder ? 'default' : 'file' };
+            tree.create_node(parentNode, newNodeData, 'last', (newNode) => {
+                tree.edit(newNode, null, async (node, status) => {
+                    if (status && node.text.trim() !== '') {
+                        const parentId = node.parent === '#' ? null : node.parent;
+                        try {
+                             const response = await fetch(createUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ filename: node.text, is_folder: isFolder, parent_id: parentId })
+                            });
+                            const result = await response.json();
+                            if (!response.ok) throw new Error(result.message);
+                            location.reload();
+                        } catch(err) {
+                            alert(`Gagal membuat: ${err.message}`);
+                            tree.delete_node(node);
+                        }
+                    } else {
+                        tree.delete_node(node);
+                    }
+                });
+            });
+        }
+    
+        async function handleRename(node, newName) {
+            // ... (tidak ada perubahan di sini)
+            if (isNaN(parseInt(node.id))) { return; }
+            try {
+                const response = await fetch(renameUrl.replace('0', node.id), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: newName })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message);
+                node.original.text = newName;
+            } catch(err) {
+                alert(`Gagal mengubah nama: ${err.message}`);
+                location.reload();
+            }
+        }
+        
+        async function handleDelete(node) {
+            // ... (tidak ada perubahan di sini)
+            if (confirm(`Anda yakin ingin menghapus "${node.text}"?`)) {
+                try {
+                    const response = await fetch(deleteUrl.replace('0', node.id), { method: 'POST' });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message);
+                    $('#fileTreeContainer').jstree(true).delete_node(node);
+                } catch(err) {
+                    alert(`Gagal menghapus: ${err.message}`);
+                }
+            }
+        }
+    
+        // FUNGSI BARU UNTUK MENYIMPAN PERUBAHAN DRAG-AND-DROP
+        async function handleMoveNode(nodeId, newParentId) {
+            try {
+                const response = await fetch(moveUrl.replace('0', nodeId), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parent_id: newParentId })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    // Jika gagal, tampilkan error dan muat ulang untuk kembali ke state yg benar
+                    alert(`Gagal memindahkan: ${result.message}`);
+                    location.reload();
+                }
+                // Jika berhasil, tidak perlu melakukan apa-apa, perubahan sudah ada di UI
+            } catch (err) {
+                alert('Gagal memindahkan node karena kesalahan jaringan.');
+                location.reload();
+            }
+        }
+        
+        // Muat file pertama saat halaman dibuka
+        const firstFileNode = $('#fileTreeContainer').find('.jstree-leaf[data-id]').first();
+        if (firstFileNode.length > 0) {
+            $('#fileTreeContainer').jstree(true).select_node(firstFileNode.attr('id'));
+        }
+    });
+    </script>
 <style>
-/* CSS Sederhana untuk Code Editor */
-.code-editor-container { display: flex; flex-direction: column; height: 85vh; padding: 20px; background-color: #f4f7f9; }
-.code-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+/* FONT & BODY */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+/* LAYOUT UTAMA */
+.code-editor-container { display: flex; flex-direction: column; height: 88vh; padding: 15px; background-color: #1e1e1e; color: #d4d4d4; }
+.code-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333333; }
+.code-editor-header h2 { margin: 0; font-size: 18px; }
 .editor-actions { display: flex; gap: 10px; }
-.code-editor-main { display: flex; flex: 1; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-.file-tree-panel { width: 250px; background-color: #fff; border-right: 1px solid #ddd; padding: 15px; flex-shrink: 0; display: flex; flex-direction: column; }
-.file-tree-panel h3 { margin-top: 0; }
-.file-tree-panel ul { list-style: none; padding: 0; margin: 0; flex-grow: 1; overflow-y: auto; }
-.file-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; cursor: pointer; border-radius: 4px; transition: background-color 0.2s; }
-.file-item:hover { background-color: #eef; }
-.file-item.active { background-color: #e0eaff; font-weight: bold; }
-.filename { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.delete-btn { background: none; border: none; color: #aaa; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 5px; display: none; }
-.file-item:hover .delete-btn { display: inline-block; }
-.delete-btn:hover { color: #f00; }
-.file-actions { margin-top: 15px; display: flex; gap: 5px; }
-#newFilenameInput { flex-grow: 1; }
-.editor-panel { flex: 1; position: relative; }
-.CodeMirror { height: 100%; border-radius: 0 8px 8px 0; font-size: 16px; }
+.code-editor-main { display: flex; flex: 1; min-height: 0; gap: 10px; }
+
+/* PANEL FILE EXPLORER */
+.file-tree-panel { width: 250px; background-color: #252526; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 4px; }
+.file-explorer-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; text-transform: uppercase; font-size: 11px; font-weight: bold; border-bottom: 1px solid #333333; }
+.file-explorer-actions button { background: none; border: none; color: #cccccc; cursor: pointer; font-size: 18px; padding: 2px 4px; border-radius: 3px; }
+.file-explorer-actions button:hover { background-color: #37373d; }
+#fileTreeContainer { padding: 5px; flex-grow: 1; overflow: auto; }
+
+/* PANEL EDITOR */
+.editor-panel { flex: 1; position: relative; border-radius: 4px; overflow: hidden; }
+#editor-placeholder { color: #888; text-align: center; padding-top: 50px; font-size: 14px; }
+
+/* STYLING JSTREE ALA VS CODE */
+.jstree-default .jstree-anchor { color: #cccccc; }
+.jstree-default .jstree-wholerow-hovered { background: #2a2d2e; }
+.jstree-default .jstree-wholerow-clicked { background: #094771; }
+.jstree-default .jstree-node, .jstree-default .jstree-leaf { background: none; }
+.jstree-default .jstree-themeicon-custom { width: auto !important; }
+/* Ikon kustom untuk folder dan file */
+.jstree-default .jstree-icon.jstree-folder { background: none !important; }
+.jstree-default .jstree-icon.jstree-folder::before { content: "📁"; }
+.jstree-default .jstree-icon.jstree-file { background: none !important; }
+.jstree-default .jstree-icon.jstree-file::before { content: "📄"; }
+
+/* STYLING CODEMIRROR & BUTTON */
+.CodeMirror { height: 100%; background-color: #1e1e1e; font-size: 15px; }
+.cm-s-default .cm-comment { color: #6a9955; }
+.cm-s-default .cm-string { color: #ce9178; }
+.cm-s-default .cm-keyword { color: #c586c0; }
+.cm-s-default .cm-number { color: #b5cea8; }
+.cm-s-default .cm-def { color: #9cdcfe; }
+.cm-s-default .cm-variable { color: #9cdcfe; }
+.cm-s-default .cm-property { color: #dcdcaa; }
+.cm-s-default .cm-operator { color: #d4d4d4; }
+.CodeMirror-gutters { background: #1e1e1e !important; border-right: 1px solid #333; }
+.CodeMirror-linenumber { color: #858585; }
+
+.button-primary, .button-secondary { font-size: 13px; }
 </style>
 
 {% endblock %}

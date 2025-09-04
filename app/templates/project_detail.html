@@ -1,60 +1,59 @@
 {% extends "base.html" %}
-{% block content %}
-<main class="project-page-container">
-    <div class="project-info-panel">
-        <h1>{{ project.title }}</h1>
-        <p>{{ project.description }}</p>
 
-        <div class="project-details-grid">
-            <div class="detail-item">
-                <h4>Tujuan Proyek</h4>
-                <p>{{ project.project_goals }}</p>
-            </div>
-            <div class="detail-item">
-                <h4>Teknologi</h4>
+{% block content %}
+<div class="project-detail-container">
+    <div class="project-header">
+        <h1>{{ project.title }}</h1>
+        <span class="difficulty-badge">{{ project.difficulty }}</span>
+    </div>
+
+    <div class="project-content">
+        <div class="project-main">
+            <h3>Deskripsi Proyek</h3>
+            <p>{{ project.description | safe }}</p>
+
+            <h3>Tujuan Proyek</h3>
+            <p>{{ project.project_goals | safe }}</p>
+
+            <h3>Kriteria Penilaian</h3>
+            <p>{{ project.evaluation_criteria | safe }}</p>
+        </div>
+        <div class="project-sidebar">
+            <div class="sidebar-card">
+                <h4>Teknologi yang Digunakan</h4>
                 <p>{{ project.tech_stack }}</p>
             </div>
-            <div class="detail-item">
-                <h4>Kriteria Penilaian</h4>
-                <p>{{ project.evaluation_criteria }}</p>
-            </div>
-            <div class="detail-item">
+            <div class="sidebar-card">
                 <h4>Sumber Daya</h4>
                 <p>{{ project.resources }}</p>
             </div>
         </div>
-
-        <hr>
-
-        <div class="submission-section">
-            <h3>Ajukan Proyek Anda</h3>
-            <p>Silakan masukkan tautan proyek yang sudah Anda selesaikan.</p>
-            <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST">
-                <input class="input-link-project" type="url" name="project_link" placeholder="Masukkan link proyek Anda (GitHub, Figma, dsb.)" required>
-                <button type="submit" class="button-primary">Ajukan Proyek</button>
-            </form>
-        </div>
-
-        <div class="coding-section">
-            <h3>Kerjakan Proyek Langsung</h3>
-            {% if coding_session %}
-            <a href="{{ url_for('routes.code_editor', session_id=coding_session.id) }}" class="button-primary">Lanjutkan Coding</a>
-            {% else %}
-            <a href="{{ url_for('routes.start_coding', project_id=project.id) }}" class="button-primary">Mulai Sesi Coding</a>
-            {% endif %}
-        </div>
-        
-
-        <hr>
-        
-        <div class="chat-section">
-            <h3>Butuh Bantuan?</h3>
-            {% if chat_session %}
-            <a href="{{ url_for('routes.chatbot_session', session_id=chat_session.id) }}" class="button-secondary">Lanjutkan Diskusi dengan AI Mentor</a>
-            {% else %}
-            <a href="{{ url_for('routes.create_project_chat', project_id=project.id) }}" class="button-secondary">Mulai Diskusi dengan AI Mentor</a>
-            {% endif %}
-        </div>
     </div>
-</main>
+
+    <div class="project-actions">
+        <!-- FORM UNTUK SUBMIT LINK PROYEK (misal: GitHub, Vercel) -->
+        <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST" class="submit-form">
+            <h3>Ajukan Proyek Anda</h3>
+            <p>Masukkan link ke repository GitHub atau link live demo proyek Anda.</p>
+            <div class="form-group">
+                <input type="url" name="project_link" placeholder="https://github.com/username/project" required>
+                <button type="submit" class="button-primary">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Styling sederhana untuk halaman detail proyek */
+    .project-detail-container { max-width: 900px; margin: 40px auto; padding: 20px; }
+    .project-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+    .difficulty-badge { background-color: #e0eaff; color: #0033cc; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 14px; }
+    .project-content { display: flex; gap: 30px; }
+    .project-main { flex: 2; }
+    .project-sidebar { flex: 1; }
+    .sidebar-card { background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .submit-form { margin-top: 40px; padding-top: 25px; border-top: 2px solid #eee; }
+    .form-group { display: flex; gap: 10px; }
+    .form-group input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+</style>
 {% endblock %}
