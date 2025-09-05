@@ -7,7 +7,8 @@ from app.models import (User, Project, ProjectSubmission, ChatMessage,
                         ChatSession, Module, Lesson, UserProgress, 
                         InterviewMessage, Task, Event, Note) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
-from datetime import datetime
+# File: app/routes.py
+from datetime import datetime, timedelta
 bp = Blueprint('routes', __name__)
 
 
@@ -755,119 +756,50 @@ def chat_ai(session_id):
     
 
 # ===============================================
+# RUTE PERSONAL HUB
+# ===============================================
+
+@bp.route('/hub')
+@login_required
+def personal_hub():
+    """Menampilkan halaman Personal Productivity Hub."""
+    return render_template('personal_hub.html', title="Personal Hub")
+
+# ===============================================
 # API UNTUK PERSONAL HUB (FARSIGHT OS)
 # ===============================================
 
-# --- Helper Functions untuk mengubah Objek ke Dictionary (Serialisasi) ---
-def task_to_dict(task):
-    return {
-        'id': task.id,
-        'title': task.title,
-        'description': task.description,
-        'due_date': task.due_date.isoformat() if task.due_date else None,
-        'priority': task.priority,
-        'status': task.status,
-        'lesson_id': task.lesson_id,
-        'project_id': task.project_id
-    }
-
 def event_to_dict(event):
+    """Mengubah objek Event menjadi dictionary yang siap untuk JSON."""
+    event_color = event.color or '#5484ed' 
     return {
-        'id': event.id,
-        'title': event.title,
-        'description': event.description,
-        'start': event.start_time.isoformat(),
-        'end': event.end_time.isoformat() if event.end_time else None,
-        'link': event.link,
-        
-        'color': event.color # <-- TAMBAHKAN INI
-        
+        'id': str(event.id), 'title': event.title, 'description': event.description,
+        'start': event.start_time.isoformat(), 'end': event.end_time.isoformat() if event.end_time else None,
+        'link': event.link, 'backgroundColor': event_color, 'borderColor': event_color
     }
 
-# --- API Endpoints untuk TASK ---
-# File: app/routes.py
-
-@bp.route('/api/hub/tasks', methods=['GET'])
-@login_required
-def get_tasks():
-    """Mengambil semua tugas, BISA DIFILTER berdasarkan tanggal."""
-    date_str = request.args.get('date') # Ambil parameter tanggal dari URL
-    query = Task.query.filter_by(author=current_user)
-
-    if date_str:
-        try:
-            # Filter tugas yang due_date-nya sama dengan tanggal yang diberikan
-            selected_date = datetime.fromisoformat(date_str).date()
-            query = query.filter(db.func.date(Task.due_date) == selected_date)
-        except (ValueError, TypeError):
-            pass # Abaikan jika format tanggal salah
-
-    tasks = query.order_by(Task.due_date.asc()).all()
-    return jsonify([task_to_dict(task) for task in tasks])
-@bp.route('/api/hub/tasks', methods=['POST'])
-@login_required
-def create_task():
-    """Membuat tugas baru."""
-    data = request.get_json()
-    if not data or not data.get('title'):
-        abort(400, description="Judul tugas dibutuhkan.")
-    
-    due_date = datetime.fromisoformat(data['due_date']) if data.get('due_date') else None
-    
-    task = Task(
-        author=current_user,
-        title=data['title'],
-        description=data.get('description'),
-        due_date=due_date,
-        priority=data.get('priority', 'medium'),
-        status=data.get('status', 'todo')
-    )
-    db.session.add(task)
-    db.session.commit()
-    return jsonify(task_to_dict(task)), 201
-
-@bp.route('/api/hub/tasks/<int:task_id>', methods=['PUT'])
-@login_required
-def update_task(task_id):
-    """Mengedit tugas yang ada (misal: mengubah status)."""
-    task = Task.query.filter_by(id=task_id, author=current_user).first_or_404()
-    data = request.get_json()
-    
-    task.title = data.get('title', task.title)
-    task.description = data.get('description', task.description)
-    task.priority = data.get('priority', task.priority)
-    task.status = data.get('status', task.status)
-    if data.get('due_date'):
-        task.due_date = datetime.fromisoformat(data['due_date'])
-        
-    db.session.commit()
-    return jsonify(task_to_dict(task))
-
-@bp.route('/api/hub/tasks/<int:task_id>', methods=['DELETE'])
-@login_required
-def delete_task(task_id):
-    """Menghapus tugas."""
-    task = Task.query.filter_by(id=task_id, author=current_user).first_or_404()
-    db.session.delete(task)
-    db.session.commit()
-    return jsonify({'status': 'success', 'message': 'Tugas berhasil dihapus.'})
-
-# --- API Endpoints untuk EVENT (Kalender) ---
+def task_to_dict(task):
+    """Mengubah objek Task menjadi dictionary."""
+    return {
+        'id': task.id, 'title': task.title, 'description': task.description,
+        'due_date': task.due_date.isoformat() if task.due_date else None,
+        'priority': task.priority, 'status': task.status
+    }
 
 @bp.route('/api/hub/events', methods=['GET'])
 @login_required
 def get_events():
     """Mengambil acara kalender untuk rentang waktu tertentu."""
-    start_str = request.args.get('start') # Disediakan oleh FullCalendar.js
-    end_str = request.args.get('end')     # Disediakan oleh FullCalendar.js
-    
-    # Filter berdasarkan rentang waktu jika disediakan
+    start_str = request.args.get('start')
+    end_str = request.args.get('end')
     query = Event.query.filter_by(author=current_user)
     if start_str and end_str:
-        start_date = datetime.fromisoformat(start_str.split('T')[0])
-        end_date = datetime.fromisoformat(end_str.split('T')[0])
-        query = query.filter(Event.start_time.between(start_date, end_date))
-        
+        try:
+            start_date = datetime.fromisoformat(start_str.split('T')[0])
+            end_date = datetime.fromisoformat(end_str.split('T')[0]) + timedelta(days=1)
+            query = query.filter(Event.start_time >= start_date, Event.start_time < end_date)
+        except (ValueError, TypeError):
+            pass
     events = query.all()
     return jsonify([event_to_dict(event) for event in events])
 
@@ -877,44 +809,41 @@ def create_event():
     """Membuat acara kalender baru."""
     data = request.get_json()
     if not data or not data.get('title') or not data.get('start'):
-        abort(400, description="Judul dan waktu mulai dibutuhkan.")
-    
-    event = Event(
-        author=current_user,
-        title=data['title'],
-        description=data.get('description'),
-        start_time=datetime.fromisoformat(data['start']),
-        end_time=datetime.fromisoformat(data['end']) if data.get('end') else None,
-        link=data.get('link'),
-        color=data.get('color', '#3788d8')
-    )
-    db.session.add(event)
-    db.session.commit()
-    return jsonify(event_to_dict(event)), 201
-
-@bp.route('/hub')
-@login_required
-def personal_hub():
-    """Menampilkan halaman Personal Productivity Hub."""
-    return render_template('personal_hub.html', title="Personal Hub")
+        return jsonify({'status': 'error', 'message': 'Judul dan waktu mulai wajib diisi.'}), 400
+    try:
+        start_time = datetime.fromisoformat(data['start']) if data.get('start') else None
+        end_time = datetime.fromisoformat(data['end']) if data.get('end') else None
+        event = Event(author=current_user, title=data['title'], description=data.get('description'),
+                      start_time=start_time, end_time=end_time, link=data.get('link'),
+                      color=data.get('color', '#3788d8'))
+        db.session.add(event)
+        db.session.commit()
+        return jsonify(event_to_dict(event)), 201
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Gagal membuat event: {e}")
+        return jsonify({'status': 'error', 'message': f'Terjadi kesalahan: {str(e)}'}), 500
 
 @bp.route('/api/hub/events/<int:event_id>', methods=['PUT'])
 @login_required
 def update_event(event_id):
-    event = Event.query.filter_by(id=event_id, author=current_user).first_or_404()
-    data = request.get_json()
-    
-    event.title = data.get('title', event.title)
-    event.description = data.get('description', event.description)
-    event.link = data.get('link', event.link)
-    event.color = data.get('color', event.color) # <-- TAMBAHKAN INI
-    if data.get('start'):
-        event.start_time = datetime.fromisoformat(data['start'])
-    if data.get('end'):
-        event.end_time = datetime.fromisoformat(data['end'])
-        
-    db.session.commit()
-    return jsonify(event_to_dict(event))
+    """Mengedit acara yang sudah ada."""
+    try:
+        event = Event.query.filter_by(id=event_id, author=current_user).first_or_404()
+        data = request.get_json()
+        event.title = data.get('title', event.title)
+        event.description = data.get('description', event.description)
+        event.link = data.get('link', event.link)
+        event.color = data.get('color', event.color)
+        if data.get('start'): event.start_time = datetime.fromisoformat(data['start'])
+        if data.get('end'): event.end_time = datetime.fromisoformat(data['end'])
+        else: event.end_time = None
+        db.session.commit()
+        return jsonify(event_to_dict(event))
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Gagal update event {event_id}: {e}")
+        return jsonify({'status': 'error', 'message': f'Terjadi kesalahan: {str(e)}'}), 500
 
 @bp.route('/api/hub/events/<int:event_id>', methods=['DELETE'])
 @login_required
@@ -924,3 +853,17 @@ def delete_event(event_id):
     db.session.delete(event)
     db.session.commit()
     return jsonify({'status': 'success', 'message': 'Acara berhasil dihapus.'})
+
+@bp.route('/api/hub/tasks', methods=['GET'])
+@login_required
+def get_tasks():
+    """Mengambil semua tugas, bisa difilter berdasarkan tanggal."""
+    date_str = request.args.get('date')
+    query = Task.query.filter_by(author=current_user)
+    if date_str:
+        try:
+            selected_date = datetime.fromisoformat(date_str).date()
+            query = query.filter(db.func.date(Task.due_date) == selected_date)
+        except (ValueError, TypeError): pass
+    tasks = query.order_by(Task.due_date.asc()).all()
+    return jsonify([task_to_dict(task) for task in tasks])

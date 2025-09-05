@@ -4287,55 +4287,6 @@ textarea#chat-input::placeholder {
     color: #9ca3af;
     font-size: 14px;
   }
-
-
-
-
-
-
-
-
-
-/* FONT & BODY */
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-
-/* LAYOUT UTAMA */
-.code-editor-container { display: flex; flex-direction: column; height: 88vh; padding: 15px; background-color: #1e1e1e; color: #d4d4d4; }
-.code-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #333333; }
-.code-editor-header h2 { margin: 0; font-size: 18px; }
-.editor-actions { display: flex; gap: 10px; }
-.code-editor-main { display: flex; flex: 1; min-height: 0; gap: 10px; }
-
-/* PANEL FILE EXPLORER */
-.file-tree-panel { width: 250px; background-color: #252526; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 4px; }
-.file-explorer-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; text-transform: uppercase; font-size: 11px; font-weight: bold; border-bottom: 1px solid #333333; }
-.file-explorer-actions button { background: none; border: none; color: #cccccc; cursor: pointer; font-size: 18px; padding: 2px 4px; border-radius: 3px; }
-.file-explorer-actions button:hover { background-color: #37373d; }
-#fileTreeContainer { padding: 5px; flex-grow: 1; overflow: auto; }
-
-/* PANEL EDITOR & TERMINAL */
-.editor-terminal-container { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.editor-panel { flex-grow: 1; position: relative; border-radius: 4px; overflow: hidden; }
-#editor-placeholder { color: #888; text-align: center; padding-top: 50px; font-size: 14px; }
-.terminal-panel { height: 250px; background-color: #181818; margin-top: 10px; border-radius: 4px; display: flex; flex-direction: column; }
-.terminal-header { background-color: #333333; padding: 5px 10px; font-size: 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; }
-#terminal-output { flex-grow: 1; overflow-y: auto; padding: 10px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', Courier, monospace; font-size: 14px; }
-#runCodeBtn { margin-right: 10px; }
-
-/* STYLING JSTREE ALA VS CODE */
-.jstree-default .jstree-anchor { color: #cccccc; }
-.jstree-default .jstree-wholerow-hovered { background: #2a2d2e; }
-.jstree-default .jstree-wholerow-clicked { background: #094771; }
-.jstree-default .jstree-node, .jstree-default .jstree-leaf { background: none; }
-/* Ikon kustom untuk folder dan file */
-.jstree-default .jstree-icon.jstree-folder::before { content: "📁"; }
-.jstree-default .jstree-icon.jstree-file::before { content: "📄"; }
-
-/* STYLING CODEMIRROR & BUTTON */
-.CodeMirror { height: 100%; background-color: #1e1e1e; font-size: 15px; }
-.button-primary, .button-secondary { font-size: 13px; }
-
-
 /* File: app/templates/personal_hub.html */
 
 /* ================================================= */
