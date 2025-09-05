@@ -2,13 +2,14 @@
 
 {% block content %}
 <div class="hub-container-v2">
-    <div class="calendar-main-panel card">
+    <div class="calendar-main-panel hub-card">
         <div id="calendar"></div>
     </div>
 
-    <div class="details-sidebar-panel card">
+    <div class="details-sidebar-panel hub-card">
         <div class="sidebar-header">
             <h3>Agenda Hari Ini</h3>
+            <button id="ai-organizer-btn" class="button-secondary" title="Minta Saran AI">🚀 Minta Saran</button>
             <span id="sidebar-date-today" class="text-secondary"></span>
         </div>
         <div class="sidebar-content">
@@ -17,80 +18,42 @@
                 <ul class="item-list"></ul>
             </div>
             <div id="sidebar-tasks" class="sidebar-section">
-                <h4>Tugas dengan Tenggat Waktu</h4>
-                <ul class="item-list"></ul>
+                <div class="sidebar-section-header">
+                    <h4>Daftar Tugas</h4>
+                    <button id="add-task-btn" class="button-add" title="Tambah Tugas Baru">+</button>
+                </div>
+                <div id="task-categories-container"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal: Event -->
-<div id="eventModal" class="modal-overlay" aria-hidden="true">
-    <div class="modal-box card" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
+<div id="eventModal" class="modal-overlay">
+    <div class="modal-box hub-card">
         <div class="modal-header">
             <h3 id="eventModalTitle">Acara Baru</h3>
-            <button type="button" class="modal-close-btn" aria-label="Tutup">×</button>
+            <button type="button" class="modal-close-btn"></button>
         </div>
-
         <form id="eventForm" class="modal-form" autocomplete="off">
             <input type="hidden" id="eventId">
-
-            <!-- Judul -->
-            <div class="form-row">
-                <div class="field-icon">✏️</div>
-                <input type="text" id="eventTitle" class="input-box" placeholder="Tambahkan judul acara" required>
-            </div>
-
-            <!-- Deskripsi -->
-            <div class="form-row">
-                <div class="field-icon">📋</div>
-                <textarea id="eventDescription" class="input-box input-textarea" placeholder="Tambahkan deskripsi..."></textarea>
-            </div>
-
-            <!-- DATETIME STACK -->
+            <div class="form-row"><div class="field-icon">✏️</div><input type="text" id="eventTitle" class="input-box" placeholder="Tambahkan judul acara" required></div>
             <div class="datetime-stack">
-
-                <!-- START: tanggal & jam mulai -->
                 <div class="datetime-card">
                     <div class="datetime-card-header">Mulai</div>
-
-                    <div class="form-row">
-                        <div class="field-icon">📅</div>
-                        <input type="text" id="eventStartDate" class="flatpickr-date input-box" placeholder="Tanggal Mulai" required>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="field-icon">⏰</div>
-                        <input type="text" id="eventStartTime" class="flatpickr-time input-box" placeholder="Jam Mulai">
-                    </div>
+                    <div class="form-row"><div class="field-icon">📅</div><input type="text" id="eventStartDate" class="input-box" placeholder="Tanggal Mulai" required></div>
+                    <div class="form-row"><div class="field-icon">⏰</div><input type="text" id="eventStartTime" class="input-box" placeholder="Jam Mulai"></div>
                 </div>
-
-                <!-- END: tanggal & jam selesai -->
                 <div class="datetime-card">
                     <div class="datetime-card-header">Selesai</div>
-
-                    <div class="form-row">
-                        <div class="field-icon">📅</div>
-                        <input type="text" id="eventEndDate" class="flatpickr-date input-box" placeholder="Tanggal Selesai">
-                    </div>
-
-                    <div class="form-row">
-                        <div class="field-icon">⏳</div>
-                        <input type="text" id="eventEndTime" class="flatpickr-time input-box" placeholder="Jam Selesai">
-                    </div>
+                    <div class="form-row"><div class="field-icon">📅</div><input type="text" id="eventEndDate" class="input-box" placeholder="Tanggal Selesai"></div>
+                    <div class="form-row"><div class="field-icon">⏳</div><input type="text" id="eventEndTime" class="input-box" placeholder="Jam Selesai"></div>
                 </div>
             </div>
-
-            <!-- Link -->
-            <div class="form-row">
-                <div class="field-icon">🔗</div>
-                <input type="url" id="eventLink" class="input-box" placeholder="Tambahkan link (misal: Zoom/GMeet)">
-            </div>
-
-            <!-- Color picker -->
+            <div class="form-row"><div class="field-icon">📋</div><textarea id="eventDescription" class="input-box input-textarea" placeholder="Tambahkan deskripsi..."></textarea></div>
+            <div class="form-row"><div class="field-icon">🔗</div><input type="url" id="eventLink" class="input-box" placeholder="Tambahkan link (misal: Zoom/GMeet)"></div>
             <div class="form-row color-row">
                 <div class="field-icon">🎨</div>
-                <div class="color-picker" role="radiogroup" aria-label="Pilih warna acara">
+                <div class="color-picker" role="radiogroup">
                     <button type="button" class="color-option" data-color="#5484ed" style="background:#5484ed" title="Biru"></button>
                     <button type="button" class="color-option" data-color="#51b749" style="background:#51b749" title="Hijau"></button>
                     <button type="button" class="color-option" data-color="#fbd75b" style="background:#fbd75b" title="Kuning"></button>
@@ -99,8 +62,6 @@
                 </div>
                 <input type="hidden" id="eventColor" value="#5484ed">
             </div>
-
-            <!-- Actions -->
             <div class="modal-actions">
                 <button type="button" class="button-secondary modal-close-btn">Batal</button>
                 <button type="submit" class="button-primary">Simpan</button>
@@ -110,29 +71,49 @@
     </div>
 </div>
 
-<!-- Modal: Daily agenda -->
-<div id="dailyAgendaModal" class="modal-overlay">
-    <div class="modal-box card">
+<div id="taskModal" class="modal-overlay">
+    <div class="modal-box hub-card">
         <div class="modal-header">
-            <h3 id="dailyAgendaTitle">Agenda untuk Tanggal</h3>
-            <button class="modal-close-btn" aria-label="Tutup">&times;</button>
+            <h3 id="taskModalTitle">Tugas Baru</h3>
+            <button class="modal-close-btn"></button>
         </div>
+        <form id="taskForm" class="modal-form">
+            <input type="hidden" id="taskId">
+            <div class="form-row"><div class="field-icon">✏️</div><input type="text" id="taskTitle" class="input-box" placeholder="Nama tugas..." required></div>
+            <div class="form-row"><div class="field-icon">📋</div><textarea id="taskDescription" class="input-box input-textarea" placeholder="Deskripsi tugas..."></textarea></div>
+            <div class="form-row"><div class="field-icon">📅</div><input type="text" id="taskDueDate" class="input-box" placeholder="Tenggat Waktu (Opsional)"></div>
+            <div class="form-row"><div class="field-icon">🚩</div>
+                <select id="taskPriority" class="input-box">
+                    <option value="low">Prioritas Rendah</option>
+                    <option value="medium" selected>Prioritas Medium</option>
+                    <option value="high">Prioritas Tinggi</option>
+                    <option value="urgent">Prioritas Mendesak</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="button-secondary modal-close-btn">Batal</button>
+                <button type="submit" class="button-primary">Simpan Tugas</button>
+                <button type="button" id="taskDeleteBtn" class="button-danger" style="display:none">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="dailyAgendaModal" class="modal-overlay">
+    <div class="modal-box hub-card" style="max-width: 500px;">
+        <div class="modal-header"><h3 id="dailyAgendaTitle">Agenda</h3><button class="modal-close-btn"></button></div>
         <div id="dailyAgendaContent" class="modal-content"></div>
         <div class="modal-actions">
-            <button id="addNewEventFromDailyBtn" class="button-primary">+ Tambah Acara Baru</button>
+            <button id="addNewTaskFromDailyBtn" class="button-secondary">+ Tambah Tugas</button>
+            <button id="addNewEventFromDailyBtn" class="button-primary">+ Tambah Acara</button>
         </div>
     </div>
 </div>
 
 <div id="confirmDeleteModal" class="modal-overlay">
-    <div class="modal-box card" style="max-width: 400px;">
-        <div class="modal-header">
-            <h3 id="confirmTitle">Konfirmasi Hapus</h3>
-            <button class="modal-close-btn">&times;</button>
-        </div>
-        <div class="modal-content">
-            <p id="confirmMessage">Apakah Anda yakin ingin menghapus item ini? Tindakan ini tidak dapat diurungkan.</p>
-        </div>
+    <div class="modal-box hub-card" style="max-width: 400px;">
+        <div class="modal-header"><h3 id="confirmTitle">Konfirmasi</h3><button class="modal-close-btn"></button></div>
+        <div class="modal-content"><p id="confirmMessage">Apakah Anda yakin?</p></div>
         <div class="modal-actions">
             <button id="cancelDeleteBtn" class="button-secondary modal-close-btn">Batal</button>
             <button id="confirmDeleteBtn" class="button-danger">Ya, Hapus</button>
@@ -140,748 +121,570 @@
     </div>
 </div>
 
-<!-- libs (tetap seperti aslinya) -->
+
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- API ENDPOINTS & Variabel Global ---
-        const EVENTS_API_URL = "{{ url_for('routes.get_events') }}";
-        const TASKS_API_URL = "{{ url_for('routes.get_tasks') }}";
-        let selectedDateForNewEvent = new Date();
-        
-        // --- Referensi Elemen DOM ---
-        const calendarEl = document.getElementById('calendar');
-        const sidebarDateEl = document.getElementById('sidebar-date-today');
-        const sidebarEventsList = document.querySelector('#sidebar-events .item-list');
-        const sidebarTasksList = document.querySelector('#sidebar-tasks .item-list');
-        
-        const eventModal = document.getElementById('eventModal');
-        const eventForm = document.getElementById('eventForm');
-        const eventModalTitle = document.getElementById('eventModalTitle');
-        const eventIdInput = document.getElementById('eventId');
-        const eventDeleteBtn = document.getElementById('eventDeleteBtn');
-        const eventColorInput = document.getElementById('eventColor');
-        const dailyAgendaModal = document.getElementById('dailyAgendaModal');
-        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+document.addEventListener('DOMContentLoaded', function() {
+    // --- 3.1. API ENDPOINTS & REFERENSI ELEMEN DOM ---
+    const EVENTS_API_URL = "{{ url_for('routes.get_events') }}";
+    const TASKS_API_URL = "{{ url_for('routes.get_tasks') }}";
+    let selectedDateForNewEvent = new Date();
+
+    const calendarEl = document.getElementById('calendar');
+    const sidebarDateEl = document.getElementById('sidebar-date-today');
+    const sidebarEventsList = document.querySelector('#sidebar-events .item-list');
+    const sidebarTasksContainer = document.getElementById('task-categories-container');
     
-        // --- Inisialisasi Flatpickr dengan Pengunci Scroll ---
-        const flatpickrConfig = {
-            locale: "id",
-            onOpen: function() { document.body.classList.add('no-scroll'); },
-            onClose: function() { document.body.classList.remove('no-scroll'); }
-        };
-        const startDatePicker = flatpickr("#eventStartDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
-        const endDatePicker = flatpickr("#eventEndDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
-        const startTimePicker = flatpickr("#eventStartTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
-        const endTimePicker = flatpickr("#eventEndTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
+    const eventModal = document.getElementById('eventModal');
+    const eventForm = document.getElementById('eventForm');
+    const eventModalTitle = document.getElementById('eventModalTitle');
+    const eventIdInput = document.getElementById('eventId');
+    const eventDeleteBtn = document.getElementById('eventDeleteBtn');
+    const eventColorInput = document.getElementById('eventColor');
+
+    const taskModal = document.getElementById('taskModal');
+    const taskForm = document.getElementById('taskForm');
+    const taskModalTitle = document.getElementById('taskModalTitle');
+    const taskIdInput = document.getElementById('taskId');
+    const taskDeleteBtn = document.getElementById('taskDeleteBtn');
+
+    const dailyAgendaModal = document.getElementById('dailyAgendaModal');
+    const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+    const aiOrganizerBtn = document.getElementById('ai-organizer-btn');
+
+    // --- 3.2. INISIALISASI LIBRARY ---
+    const flatpickrConfig = { locale: "id", onOpen: () => document.body.classList.add('no-scroll'), onClose: () => document.body.classList.remove('no-scroll') };
+    const startDatePicker = flatpickr("#eventStartDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
+    const endDatePicker = flatpickr("#eventEndDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
+    const startTimePicker = flatpickr("#eventStartTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
+    const endTimePicker = flatpickr("#eventEndTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
+    const taskDueDatePicker = flatpickr("#taskDueDate", { ...flatpickrConfig, enableTime: true, dateFormat: "Y-m-d H:i" });
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        
+        // --- PERUBAHAN UTAMA DI SINI ---
+        headerToolbar: { 
+            left: 'prev,next today', 
+            center: 'title', 
+            right: 'dayGridMonth,timeGridWeek,list7Days,list30Days' // Menggunakan tombol custom baru
+        },
+        
+        views: {
+            list7Days: {
+                type: 'list',
+                duration: { days: 7 },
+                buttonText: '7 Hari Kedepan' // Nama tombol baru
+            },
+            list30Days: {
+                type: 'list',
+                duration: { days: 30 },
+                buttonText: '30 Hari Kedepan' // Nama tombol baru
+            }
+        },
+        // --- AKHIR PERUBAHAN UTAMA ---
     
-        // --- Inisialisasi Kalender ---
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
-            events: EVENTS_API_URL,
-            editable: true,
-            selectable: true,
-            dateClick: (info) => handleDateClick(info),
-            eventClick: (info) => openEventModal(info.event),
-            eventDrop: (info) => handleEventDrop(info.event),
-            eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
-            eventContent: function(arg) {
-                let timeHtml = arg.timeText ? `<span class="fc-event-time">${arg.timeText}</span>` : '';
-                let titleHtml = `<span class="fc-event-title">${arg.event.title}</span>`;
-                return { html: `<div class="fc-event-main">${timeHtml} ${titleHtml}</div>` };
+        // Konfigurasi lainnya tetap sama
+        events: EVENTS_API_URL,
+        editable: true,
+        selectable: true,
+        dateClick: (info) => handleDateClick(info),
+        eventClick: (info) => openEventModal(info.event),
+        eventDrop: (info) => handleEventDrop(info.event),
+        eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+        eventContent: (arg) => ({ html: `<div class="fc-event-main">${arg.timeText ? `<span class="fc-event-time">${arg.timeText}</span>` : ''} <span class="fc-event-title">${arg.event.title}</span></div>` })
+    });
+    calendar.render();
+
+    // --- 3.3. EVENT LISTENERS ---
+    document.querySelector('.fc-today-button').addEventListener('click', () => { calendar.today(); loadTodaysAgenda(); });
+    document.getElementById('add-task-btn').addEventListener('click', () => openTaskModal(null));
+    document.getElementById('addNewEventFromDailyBtn').addEventListener('click', () => { dailyAgendaModal.classList.remove('visible'); openEventModal(null, selectedDateForNewEvent); });
+    document.getElementById('addNewTaskFromDailyBtn').addEventListener('click', () => {
+        dailyAgendaModal.classList.remove('visible');
+        openTaskModal(null);
+        taskDueDatePicker.setDate(selectedDateForNewEvent, true);
+    });
+    
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.closest('.modal-close-btn')) {
+                modal.classList.remove('visible');
             }
         });
-        calendar.render();
+    });
+
+    eventForm.addEventListener('submit', handleEventFormSubmit);
+    taskForm.addEventListener('submit', handleTaskFormSubmit);
+    eventDeleteBtn.addEventListener('click', () => { const event = { id: eventIdInput.value, title: document.getElementById('eventTitle').value }; handleDeleteEvent(event); });
+    taskDeleteBtn.addEventListener('click', () => { const task = { id: taskIdInput.value, title: document.getElementById('taskTitle').value }; handleDeleteTask(task); });
     
-        // --- Event Listeners ---
-        document.querySelector('.fc-today-button').addEventListener('click', function() {
-            calendar.today();
-            loadTodaysAgenda();
-        });
-        document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal || e.target.classList.contains('modal-close-btn')) {
-                    modal.classList.remove('visible');
-                }
-            });
-        });
-        document.getElementById('addNewEventFromDailyBtn').addEventListener('click', () => {
-            dailyAgendaModal.classList.remove('visible');
-            openEventModal(null, selectedDateForNewEvent);
-        });
-        document.querySelectorAll('.color-option').forEach(option => {
-            option.addEventListener('click', function() {
-                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-                this.classList.add('selected');
-                eventColorInput.value = this.dataset.color;
-            });
-        });
-        eventForm.addEventListener('submit', handleEventFormSubmit);
-        eventDeleteBtn.addEventListener('click', () => handleDeleteEvent({ id: eventIdInput.value, title: document.getElementById('eventTitle').value }));
-    
-        // --- Fungsi Logika ---
-        
-        function showConfirmModal(title = "Konfirmasi", message = "Apakah Anda yakin?") {
-            return new Promise((resolve) => {
-                confirmDeleteModal.querySelector('#confirmTitle').textContent = title;
-                confirmDeleteModal.querySelector('#confirmMessage').textContent = message;
-                
-                const confirmBtn = document.getElementById('confirmDeleteBtn');
-                const cancelBtns = confirmDeleteModal.querySelectorAll('.modal-close-btn');
-    
-                const cleanupAndResolve = (value) => {
-                    confirmDeleteModal.classList.remove('visible');
-                    // Hapus listener agar tidak menumpuk
-                    confirmBtn.removeEventListener('click', confirmHandler);
-                    cancelBtns.forEach(btn => btn.removeEventListener('click', cancelHandler));
-                    resolve(value);
-                };
-    
-                const confirmHandler = () => cleanupAndResolve(true);
-                const cancelHandler = () => cleanupAndResolve(false);
-    
-                confirmBtn.addEventListener('click', confirmHandler, { once: true });
-                cancelBtns.forEach(btn => btn.addEventListener('click', cancelHandler, { once: true }));
-    
-                confirmDeleteModal.classList.add('visible');
-            });
-        }
-        
-        function combineDateTime(dateStr, timeStr) {
-            if (!dateStr) return null;
-            return `${dateStr} ${timeStr || '00:00'}`;
-        }
-    
-        async function handleDateClick(clickInfo) {
-            selectedDateForNewEvent = clickInfo.date;
-            const dateStr = clickInfo.dateStr;
-            
-            const dailyAgendaTitle = document.getElementById('dailyAgendaTitle');
-            const dailyAgendaContent = document.getElementById('dailyAgendaContent');
-    
-            dailyAgendaTitle.textContent = `Agenda untuk ${clickInfo.date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}`;
-            dailyAgendaContent.innerHTML = "<p class='empty-item'>Memuat acara...</p>";
-            dailyAgendaModal.classList.add('visible');
-    
-            try {
-                const response = await fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}`);
-                const events = await response.json();
-                
-                dailyAgendaContent.innerHTML = '';
-                if (events.length === 0) {
-                    dailyAgendaContent.innerHTML = "<p class='empty-item'>Tidak ada acara terjadwal untuk hari ini.</p>";
-                } else {
-                    const eventList = document.createElement('ul');
-                    eventList.className = 'daily-agenda-list';
-                    events.forEach(eventData => {
-                        const li = document.createElement('li');
-                        const descriptionHtml = eventData.description ? `<p class="item-description">${eventData.description}</p>` : '';
-                        const linkHtml = eventData.link ? `<a href="${eventData.link}" target="_blank" class="item-link">Buka Link</a>` : '';
-                        li.innerHTML = `<div class="event-details"><div class="event-item"><span class="event-color-dot" style="background-color: ${eventData.backgroundColor || '#5484ed'}"></span><span class="event-time">${new Date(eventData.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span><span class="event-title">${eventData.title}</span></div>${descriptionHtml}${linkHtml}</div><div class="event-actions"><button class="button-secondary button-small btn-edit" data-event-id="${eventData.id}">Edit</button><button class="button-danger button-small btn-delete" data-event-id="${eventData.id}">Hapus</button></div>`;
-                        eventList.appendChild(li);
-                    });
-                    dailyAgendaContent.appendChild(eventList);
-    
-                    eventList.querySelectorAll('.btn-edit').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                            dailyAgendaModal.classList.remove('visible');
-                            const eventId = e.target.dataset.eventId;
-                            const calEvent = calendar.getEventById(eventId);
-                            if (calEvent) openEventModal(calEvent);
-                        });
-                    });
-                    eventList.querySelectorAll('.btn-delete').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                            const eventId = e.target.dataset.eventId;
-                            const calEvent = calendar.getEventById(eventId);
-                            if (calEvent) handleDeleteEvent(calEvent);
-                        });
-                    });
-                }
-            } catch (error) {
-                dailyAgendaContent.innerHTML = "<p class='empty-item'>Gagal memuat acara.</p>";
-            }
-        }
-    
-        async function loadTodaysAgenda() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const dateStr = `${year}-${month}-${day}`;
-    
-            sidebarDateEl.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
-            sidebarEventsList.innerHTML = '<li class="empty-item">Memuat...</li>';
-            sidebarTasksList.innerHTML = '<li class="empty-item">Memuat...</li>';
-            try {
-                const [eventsResponse, tasksResponse] = await Promise.all([
-                    fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}`),
-                    fetch(`${TASKS_API_URL}?date=${dateStr}`)
-                ]);
-                const events = await eventsResponse.json();
-                const tasks = await tasksResponse.json();
-                renderItems(sidebarEventsList, events, 'event');
-                renderItems(sidebarTasksList, tasks, 'task');
-            } catch (error) {
-                console.error("Gagal memuat data agenda:", error);
-                sidebarEventsList.innerHTML = '<li class="empty-item">Gagal memuat acara.</li>';
-                sidebarTasksList.innerHTML = '<li class="empty-item">Gagal memuat tugas.</li>';
-            }
-        }
-    
-        function renderItems(listElement, items, type) {
-            listElement.innerHTML = '';
-            if (items.length === 0) {
-                listElement.innerHTML = `<li class="empty-item">Tidak ada ${type} hari ini.</li>`;
-                return;
-            }
-            items.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'sidebar-item';
-                const descriptionHtml = item.description ? `<p class="item-description">${item.description}</p>` : '';
-                const linkHtml = item.link ? `<a href="${item.link}" target="_blank" class="item-link">Buka Link</a>` : '';
-                const timeString = type === 'event' ? new Date(item.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
-                li.innerHTML = `<div class="item-color-dot" style="background-color: ${item.backgroundColor || '#3788d8'}"></div><div class="item-main-content"><div class="item-header"><span class="item-time">${timeString}</span><span class="item-title">${item.title}</span></div>${descriptionHtml}${linkHtml}</div>`;
-                li.addEventListener('click', () => {
-                    if (type === 'event') {
-                        const calEvent = calendar.getEventById(item.id);
-                        if (calEvent) openEventModal(calEvent);
-                    }
-                });
-                listElement.appendChild(li);
-            });
-        }
-    
-        function openEventModal(event, date = null) {
-            eventForm.reset();
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', function() {
             document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-            if (event) { // Mode Edit
-                eventModalTitle.textContent = "Edit Acara";
-                eventIdInput.value = event.id;
-                document.getElementById('eventTitle').value = event.title;
-                document.getElementById('eventDescription').value = event.extendedProps.description || '';
-                document.getElementById('eventLink').value = event.extendedProps.link || '';
-                const start = new Date(event.start);
-                const end = event.end ? new Date(event.end) : null;
-                startDatePicker.setDate(start, true);
-                startTimePicker.setDate(start, true);
-                if (end) {
-                    endDatePicker.setDate(end, true);
-                    endTimePicker.setDate(end, true);
-                } else {
-                    endDatePicker.clear();
-                    endTimePicker.clear();
-                }
-                const eventColor = event.backgroundColor || event.color || '#5484ed';
-                eventColorInput.value = eventColor;
-                const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
-                if(selectedColorEl) selectedColorEl.classList.add('selected');
-                eventDeleteBtn.style.display = 'inline-block';
-            } else { // Mode Tambah Baru
-                eventModalTitle.textContent = "Acara Baru";
-                eventIdInput.value = '';
-                const initialDate = date || new Date();
-                startDatePicker.setDate(initialDate, true);
-                startTimePicker.setDate(initialDate, true); 
-                endDatePicker.clear();
-                endTimePicker.clear();
-                eventColorInput.value = '#5484ed';
-                document.querySelector(".color-option[data-color='#5484ed']").classList.add('selected');
-                eventDeleteBtn.style.display = 'none';
+            this.classList.add('selected');
+            eventColorInput.value = this.dataset.color;
+        });
+    });
+
+    aiOrganizerBtn.addEventListener('click', handleAIOrganizerClick);
+
+    // --- 3.4. FUNGSI LOGIKA UTAMA ---
+    async function handleDateClick(clickInfo) {
+        selectedDateForNewEvent = clickInfo.date;
+        const dateStr = clickInfo.dateStr;
+        const dailyAgendaTitle = document.getElementById('dailyAgendaTitle');
+        const dailyAgendaContent = document.getElementById('dailyAgendaContent');
+        
+        dailyAgendaTitle.textContent = `Agenda untuk ${clickInfo.date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+        dailyAgendaContent.innerHTML = "<p class='empty-item'>Memuat agenda...</p>";
+        dailyAgendaModal.classList.add('visible');
+
+        try {
+            const [eventsResponse, tasksResponse] = await Promise.all([
+                fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}T23:59:59`),
+                fetch(`${TASKS_API_URL}?date=${dateStr}`)
+            ]);
+            const events = await eventsResponse.json();
+            const tasks = await tasksResponse.json();
+            
+            dailyAgendaContent.innerHTML = '';
+            let eventsHtml = '<h4>Acara</h4>';
+            if (events.length === 0) {
+                eventsHtml += "<p class='empty-item'>Tidak ada acara terjadwal.</p>";
+            } else {
+                eventsHtml += '<ul class="daily-agenda-list">';
+                events.forEach(event => { eventsHtml += `<li><span class="event-color-dot" style="background-color: ${event.backgroundColor || '#5484ed'}"></span> ${new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${event.title}</li>`; });
+                eventsHtml += '</ul>';
             }
-            eventModal.classList.add('visible');
+            dailyAgendaContent.innerHTML += eventsHtml;
+
+            let tasksHtml = '<h4 style="margin-top: 1rem;">Tugas</h4>';
+            if (tasks.length === 0) {
+                tasksHtml += "<p class='empty-item'>Tidak ada tugas untuk hari ini.</p>";
+            } else {
+                tasksHtml += '<ul class="daily-agenda-list">';
+                tasks.forEach(task => { tasksHtml += `<li>✔️ ${task.title} (Prioritas: ${task.priority})</li>`; });
+                tasksHtml += '</ul>';
+            }
+            dailyAgendaContent.innerHTML += tasksHtml;
+
+        } catch (error) {
+            console.error("Gagal memuat agenda harian:", error);
+            dailyAgendaContent.innerHTML = "<p class='empty-item error'>Gagal memuat agenda.</p>";
         }
-    
-        async function handleEventFormSubmit(e) {
-            e.preventDefault();
-            const startDateStr = combineDateTime(startDatePicker.input.value, startTimePicker.input.value);
-            const endDateStr = combineDateTime(endDatePicker.input.value, endTimePicker.input.value);
-            if (startDateStr && endDateStr && (new Date(endDateStr) < new Date(startDateStr))) {
-                alert('Waktu selesai tidak boleh lebih awal dari waktu mulai.');
-                return;
+    }
+
+    async function loadTodaysAgenda() {
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        
+        sidebarDateEl.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
+        sidebarEventsList.innerHTML = '<li class="empty-item">Memuat...</li>';
+        sidebarTasksContainer.innerHTML = '<li class="empty-item">Memuat...</li>';
+
+        try {
+            const [eventsResponse, tasksResponse] = await Promise.all([
+                fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}T23:59:59`),
+                fetch(`${TASKS_API_URL}?filter=today_and_overdue`)
+            ]);
+            const events = await eventsResponse.json();
+            const tasks = await tasksResponse.json();
+            
+            renderEvents(sidebarEventsList, events);
+            renderCategorizedTasks(sidebarTasksContainer, tasks);
+        } catch (error) {
+            console.error("Gagal memuat data agenda:", error);
+            sidebarEventsList.innerHTML = '<li class="empty-item error">Gagal memuat acara.</li>';
+            sidebarTasksContainer.innerHTML = '<li class="empty-item error">Gagal memuat tugas.</li>';
+        }
+    }
+
+    function renderEvents(listElement, events) {
+        listElement.innerHTML = '';
+        if (events.length === 0) {
+            listElement.innerHTML = `<li class="empty-item">Tidak ada acara untuk hari ini.</li>`;
+            return;
+        }
+        events.forEach(event => {
+            const li = document.createElement('li');
+            li.className = 'sidebar-item';
+            const timeString = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const colorDot = `<div class="item-color-dot" style="background-color: ${event.backgroundColor || '#3788d8'}"></div>`;
+            li.innerHTML = `${colorDot}<div class="item-main-content"><div class="item-header"><span class="item-title">${event.title}</span></div><p class="item-description">${timeString}</p></div>`;
+            li.addEventListener('click', () => {
+                const calEvent = calendar.getEventById(event.id);
+                if (calEvent) openEventModal(calEvent);
+            });
+            listElement.appendChild(li);
+        });
+    }
+
+    function renderCategorizedTasks(container, tasks) {
+        container.innerHTML = '';
+        const categories = {
+            urgent: { title: 'Mendesak', icon: '🔥', tasks: [] },
+            high: { title: 'Penting', icon: '📌', tasks: [] },
+            medium: { title: 'Biasa', icon: '🗓️', tasks: [] },
+            low: { title: 'Santai', icon: '☕', tasks: [] },
+        };
+
+        tasks.forEach(task => {
+            const priority = task.priority || 'medium';
+            if (categories[priority]) {
+                categories[priority].tasks.push(task);
             }
-            const eventId = eventIdInput.value;
-            const eventData = {
-                title: document.getElementById('eventTitle').value,
-                description: document.getElementById('eventDescription').value,
-                start: startDateStr,
-                end: endDateStr,
-                link: document.getElementById('eventLink').value,
-                color: eventColorInput.value
-            };
-            const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
-            const method = eventId ? 'PUT' : 'POST';
+        });
+
+        let hasTasks = false;
+        for (const key in categories) {
+            const category = categories[key];
+            if (category.tasks.length > 0) {
+                hasTasks = true;
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'task-category';
+                let tasksHtml = `<div class="task-category-header"><span class="icon">${category.icon}</span> ${category.title}</div><ul class="item-list">`;
+                
+                category.tasks.forEach(task => {
+                    const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID')}` : 'Tanpa batas waktu';
+                    tasksHtml += `
+                        <li class="sidebar-item item-priority-${task.priority}" data-task-id="${task.id}">
+                            <div class="item-main-content">
+                                <div class="item-header"><span class="item-title">${task.title}</span></div>
+                                <p class="item-description">${dueDateString}</p>
+                            </div>
+                        </li>
+                    `;
+                });
+                tasksHtml += `</ul>`;
+                categoryDiv.innerHTML = tasksHtml;
+                container.appendChild(categoryDiv);
+
+                categoryDiv.querySelectorAll('.sidebar-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const taskId = item.dataset.taskId;
+                        const taskData = tasks.find(t => t.id == taskId);
+                        if(taskData) openTaskModal(taskData);
+                    });
+                });
+            }
+        }
+        
+        if (!hasTasks) {
+            container.innerHTML = `<p class="empty-item">Tidak ada tugas yang relevan hari ini.</p>`;
+        }
+    }
+
+    function openEventModal(event, date = null) {
+        eventForm.reset();
+        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+        if (event) {
+            eventModalTitle.textContent = "Edit Acara";
+            eventIdInput.value = event.id;
+            document.getElementById('eventTitle').value = event.title;
+            document.getElementById('eventDescription').value = event.extendedProps.description || '';
+            document.getElementById('eventLink').value = event.extendedProps.link || '';
+            const start = new Date(event.start);
+            const end = event.end ? new Date(event.end) : null;
+            startDatePicker.setDate(start, true);
+            startTimePicker.setDate(start, true);
+            if (end) { endDatePicker.setDate(end, true); endTimePicker.setDate(end, true); } else { endDatePicker.clear(); endTimePicker.clear(); }
+            const eventColor = event.backgroundColor || event.color || '#5484ed';
+            eventColorInput.value = eventColor;
+            const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
+            if (selectedColorEl) selectedColorEl.classList.add('selected');
+            eventDeleteBtn.style.display = 'inline-block';
+        } else {
+            eventModalTitle.textContent = "Acara Baru";
+            eventIdInput.value = '';
+            const initialDate = date || new Date();
+            startDatePicker.setDate(initialDate, true);
+            startTimePicker.clear();
+            endDatePicker.clear();
+            endTimePicker.clear();
+            eventColorInput.value = '#5484ed';
+            document.querySelector(".color-option[data-color='#5484ed']").classList.add('selected');
+            eventDeleteBtn.style.display = 'none';
+        }
+        eventModal.classList.add('visible');
+    }
+
+    async function handleEventFormSubmit(e) {
+        e.preventDefault();
+        const startDateStr = combineDateTime(startDatePicker.input.value, startTimePicker.input.value);
+        const endDateStr = combineDateTime(endDatePicker.input.value, endTimePicker.input.value);
+        if (startDateStr && endDateStr && (new Date(endDateStr) < new Date(startDateStr))) { alert('Waktu selesai tidak boleh lebih awal dari waktu mulai.'); return; }
+        const eventId = eventIdInput.value;
+        const eventData = { title: document.getElementById('eventTitle').value, description: document.getElementById('eventDescription').value, start: startDateStr, end: endDateStr, link: document.getElementById('eventLink').value, color: eventColorInput.value };
+        const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
+        const method = eventId ? 'PUT' : 'POST';
+        try {
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
+            if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan acara');
+            eventModal.classList.remove('visible');
+            calendar.refetchEvents();
+            loadTodaysAgenda();
+        } catch (error) { alert(error.message); }
+    }
+    
+    async function handleDeleteEvent(event) {
+        const confirmed = await showConfirmModal("Hapus Acara", `Anda yakin ingin menghapus "${event.title}"?`);
+        if (event.id && confirmed) {
             try {
-                const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message || 'Gagal menyimpan acara');
+                const response = await fetch(`${EVENTS_API_URL}/${event.id}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Gagal menghapus acara');
                 eventModal.classList.remove('visible');
-                dailyAgendaModal.classList.remove('visible');
                 calendar.refetchEvents();
                 loadTodaysAgenda();
-            } catch (error) {
-                alert(error.message);
-            }
+            } catch (error) { alert(error.message); }
         }
-        
-        async function handleDeleteEvent(event) {
-            const eventId = event.id;
-            const eventTitle = event.title || 'acara ini';
-            const confirmed = await showConfirmModal("Hapus Acara", `Anda yakin ingin menghapus acara "${eventTitle}"?`);
-            if (eventId && confirmed) {
-                try {
-                    const response = await fetch(`${EVENTS_API_URL}/${eventId}`, { method: 'DELETE' });
-                    if (!response.ok) throw new Error('Gagal menghapus acara');
-                    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('visible'));
-                    calendar.refetchEvents();
-                    loadTodaysAgenda();
-                } catch (error) {
-                    alert(error.message);
-                }
-            }
-        }
-        
-        async function handleEventDrop(info) {
-            const eventData = {
-                start: info.event.start.toISOString(),
-                end: info.event.end ? info.event.end.toISOString() : null,
-                title: info.event.title,
-                description: info.event.extendedProps.description,
-                link: info.event.extendedProps.link,
-                color: info.event.backgroundColor
-            };
-            try {
-                const response = await fetch(`${EVENTS_API_URL}/${info.event.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(eventData)
-                });
-                if (!response.ok) throw new Error('Gagal update waktu acara');
-                loadTodaysAgenda();
-            } catch (error) {
-                alert(error.message);
-                info.revert();
-            }
-        }
-        
-        // Inisialisasi
-        loadTodaysAgenda();
-    });
-    </script>
-
-<style>
-/* ================= GLOBAL ================= */
-:root {
-  --bg: #1e1e1e;
-  --panel: #252526;
-  --muted: #9aa4b2;
-  --accent: #569ff7;
-  --card:rgb(53, 53, 105);
-  --border:rgb(74, 110, 194);
-}
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg);
-  color: #e6eef6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* ================= LAYOUT ================= */
-.hub-container-v2 {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 20px;
-  height: 88vh;
-  padding: 20px;
-  box-sizing: border-box;
-}
-.calendar-main-panel, .details-sidebar-panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-/* responsive */
-@media (max-width: 920px) {
-  .hub-container-v2 { grid-template-columns: 1fr; height: auto; }
-  .details-sidebar-panel { order: 2; }
-}
-
-/* ================= SIDEBAR ================= */
-.sidebar-header { border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px; margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center; }
-.sidebar-header h3 { margin:0; color: #fff; font-size:16px; }
-.sidebar-header .text-secondary { color: var(--muted); font-size:13px; }
-
-.sidebar-section h4 { margin: 12px 0 8px; color: var(--muted); font-size:13px; letter-spacing:0.6px; text-transform:uppercase; }
-.item-list { list-style:none; margin:0; padding:0; }
-
-.sidebar-item { display:flex; gap:12px; align-items:flex-start; padding:10px; border-radius:8px; transition: background .12s ease; cursor:pointer; }
-.sidebar-item:hover { background: rgba(255,255,255,0.02); }
-.item-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:6px; }
-.item-main-content { min-width:0; flex:1; }
-.item-header { display:flex; justify-content:space-between; gap:8px; align-items:center; }
-.item-title { font-weight:600; color:#e6eef6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.item-time { color: var(--muted); font-size:13px; }
-.item-description { color:#bfc9d4; font-size:13px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.item-link { color: var(--accent); font-size:13px; text-decoration:none; display:inline-block; margin-top:6px; }
-.item-link:hover { text-decoration:underline; }
-
-/* ================= FULLCALENDAR (minor tweaks) ================= */
-:root { --fc-border-color: #333; }
-.fc-theme-standard { color: #e8eef6; }
-.fc .fc-toolbar-title { color:#fff; font-weight:600; font-size:1.3rem; }
-.fc .fc-button { background:#2f3338 !important; color:#dfe8f3 !important; border:1px solid rgba(255,255,255,0.04) !important; border-radius:8px !important; }
-.fc .fc-button:hover { filter:brightness(.95); }
-.fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--accent) !important; color:#fff !important; }
-
-/* ================= MODAL ================ */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:3000; padding:20px; box-sizing:border-box; }
-.modal-overlay.visible { display:flex; }
-.modal-box { width:100%; max-width:640px; background:var(--card); border-radius:12px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.03); }
-.modal-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:linear-gradient(180deg, rgba(0,0,0,0.04), transparent); border-bottom:1px solid rgba(255,255,255,0.02); }
-.modal-header h3 { margin:0; font-size:18px; color:#fff; }
-.modal-close-btn { background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:6px; border-radius:6px; }
-.modal-close-btn:hover { color:#fff; background: rgba(255,255,255,0.02); }
-
-/* ================= FORM (icon-left + boxed inputs) ================= */
-.modal-form { padding:10px 10px 2px; display:flex; flex-direction:column; gap:12px; box-sizing:border-box; }
-
-/* .form-row: icon at left, input to right (single horizontal row) */
-.form-row { display:flex; gap:12px; align-items:center; width:100%; }
-.field-icon { width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.02); border-radius:8px; color:var(--muted); font-size:18px; flex-shrink:0; border:1px solid rgba(255,255,255,0.02); }
-
-/* Inputs styles (boxed, elevated) */
-.input-box { flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); background:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(255,255,255,0.01)); color:#eaf3ff; font-size:14px; box-shadow: 0 4px 10px rgba(2,6,23,0.45) inset; transition: box-shadow .16s ease, border-color .16s ease, transform .08s ease; }
-.input-box::placeholder { color: #8b98a8; }
-.input-textarea { min-height:92px; resize:vertical; padding-top:12px; }
-
-/* focus ring (soft) */
-.input-box:focus, .input-textarea:focus { outline:none; border-color: rgba(86,159,247,0.95); box-shadow: 0 0 0 6px rgba(86,159,247,0.085); transform: translateY(-1px); }
-
-/* ================= DATETIME STACK (clear visual separation) ================= */
-.datetime-stack { display:flex; gap:12px; flex-direction:row; }
-@media (max-width:560px) { .datetime-stack { flex-direction:column; } }
-
-.datetime-card { flex:1; background: rgba(255,255,255,0.01); border-radius:10px; padding:10px; border:1px solid rgba(255,255,255,0.02); box-sizing:border-box; }
-.datetime-card-header { color:var(--muted); font-size:13px; margin-bottom:8px; font-weight:600; }
-
-/* make sure flatpickr inputs fit */
-.flatpickr-input { width:100%; box-sizing:border-box; }
-
-/* ================= COLOR PICKER ================= */
-.color-row { align-items:center; }
-.color-picker { display:flex; gap:8px; align-items:center; }
-.color-option { width:36px; height:36px; border-radius:8px; border:2px solid transparent; cursor:pointer; box-shadow: 0 4px 12px rgba(2,6,23,0.5); transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
-.color-option:hover { transform: translateY(-3px); }
-.color-option.selected { border-color: rgba(86,159,247,0.95); box-shadow: 0 6px 18px rgba(86,159,247,0.08); transform: translateY(-4px) scale(1.02); }
-
-/* ================= MODAL ACTIONS ================= */
-.modal-actions { display:flex; justify-content:flex-end; gap:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.02); margin-top:8px; }
-.button-primary, .button-secondary, .button-danger { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:600; }
-.button-primary { background: var(--accent); color:#072033; box-shadow: 0 6px 20px rgba(86,159,247,0.18); }
-.button-secondary { background: rgba(255,255,255,0.03); color:#dbe9ff; border:1px solid rgba(255,255,255,0.02); }
-.button-danger { background:#d9534f; color:white; }
-
-/* small btn style in lists */
-.button-small { padding:6px 10px; border-radius:8px; font-size:13px; }
-
-/* ================= DAILY AGENDA LIST ================= */
-.modal-content { padding:14px 18px; max-height:400px; overflow:auto; }
-.daily-agenda-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
-.daily-agenda-list li { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; padding:10px; background:rgba(255,255,255,0.01); border-radius:8px; border:1px solid rgba(255,255,255,0.01); }
-
-/* small tweaks */
-.event-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:6px; }
-.event-time { color:var(--muted); font-size:13px; margin-right:8px; }
-.event-title { font-weight:600; color:#e8f6ff; }
-.event-actions { display:flex; gap:8px; align-items:center; }
-
-/* ================= UTIL ================= */
-.hidden { display:none !important; }
-
-
-
-
-/* Menargetkan secara spesifik kotak input untuk jam dan menit */
-.flatpickr-time input.flatpickr-hour, 
-.flatpickr-time input.flatpickr-minute {
-    color: #d4d4d4;      /* Warna teks angka di dalamnya */
-    background: transparent; /* Membuat latar belakangnya transparan */
-}
-
-/* Ini adalah gaya umum untuk semua angka di dalam picker, 
-   termasuk yang di atas, dan juga untuk tahun */
-.numInputWrapper .numInput {
-    color: #d4d4d4; 
-}
-
-body.no-scroll {
-    overflow: hidden;
-}
-
-/* ======================================================= */
-/* === DESAIN DARK THEME UNTUK FLATPCIKR (KALENDER POP-UP) === */
-/* ======================================================= */
-
-/* Latar belakang utama pop-up */
-.flatpickr-calendar {
-    background-color: #2d2d2d; 
-    border: 1px solid #444; 
-    color: #d4d4d4;
-    border-radius: 6px;
-}
-
-/* Header: Bulan, Tahun, dan Panah Navigasi */
-.flatpickr-months .flatpickr-month,
-.flatpickr-current-month .flatpickr-monthDropdown-months {
-    color: #ffffff;
-    font-weight: bold;
-}
-
-/* Nama Hari (Senin, Selasa, dst.) */
-span.flatpickr-weekday {
-    color: #8ab4f8; /* Warna biru muda untuk aksen */
-    font-weight: 500;
-}
-
-/* Angka Tanggal */
-.flatpickr-day {
-    color: #d4d4d4;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-/* Tanggal yang Dipilih */
-.flatpickr-day.selected, 
-.flatpickr-day.startRange, 
-.flatpickr-day.endRange {
-    background: #094771;
-    border-color: #094771;
-    color: #ffffff; /* Teks putih cerah saat dipilih */
-}
-
-/* Tanggal saat di-hover mouse */
-.flatpickr-day:hover {
-    background: #3a3d3e;
-}
-
-/* Penanda Tanggal Hari Ini */
-.flatpickr-day.today {
-    border-color: #8ab4f8;
-    color: #8ab4f8; /* Teks tanggal hari ini juga berwarna biru */
-}
-
-/* Tanggal di bulan lain (redup) */
-.flatpickr-day.prevMonthDay,
-.flatpickr-day.nextMonthDay {
-    color: #555;
-}
-/* ================= FULLCALENDAR LIST VIEW (Dark) ================= */
-.fc-list {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #12171d; /* panel gelap */
-  border-radius: 12px;
-  overflow: hidden;
-  color: #e6eef6;
-  font-family: 'Inter', sans-serif;
-}
-
-/* ======= HEADER PER HARI ======= */
-.fc .fc-list-day-cushion {
-  background: linear-gradient(90deg, #1e2633, #161b22);
-  color: #ffffff;
-  font-weight: 600;
-  padding: 10px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.fc .fc-list-day-text,
-.fc .fc-list-day-side-text {
-  color: #9aa7b8;
-  font-size: 13px;
-}
-
-/* ======= ITEM EVENT ======= */
-.fc .fc-list-event {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-
-.fc .fc-list-event:hover td {
-  background: rgba(255, 255, 255, 0.05);
-  transform: scale(1.01);
-}
-
-.fc .fc-list-event-time {
-  color: #9aa7b8;
-  font-size: 13px;
-  padding-left: 10px;
-  white-space: nowrap;
-}
-
-.fc .fc-list-event-title {
-  font-weight: 600;
-  color: #f0f4fa;
-  font-size: 14px;
-}
-
-.fc .fc-list-event-dot {
-  border: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 6px rgba(255,255,255,0.25);
-}
-
-/* ======= STATE TANPA EVENT ======= */
-.fc .fc-list-empty {
-  color: #7a8593;
-  padding: 20px;
-  text-align: center;
-  font-size: 14px;
-  font-style: italic;
-}
-
-/* ======= SCROLLBAR DARK MODE ======= */
-.fc-scroller::-webkit-scrollbar {
-  width: 8px;
-}
-.fc-scroller::-webkit-scrollbar-track {
-  background: #1a202c;
-}
-.fc-scroller::-webkit-scrollbar-thumb {
-  background: #3b455a;
-  border-radius: 4px;
-}
-.fc-scroller::-webkit-scrollbar-thumb:hover {
-  background: #58657a;
-}
-
-/* ===== FORM INPUT EVENT PURE DARK (NO PURPLE) ===== */
-
-/* Reset form wrapper */
-form {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  margin: 0 auto;
-  color: #e6eef6;
-  max-width: 450px;
-}
-
-/* Label */
-form label {
-  display: block;
-  font-size: 14px;
-  margin-bottom: 6px;
-  color: #9aa7b8;
-}
-
-/* Input & textarea */
-form input[type="text"],
-form input[type="date"],
-form input[type="time"],
-form input[type="url"],
-form input[type="email"],
-form input[type="number"],
-form select,
-form textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: #0d1117;  /* dark pure */
-  color: #f0f4fa;
-  font-size: 14px;
-  outline: none;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
-  margin-bottom: 16px;
-}
-
-/* Fokus input (biru glow) */
-form input:focus,
-form select:focus,
-form textarea:focus {
-  border-color: #3b82f6; /* biru */
-  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
-}
-
-/* Placeholder */
-form input::placeholder,
-form textarea::placeholder {
-  color: #6b7280;
-  font-size: 13px;
-}
-
-/* Tombol submit (full biru, no purple) */
-form button[type="submit"] {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  background: #2563eb; /* biru */
-  color: #fff;
-  font-weight: 600;
-  font-size: 15px;
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.2s ease;
-}
-
-form button[type="submit"]:hover {
-  background: #1d4ed8; /* biru lebih gelap */
-  transform: translateY(-1px);
-}
-/* ====== MODAL WRAPPER DARK PURE ====== */
-.modal-content, 
-.modal,
-.card, 
-.event-form-container {
-  background: #0d1117 !important;   /* pure dark */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e6eef6;
-}
-
-/* Header modal */
-.modal-header {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  color: #f0f4fa;
-}
-
-/* Footer modal */
-.modal-footer {
-  background: transparent !important;
-  border-top: 1px solid rgba(255,255,255,0.08);
-}
-
-/* File: app/templates/personal_hub.html (di dalam <style>) */
-
-    /* =============================================== */
-    /* === CSS BARU UNTUK MODAL KONFIRMASI HAPUS === */
-    /* =============================================== */
-    #confirmDeleteModal .modal-content p {
-        margin: 0;
-        line-height: 1.6;
-        color: var(--text-primary);
     }
     
-    #confirmDeleteModal .modal-actions {
-        background-color: rgba(255,0,0,0.05); /* Sedikit nuansa merah di area tombol */
+    async function handleEventDrop(info) {
+        const eventData = { start: info.event.start.toISOString(), end: info.event.end ? info.event.end.toISOString() : null };
+        try {
+            const response = await fetch(`${EVENTS_API_URL}/${info.event.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
+            if (!response.ok) throw new Error('Gagal update waktu acara');
+            loadTodaysAgenda();
+        } catch (error) { alert(error.message); info.revert(); }
     }
 
+    function openTaskModal(task) {
+        taskForm.reset();
+        if(task) {
+            taskModalTitle.textContent = "Detail Tugas";
+            taskIdInput.value = task.id;
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDescription').value = task.description || '';
+            taskDueDatePicker.setDate(task.due_date || '', true);
+            document.getElementById('taskPriority').value = task.priority || 'medium';
+            taskDeleteBtn.style.display = 'inline-block';
+        } else {
+            taskModalTitle.textContent = "Tugas Baru";
+            taskIdInput.value = '';
+            taskDueDatePicker.clear();
+            document.getElementById('taskPriority').value = 'medium';
+            taskDeleteBtn.style.display = 'none';
+        }
+        taskModal.classList.add('visible');
+    }
+
+    async function handleTaskFormSubmit(e) {
+        e.preventDefault();
+        const taskId = taskIdInput.value;
+        const taskData = { title: document.getElementById('taskTitle').value, description: document.getElementById('taskDescription').value, due_date: document.getElementById('taskDueDate').value || null, priority: document.getElementById('taskPriority').value };
+        const url = taskId ? `${TASKS_API_URL}/${taskId}` : TASKS_API_URL;
+        const method = taskId ? 'PUT' : 'POST';
+        try {
+            const response = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(taskData)});
+            if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan tugas');
+            taskModal.classList.remove('visible');
+            loadTodaysAgenda();
+        } catch (error) { alert(error.message); }
+    }
+
+    async function handleDeleteTask(task) {
+        const confirmed = await showConfirmModal("Hapus Tugas", `Anda yakin ingin menghapus "${task.title}"?`);
+        if(task.id && confirmed) {
+            try {
+                const response = await fetch(`${TASKS_API_URL}/${task.id}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Gagal menghapus tugas');
+                taskModal.classList.remove('visible');
+                loadTodaysAgenda();
+            } catch (error) { alert(error.message); }
+        }
+    }
+    
+    function handleAIOrganizerClick() {
+        aiOrganizerBtn.disabled = true;
+        aiOrganizerBtn.textContent = 'Mengarahkan...';
+        const events = Array.from(sidebarEventsList.querySelectorAll('.sidebar-item .item-title')).map(el => el.textContent);
+        const tasks = Array.from(document.querySelectorAll('#task-categories-container .sidebar-item .item-title')).map(el => el.textContent);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('routes.ask_ai_from_hub') }}";
+        const eventsInput = document.createElement('input');
+        eventsInput.type = 'hidden';
+        eventsInput.name = 'events';
+        eventsInput.value = JSON.stringify(events);
+        form.appendChild(eventsInput);
+        const tasksInput = document.createElement('input');
+        tasksInput.type = 'hidden';
+        tasksInput.name = 'tasks';
+        tasksInput.value = JSON.stringify(tasks);
+        form.appendChild(tasksInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function showConfirmModal(title, message) {
+        return new Promise((resolve) => {
+            confirmDeleteModal.querySelector('#confirmTitle').textContent = title;
+            confirmDeleteModal.querySelector('#confirmMessage').textContent = message;
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const cancelBtns = confirmDeleteModal.querySelectorAll('.modal-close-btn, #cancelDeleteBtn');
+            const confirmHandler = () => { cleanup(true); };
+            const cancelHandler = () => { cleanup(false); };
+            const cleanup = (value) => {
+                confirmDeleteModal.classList.remove('visible');
+                confirmBtn.removeEventListener('click', confirmHandler);
+                cancelBtns.forEach(btn => btn.removeEventListener('click', cancelHandler));
+                resolve(value);
+            };
+            confirmBtn.addEventListener('click', confirmHandler, { once: true });
+            cancelBtns.forEach(btn => btn.addEventListener('click', cancelHandler, { once: true }));
+            confirmDeleteModal.classList.add('visible');
+        });
+    }
+
+    function combineDateTime(dateStr, timeStr) {
+        if (!dateStr) return null;
+        return `${dateStr} ${timeStr || '00:00:00'}`;
+    }
+    
+    // --- 3.5. INISIALISASI AWAL ---
+    loadTodaysAgenda();
+});
+</script>
+
+
+<style>
+/* --- VARIABEL WARNA & DASAR --- */
+:root {
+    --bg-main: #1e1e1e; 
+    --bg-card: #252526; 
+    --bg-input: #3c3c3c;
+    --bg-hover: #37373d; 
+    --border-color: #3c3c3c; 
+    --border-input-focus: #4a90e2;
+    --text-primary: #e0e0e0; 
+    --text-secondary: #9e9e9e; 
+    --accent-primary: #4a90e2;
+    --accent-danger: #d93025;
+}
+body.no-scroll { overflow: hidden; }
+
+/* --- LAYOUT UTAMA --- */
+.hub-container-v2 { 
+    display: grid; 
+    grid-template-columns: 1fr 340px; 
+    gap: 20px; 
+    height: 88vh; 
+    padding: 20px; 
+}
+.hub-card { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-color); 
+    border-radius: 10px; 
+    padding: 18px; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;
+}
+#calendar { 
+    flex-grow: 1; 
+    min-height: 0; 
+}
+@media (max-width: 920px) { 
+    .hub-container-v2 { grid-template-columns: 1fr; height: auto; } 
+    .details-sidebar-panel { order: -1; max-height: 45vh; margin-bottom: 20px; } 
+}
+
+/* --- SIDEBAR --- */
+.sidebar-header { 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 8px; 
+    margin-bottom: 12px; 
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center; 
+    gap: 10px;
+}
+.sidebar-header h3 { margin:0; color: #fff; font-size:16px; flex-shrink: 0; }
+.sidebar-content { flex-grow: 1; overflow-y: auto; }
+.sidebar-section h4 { margin: 12px 0 8px; color: var(--text-secondary); font-size:13px; letter-spacing:0.6px; text-transform:uppercase; }
+.sidebar-section-header { display: flex; justify-content: space-between; align-items: center; }
+.button-add { background: none; border: 1px solid var(--border-color); color: var(--text-secondary); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.button-add:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+.item-list { list-style:none; margin:0; padding:0; }
+.sidebar-item { display:flex; gap:12px; align-items:flex-start; padding:10px; border-radius:8px; transition: background .12s ease; cursor:pointer; border-left: 3px solid transparent; }
+.sidebar-item:hover { background: var(--bg-hover); }
+.item-color-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:6px; }
+.item-main-content { min-width:0; flex:1; }
+.item-header { display:flex; align-items:center; gap:8px; }
+.item-title { font-weight:500; color: var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.item-description { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.empty-item { color: var(--text-secondary); padding: 10px; font-style: italic; }
+.empty-item.error { color: var(--accent-danger); }
+
+/* CSS BARU UNTUK KATEGORI TUGAS */
+.task-category { margin-top: 15px; }
+.task-category-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--text-primary); font-size: 14px; font-weight: 500; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+.task-category-header .icon { font-size: 16px; }
+.item-priority-urgent .item-title { color: #dc2127; }
+.item-priority-high .item-title { color: #fbd75b; }
+
+/* --- FULLCALENDAR STYLING --- */
+:root { --fc-border-color: var(--border-color); --fc-today-bg-color: rgba(74, 144, 226, 0.15); }
+.fc .fc-toolbar-title { color:#fff; font-size:1.4rem; }
+.fc .fc-button { background:#2f3338 !important; color:#dfe8f3 !important; border:1px solid var(--border-color) !important; border-radius:8px !important; }
+.fc .fc-button:hover { filter:brightness(1.2); }
+.fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--accent-primary) !important; color:#fff !important; }
+.fc-daygrid-event { border: none !important; }
+.fc-event-main { display: flex; align-items: center; gap: 5px; }
+.fc-list { background-color: var(--bg-card); border: 1px solid var(--border-color) !important; }
+.fc .fc-list-day-cushion { background-color: var(--bg-hover); }
+.fc-daygrid-day-number, .fc-col-header-cell-cushion { color: var(--text-secondary); }
+
+/* --- MODAL STYLING --- */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:3000; padding:20px; }
+.modal-overlay.visible { display:flex; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-box { width:100%; max-width:580px; background:var(--bg-card); border-radius:12px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,0.6); border:1px solid var(--border-color); padding: 0; }
+.modal-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; background:#333338; border-bottom:1px solid var(--border-color); }
+.modal-header h3 { margin:0; font-size:16px; color:#fff; }
+.modal-close-btn { width: 30px; height: 30px; position: relative; background: none; border: none; cursor: pointer; opacity: 0.7; transition: all 0.2s; border-radius: 50%; }
+.modal-close-btn:hover { opacity: 1; background-color: var(--bg-hover); transform: rotate(90deg); }
+.modal-close-btn::before, .modal-close-btn::after { content: ''; position: absolute; top: 50%; left: 50%; width: 14px; height: 2px; background-color: var(--text-secondary); }
+.modal-close-btn::before { transform: translate(-50%, -50%) rotate(45deg); }
+.modal-close-btn::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.modal-content { padding: 18px 20px 22px; }
+.modal-form { padding:18px 20px 22px; display:flex; flex-direction:column; gap:12px; }
+.form-row { display:flex; gap:12px; align-items:center; width:100%; }
+.field-icon { width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.02); border-radius:8px; color:var(--text-secondary); font-size:18px; flex-shrink:0; border:1px solid var(--border-color); }
+.input-box { flex:1; padding:10px 12px; border-radius:8px; border:1px solid #444; background:var(--bg-main); color:var(--text-primary); font-size:14px; transition: all .16s ease; }
+.input-box::placeholder { color: #8b98a8; }
+.input-textarea { min-height:92px; resize:vertical; }
+.input-box:focus { outline:none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.25); }
+.datetime-stack { display:flex; gap:12px; }
+@media (max-width:560px) { .datetime-stack { flex-direction:column; } }
+.datetime-card { flex:1; background: rgba(0,0,0,0.15); border-radius:10px; padding:12px; border:1px solid var(--border-color); }
+.datetime-card-header { color:var(--text-secondary); font-size:12px; margin-bottom:8px; font-weight:500; }
+.flatpickr-input { width:100%; box-sizing:border-box; }
+.color-row { align-items:center; }
+.color-picker { display:flex; gap:8px; align-items:center; }
+.color-option { width:32px; height:32px; border-radius:50%; border:2px solid transparent; cursor:pointer; transition: all .12s ease; }
+.color-option:hover { transform: translateY(-2px); }
+.color-option.selected { border-color: var(--accent-primary); transform: translateY(-2px) scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.modal-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 20px; border-top:1px solid var(--border-color); margin-top:8px; }
+.daily-agenda-list { list-style: none; padding: 0; margin: 0; }
+.daily-agenda-list li { padding: 8px 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; }
+.daily-agenda-list li:last-child { border-bottom: none; }
+#confirmDeleteModal .modal-actions { background-color: rgba(217, 48, 37, 0.1); }
+
+/* --- TOMBOL-TOMBOL --- */
+.button-primary, .button-secondary, .button-danger { border: none; padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all .2s ease; }
+.button-primary { background-color: var(--accent-primary); color: white; }
+.button-primary:hover { filter: brightness(1.15); }
+.button-secondary { background-color: #3c3c3c; color: var(--text-primary); }
+.button-secondary:hover { background-color: #4c4c4c; }
+.button-danger { background-color: var(--accent-danger); color: white; }
+.button-danger:hover { filter: brightness(1.15); }
 </style>
 
 {% endblock %}
