@@ -9,7 +9,6 @@
     <div class="details-sidebar-panel hub-card">
         <div class="sidebar-header">
             <h3>Agenda Hari Ini</h3>
-            
             <span id="sidebar-date-today" class="text-secondary"></span>
         </div>
         <div class="sidebar-content">
@@ -42,31 +41,30 @@
         </div>
         <form id="eventForm" class="modal-form" autocomplete="off">
             <input type="hidden" id="eventId">
-            <div class="form-row"><div class="field-icon">✏️</div><input type="text" id="eventTitle" class="input-box" placeholder="Tambahkan judul acara" required></div>
+            <div class="form-row"><input type="text" id="eventTitle" class="input-box" placeholder="Tambahkan judul acara" required></div>
             <div class="datetime-stack">
                 <div class="datetime-card">
                     <div class="datetime-card-header">Mulai</div>
-                    <div class="form-row"><div class="field-icon">📅</div><input type="text" id="eventStartDate" class="input-box" placeholder="Tanggal Mulai" required></div>
-                    <div class="form-row"><div class="field-icon">⏰</div><input type="text" id="eventStartTime" class="input-box" placeholder="Jam Mulai"></div>
+                    <div class="form-row"><input type="text" id="eventStartDate" class="input-box" placeholder="Tanggal Mulai" required></div>
+                    <div class="form-row"><input type="text" id="eventStartTime" class="input-box" placeholder="Jam Mulai"></div>
                 </div>
                 <div class="datetime-card">
                     <div class="datetime-card-header">Selesai</div>
-                    <div class="form-row"><div class="field-icon">📅</div><input type="text" id="eventEndDate" class="input-box" placeholder="Tanggal Selesai"></div>
-                    <div class="form-row"><div class="field-icon">⏳</div><input type="text" id="eventEndTime" class="input-box" placeholder="Jam Selesai"></div>
+                    <div class="form-row"><input type="text" id="eventEndDate" class="input-box" placeholder="Tanggal Selesai"></div>
+                    <div class="form-row"><input type="text" id="eventEndTime" class="input-box" placeholder="Jam Selesai"></div>
                 </div>
             </div>
-            <div class="form-row"><div class="field-icon">📋</div><textarea id="eventDescription" class="input-box input-textarea" placeholder="Tambahkan deskripsi..."></textarea></div>
-            <div class="form-row"><div class="field-icon">🔗</div><input type="url" id="eventLink" class="input-box" placeholder="Tambahkan link (misal: Zoom/GMeet)"></div>
+            <div class="form-row"><textarea id="eventDescription" class="input-box input-textarea" placeholder="Tambahkan deskripsi..."></textarea></div>
+            <div class="form-row"><input type="url" id="eventLink" class="input-box" placeholder="Tambahkan link (misal: Zoom/GMeet)"></div>
             <div class="form-row color-row">
-                <div class="field-icon">🎨</div>
-                <div class="color-picker" role="radiogroup">
-                    <button type="button" class="color-option" data-color="#5484ed" style="background:#5484ed" title="Biru"></button>
-                    <button type="button" class="color-option" data-color="#51b749" style="background:#51b749" title="Hijau"></button>
-                    <button type="button" class="color-option" data-color="#fbd75b" style="background:#fbd75b" title="Kuning"></button>
-                    <button type="button" class="color-option" data-color="#dc2127" style="background:#dc2127" title="Merah"></button>
-                    <button type="button" class="color-option" data-color="#7b17cc" style="background:#7b17cc" title="Ungu"></button>
+                <div class="color-picker">
+                    <button type="button" class="color-option" data-color="#3B82F6" style="background:#3B82F6" title="Biru"></button>
+                    <button type="button" class="color-option" data-color="#10B981" style="background:#10B981" title="Hijau"></button>
+                    <button type="button" class="color-option" data-color="#FBBF24" style="background:#FBBF24" title="Kuning"></button>
+                    <button type="button" class="color-option" data-color="#EF4444" style="background:#EF4444" title="Merah"></button>
+                    <button type="button" class="color-option" data-color="#8B5CF6" style="background:#8B5CF6" title="Ungu"></button>
                 </div>
-                <input type="hidden" id="eventColor" value="#5484ed">
+                <input type="hidden" id="eventColor" value="#3B82F6">
             </div>
             <div class="modal-actions">
                 <button type="button" class="button-secondary modal-close-btn">Batal</button>
@@ -85,10 +83,10 @@
         </div>
         <form id="taskForm" class="modal-form">
             <input type="hidden" id="taskId">
-            <div class="form-row"><div class="field-icon">✏️</div><input type="text" id="taskTitle" class="input-box" placeholder="Nama tugas..." required></div>
-            <div class="form-row"><div class="field-icon">📋</div><textarea id="taskDescription" class="input-box input-textarea" placeholder="Deskripsi tugas..."></textarea></div>
-            <div class="form-row"><div class="field-icon">📅</div><input type="text" id="taskDueDate" class="input-box" placeholder="Tenggat Waktu (Opsional)"></div>
-            <div class="form-row"><div class="field-icon">🚩</div>
+            <div class="form-row"><input type="text" id="taskTitle" class="input-box" placeholder="Nama tugas..." required></div>
+            <div class="form-row"><textarea id="taskDescription" class="input-box input-textarea" placeholder="Deskripsi tugas..."></textarea></div>
+            <div class="form-row"><input type="text" id="taskDueDate" class="input-box" placeholder="Tenggat Waktu (Opsional)"></div>
+            <div class="form-row">
                 <select id="taskPriority" class="input-box">
                     <option value="low">Prioritas Rendah</option>
                     <option value="medium" selected>Prioritas Medium</option>
@@ -173,37 +171,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
-        
-        // --- PERUBAHAN UTAMA DI SINI ---
-        headerToolbar: { 
-            left: 'prev,next today', 
-            center: 'title', 
-            right: 'dayGridMonth,timeGridWeek,list7Days,list30Days' // Menggunakan tombol custom baru
-        },
-        
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,list7Days,list30Days' },
         views: {
-            list7Days: {
-                type: 'list',
-                duration: { days: 7 },
-                buttonText: '7 Hari Kedepan' // Nama tombol baru
-            },
-            list30Days: {
-                type: 'list',
-                duration: { days: 30 },
-                buttonText: '30 Hari Kedepan' // Nama tombol baru
-            }
+            list7Days: { type: 'list', duration: { days: 7 }, buttonText: '7 Hari' },
+            list30Days: { type: 'list', duration: { days: 30 }, buttonText: '30 Hari' }
         },
-        // --- AKHIR PERUBAHAN UTAMA ---
-    
-        // Konfigurasi lainnya tetap sama
         events: EVENTS_API_URL,
         editable: true,
         selectable: true,
         dateClick: (info) => handleDateClick(info),
-        eventClick: (info) => openEventModal(info.event),
+        eventClick: (info) => {
+            const props = info.event.extendedProps;
+            if (props.item_type === 'task') {
+                openTaskModal(props.original_task);
+            } else {
+                openEventModal(info.event);
+            }
+        },
         eventDrop: (info) => handleEventDrop(info.event),
         eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
-        eventContent: (arg) => ({ html: `<div class="fc-event-main">${arg.timeText ? `<span class="fc-event-time">${arg.timeText}</span>` : ''} <span class="fc-event-title">${arg.event.title}</span></div>` })
     });
     calendar.render();
 
@@ -227,8 +213,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     eventForm.addEventListener('submit', handleEventFormSubmit);
     taskForm.addEventListener('submit', handleTaskFormSubmit);
-    eventDeleteBtn.addEventListener('click', () => { const event = { id: eventIdInput.value, title: document.getElementById('eventTitle').value }; handleDeleteEvent(event); });
-    taskDeleteBtn.addEventListener('click', () => { const task = { id: taskIdInput.value, title: document.getElementById('taskTitle').value }; handleDeleteTask(task); });
+    eventDeleteBtn.addEventListener('click', () => { const eventId = eventIdInput.value.replace('event-',''); const event = { id: eventId, title: document.getElementById('eventTitle').value }; handleDeleteEvent(event); });
+    taskDeleteBtn.addEventListener('click', () => { const taskId = taskIdInput.value.replace('task-',''); const task = { id: taskId, title: document.getElementById('taskTitle').value }; handleDeleteTask(task); });
     
     document.querySelectorAll('.color-option').forEach(option => {
         option.addEventListener('click', function() {
@@ -265,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 eventsHtml += "<p class='empty-item'>Tidak ada acara terjadwal.</p>";
             } else {
                 eventsHtml += '<ul class="daily-agenda-list">';
-                events.forEach(event => { eventsHtml += `<li><span class="event-color-dot" style="background-color: ${event.backgroundColor || '#5484ed'}"></span> ${new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${event.title}</li>`; });
+                events.forEach(event => { eventsHtml += `<li><span class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></span> ${new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${event.title}</li>`; });
                 eventsHtml += '</ul>';
             }
             dailyAgendaContent.innerHTML += eventsHtml;
@@ -292,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         sidebarDateEl.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
         sidebarEventsList.innerHTML = '<li class="empty-item">Memuat...</li>';
-        sidebarTasksContainer.innerHTML = '<li class="empty-item">Memuat...</li>';
+        sidebarTasksContainer.innerHTML = '<p class="empty-item">Memuat...</p>';
 
         try {
             const [eventsResponse, tasksResponse] = await Promise.all([
@@ -302,12 +288,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const events = await eventsResponse.json();
             const tasks = await tasksResponse.json();
             
-            renderEvents(sidebarEventsList, events);
+            renderEvents(sidebarEventsList, events.filter(item => item.extendedProps.item_type === 'event'));
             renderCategorizedTasks(sidebarTasksContainer, tasks);
         } catch (error) {
             console.error("Gagal memuat data agenda:", error);
             sidebarEventsList.innerHTML = '<li class="empty-item error">Gagal memuat acara.</li>';
-            sidebarTasksContainer.innerHTML = '<li class="empty-item error">Gagal memuat tugas.</li>';
+            sidebarTasksContainer.innerHTML = '<p class="empty-item error">Gagal memuat tugas.</p>';
         }
     }
 
@@ -321,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const li = document.createElement('li');
             li.className = 'sidebar-item';
             const timeString = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const colorDot = `<div class="item-color-dot" style="background-color: ${event.backgroundColor || '#3788d8'}"></div>`;
+            const colorDot = `<div class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></div>`;
             li.innerHTML = `${colorDot}<div class="item-main-content"><div class="item-header"><span class="item-title">${event.title}</span></div><p class="item-description">${timeString}</p></div>`;
             li.addEventListener('click', () => {
                 const calEvent = calendar.getEventById(event.id);
@@ -339,14 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
             medium: { title: 'Biasa', icon: '🗓️', tasks: [] },
             low: { title: 'Santai', icon: '☕', tasks: [] },
         };
-
-        tasks.forEach(task => {
-            const priority = task.priority || 'medium';
-            if (categories[priority]) {
-                categories[priority].tasks.push(task);
-            }
-        });
-
+        tasks.forEach(task => { (categories[task.priority] || categories.medium).tasks.push(task); });
         let hasTasks = false;
         for (const key in categories) {
             const category = categories[key];
@@ -355,22 +334,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const categoryDiv = document.createElement('div');
                 categoryDiv.className = 'task-category';
                 let tasksHtml = `<div class="task-category-header"><span class="icon">${category.icon}</span> ${category.title}</div><ul class="item-list">`;
-                
                 category.tasks.forEach(task => {
                     const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID')}` : 'Tanpa batas waktu';
-                    tasksHtml += `
-                        <li class="sidebar-item item-priority-${task.priority}" data-task-id="${task.id}">
-                            <div class="item-main-content">
-                                <div class="item-header"><span class="item-title">${task.title}</span></div>
-                                <p class="item-description">${dueDateString}</p>
-                            </div>
-                        </li>
-                    `;
+                    tasksHtml += `<li class="sidebar-item" data-task-id="${task.id}"><div class="item-main-content"><div class="item-header"><span class="item-title">${task.title}</span></div><p class="item-description">${dueDateString}</p></div></li>`;
                 });
                 tasksHtml += `</ul>`;
                 categoryDiv.innerHTML = tasksHtml;
                 container.appendChild(categoryDiv);
-
                 categoryDiv.querySelectorAll('.sidebar-item').forEach(item => {
                     item.addEventListener('click', () => {
                         const taskId = item.dataset.taskId;
@@ -380,16 +350,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         }
-        
-        if (!hasTasks) {
-            container.innerHTML = `<p class="empty-item">Tidak ada tugas yang relevan hari ini.</p>`;
-        }
+        if (!hasTasks) { container.innerHTML = `<p class="empty-item">Tidak ada tugas yang relevan hari ini.</p>`; }
     }
 
-    function openEventModal(event, date = null) {
+    function openEventModal(event) {
         eventForm.reset();
         document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-        if (event) {
+        if (event && event.extendedProps.item_type === 'event') {
             eventModalTitle.textContent = "Edit Acara";
             eventIdInput.value = event.id;
             document.getElementById('eventTitle').value = event.title;
@@ -400,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
             startDatePicker.setDate(start, true);
             startTimePicker.setDate(start, true);
             if (end) { endDatePicker.setDate(end, true); endTimePicker.setDate(end, true); } else { endDatePicker.clear(); endTimePicker.clear(); }
-            const eventColor = event.backgroundColor || event.color || '#5484ed';
+            const eventColor = event.backgroundColor || event.color || '#3B82F6';
             eventColorInput.value = eventColor;
             const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
             if (selectedColorEl) selectedColorEl.classList.add('selected');
@@ -408,13 +375,13 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             eventModalTitle.textContent = "Acara Baru";
             eventIdInput.value = '';
-            const initialDate = date || new Date();
+            const initialDate = event || new Date(); // event is a date object on dateClick
             startDatePicker.setDate(initialDate, true);
             startTimePicker.clear();
             endDatePicker.clear();
             endTimePicker.clear();
-            eventColorInput.value = '#5484ed';
-            document.querySelector(".color-option[data-color='#5484ed']").classList.add('selected');
+            eventColorInput.value = '#3B82F6';
+            document.querySelector(".color-option[data-color='#3B82F6']").classList.add('selected');
             eventDeleteBtn.style.display = 'none';
         }
         eventModal.classList.add('visible');
@@ -422,11 +389,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function handleEventFormSubmit(e) {
         e.preventDefault();
-        const startDateStr = combineDateTime(startDatePicker.input.value, startTimePicker.input.value);
-        const endDateStr = combineDateTime(endDatePicker.input.value, endTimePicker.input.value);
-        if (startDateStr && endDateStr && (new Date(endDateStr) < new Date(startDateStr))) { alert('Waktu selesai tidak boleh lebih awal dari waktu mulai.'); return; }
-        const eventId = eventIdInput.value;
-        const eventData = { title: document.getElementById('eventTitle').value, description: document.getElementById('eventDescription').value, start: startDateStr, end: endDateStr, link: document.getElementById('eventLink').value, color: eventColorInput.value };
+        const eventIdRaw = eventIdInput.value;
+        const eventId = eventIdRaw.startsWith('event-') ? eventIdRaw.replace('event-', '') : eventIdRaw;
+        const eventData = { title: document.getElementById('eventTitle').value, description: document.getElementById('eventDescription').value, start: combineDateTime(startDatePicker.input.value, startTimePicker.input.value), end: combineDateTime(endDatePicker.input.value, endTimePicker.input.value), link: document.getElementById('eventLink').value, color: eventColorInput.value };
         const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
         const method = eventId ? 'PUT' : 'POST';
         try {
@@ -452,9 +417,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function handleEventDrop(info) {
+        if (info.event.extendedProps.item_type === 'task') {
+            info.revert();
+            alert('Tugas tidak dapat dipindahkan. Harap ubah tanggalnya melalui menu edit.');
+            return;
+        }
         const eventData = { start: info.event.start.toISOString(), end: info.event.end ? info.event.end.toISOString() : null };
         try {
-            const response = await fetch(`${EVENTS_API_URL}/${info.event.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
+            const response = await fetch(`${EVENTS_API_URL}/${info.event.id.replace('event-', '')}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
             if (!response.ok) throw new Error('Gagal update waktu acara');
             loadTodaysAgenda();
         } catch (error) { alert(error.message); info.revert(); }
@@ -490,6 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(taskData)});
             if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan tugas');
             taskModal.classList.remove('visible');
+            calendar.refetchEvents();
             loadTodaysAgenda();
         } catch (error) { alert(error.message); }
     }
@@ -501,6 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch(`${TASKS_API_URL}/${task.id}`, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Gagal menghapus tugas');
                 taskModal.classList.remove('visible');
+                calendar.refetchEvents();
                 loadTodaysAgenda();
             } catch (error) { alert(error.message); }
         }
@@ -530,12 +502,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showConfirmModal(title, message) {
         return new Promise((resolve) => {
-            confirmDeleteModal.querySelector('#confirmTitle').textContent = title;
-            confirmDeleteModal.querySelector('#confirmMessage').textContent = message;
             const confirmBtn = document.getElementById('confirmDeleteBtn');
             const cancelBtns = confirmDeleteModal.querySelectorAll('.modal-close-btn, #cancelDeleteBtn');
-            const confirmHandler = () => { cleanup(true); };
-            const cancelHandler = () => { cleanup(false); };
+            confirmDeleteModal.querySelector('#confirmTitle').textContent = title;
+            confirmDeleteModal.querySelector('#confirmMessage').textContent = message;
+            const confirmHandler = () => cleanup(true);
+            const cancelHandler = () => cleanup(false);
             const cleanup = (value) => {
                 confirmDeleteModal.classList.remove('visible');
                 confirmBtn.removeEventListener('click', confirmHandler);
@@ -557,256 +529,207 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTodaysAgenda();
 });
 </script>
+
+
 <style>
-    /* =================================================================== */
-    /* ===         DESAIN PROFESIONAL FOKUS PADA LAYOUT                === */
-    /* =================================================================== */
-    
-    /* --- 1. FONT & VARIABEL UTAMA --- */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
-    :root {
-        --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    
-        /* Palette Warna Profesional */
-        --bg-deep: #0D0F12;      /* Latar paling belakang */
-        --bg-surface: #191B1F;   /* Latar untuk panel/kartu */
-        --border-strong: #33353A;/* Border yang terlihat jelas */
-        --border-faint: #222428; /* Border pemisah yang sangat halus */
-        
-        --text-primary: #F0F0F0; /* Teks utama */
-        --text-secondary: #8B909A;/* Teks sekunder, placeholder */
-        
-        /* Warna Aksen */
-        --accent: #3B82F6;
-        --accent-hover: #60A5FA;
-        --accent-focus-ring: rgba(59, 130, 246, 0.4);
-        
-        /* Warna Lain */
-        --danger: #EF4444;
-        --danger-hover: #F87171;
-        --warning: #FBBF24;
-    }
-    
-    /* --- 2. GAYA DASAR --- */
-    body {
-        font-family: var(--font-sans);
-        background-color: var(--bg-deep);
-        color: var(--text-primary);
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-    body.no-scroll { overflow: hidden; }
-    
-    /* --- 3. LAYOUT UTAMA --- */
-    .hub-container-v2 { 
-        /* Tambahkan 3 baris ini */
-        min-width: 1400px; /* Atur lebar maksimum yang Anda mau, misal: 1800px */
-        max-width: 1800px;
-        width: 100%;      /* Gunakan persentase dari total lebar layar */
-        margin: 0 auto;  /* Ini akan membuat container berada di tengah */
-    
-        /* Properti lain biarkan seperti semula */
-        display: grid; 
-        grid-template-columns: 1fr 350px; 
-        gap: 24px; 
-        height: 90vh; 
-        padding: 24px; 
-    }
-    
-    .hub-card { 
-        background: var(--bg-surface); 
-        border: 1px solid var(--border-strong); 
-        border-radius: 12px; 
-        padding: 24px; 
-        display: flex; 
-        flex-direction: column; 
-        overflow: hidden;
-    }
-    @media (max-width: 960px) { 
-        .hub-container-v2 { grid-template-columns: 1fr; height: auto; } 
-        .details-sidebar-panel { order: -1; max-height: 50vh; margin-bottom: 24px; } 
-    }
-    
-    /* --- 4. SIDEBAR --- */
-    .sidebar-header { 
-        padding-bottom: 16px; 
-        margin-bottom: 16px; 
-        border-bottom: 1px solid var(--border-strong); 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-    }
-    .sidebar-header h3 { margin:0; font-size: 18px; font-weight: 600; }
-    .sidebar-content { flex-grow: 1; overflow-y: auto; padding-right: 8px; }
-    .sidebar-section h4 { margin: 24px 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
-    .sidebar-section-header { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-    
-    .item-list { list-style:none; margin:0; padding:0; display: flex; flex-direction: column; gap: 8px; }
-    .sidebar-item { 
-        padding: 12px; 
-        border-radius: 8px; 
-        cursor: pointer;
-        transition: background-color 0.2s ease; 
-    }
-    .sidebar-item:hover { background-color: rgba(255,255,255,0.05); }
-    .item-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-    .item-title { font-weight: 500; color: var(--text-primary); }
-    .item-description { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-    .empty-item { color: var(--text-secondary); padding: 16px; text-align: center; }
-    
-    .task-category { margin-top: 16px; }
-    .task-category-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--text-primary); font-size: 14px; font-weight: 600; }
-    .task-category-header .icon { font-size: 16px; }
-    .item-priority-urgent .item-title { color: var(--danger); }
-    .item-priority-high .item-title { color: var(--warning); }
-    
-    /* --- 5. KALENDER --- */
-    :root { --fc-border-color: var(--border-strong); --fc-today-bg-color: rgba(59, 130, 246, 0.1); }
-    #calendar { flex-grow: 1; min-height: 0; }
-    .fc .fc-toolbar-title { color: var(--text-primary); font-size: 22px; font-weight: 600; }
-    .fc .fc-button { background-color: var(--bg-surface) !important; color: var(--text-secondary) !important; border: 1px solid var(--border-strong) !important; transition: all 0.2s ease; }
-    .fc .fc-button:hover { color: var(--text-primary) !important; border-color: var(--accent) !important; }
-    .fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--accent) !important; color: white !important; border-color: var(--accent) !important; }
-    .fc-daygrid-day-number, .fc-col-header-cell-cushion { color: var(--text-secondary); text-decoration: none; }
-    
-    /* --- 6. MODAL & FORM --- */
-    .modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
-    .modal-box { max-width: 640px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 12px; }
-    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border-strong); }
-    .modal-header h3 { font-size: 18px; font-weight: 600; }
-    .modal-form { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border-strong); background-color: var(--bg-deep); }
-    .modal-content, .daily-agenda-list { padding: 24px; color: var(--text-secondary); }
-    
-    .form-row { display: flex; gap: 16px; align-items: center; }
-    .field-icon { display: none; /* Dihilangkan untuk tampilan lebih bersih */ }
-    .input-box { width: 100%; background: var(--bg-deep); color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; padding: 12px 16px; font-size: 14px; font-family: var(--font-sans); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-    .input-box::placeholder { color: var(--text-secondary); }
-    .input-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-focus-ring); }
-    .input-textarea { min-height: 120px; resize: vertical; }
-    
-    .datetime-stack { display: flex; gap: 16px; }
-    .datetime-card { flex: 1; background: var(--bg-deep); border-radius: 8px; padding: 16px; border: 1px solid var(--border-strong); }
-    .datetime-card-header { color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; font-weight: 500; }
-    
-    .color-picker { display: flex; gap: 12px; align-items: center; padding-left: 16px; }
-    .color-option { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; background-clip: content-box; cursor: pointer; transition: all .2s ease; }
-    .color-option:hover { transform: scale(1.1); }
-    .color-option.selected { border-color: var(--accent); transform: scale(1.1); }
-    
-    /* --- 7. TOMBOL --- */
-    .button-primary, .button-secondary, .button-danger, .button-add { 
-        border: 1px solid var(--border-strong); 
-        padding: 10px 18px; 
-        border-radius: 6px; 
-        font-weight: 500; font-size: 14px; 
-        cursor: pointer; 
-        transition: all .2s ease; 
-    }
-    .button-primary { background-color: var(--accent); color: white; border-color: var(--accent); }
-    .button-primary:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); }
-    .button-secondary { background-color: var(--bg-surface); color: var(--text-primary); }
-    .button-secondary:hover { border-color: var(--text-primary); }
-    .button-danger { background-color: transparent; color: var(--danger); border-color: var(--danger); }
-    .button-danger:hover { background-color: var(--danger); color: white; }
-    
-    .button-add { padding: 0; width: 32px; height: 32px; font-size: 22px; line-height: 32px; color: var(--text-secondary); }
-    .button-add:hover { color: var(--text-primary); border-color: var(--text-primary); }
-    
-    /* Class lama yang mungkin masih terpakai */
-    .modal-close-btn::before, .modal-close-btn::after { background-color: var(--text-secondary); }
-    .fc-event-main, .daily-agenda-list li { align-items: center; }
-
-
-
-    /* =================================================================== */
-/* ===         DESAIN UNTUK TAMPILAN DAFTAR ACARA (LIST VIEW)      === */
-/* =================================================================== */
-
-/* --- Kontainer utama untuk seluruh daftar --- */
-.fc-list {
-    border: none !important; /* Hilangkan border agar menyatu dengan kartu */
+/* --- 1. FONT & VARIABEL UTAMA --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root {
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --bg-deep: #0D0F12;
+    --bg-surface: #191B1F;
+    --border-strong: #33353A;
+    --border-faint: #222428;
+    --text-primary: #F0F0F0;
+    --text-secondary: #8B909A;
+    --accent: #3B82F6;
+    --accent-hover: #60A5FA;
+    --accent-focus-ring: rgba(59, 130, 246, 0.4);
+    --danger: #EF4444;
+    --danger-hover: #F87171;
+    --warning: #FBBF24;
 }
 
-/* --- Header per Hari (Contoh: Sabtu, 6 September 2025) --- */
-.fc .fc-list-day-cushion {
-    background-color: var(--bg-deep) !important; /* Latar lebih gelap agar menonjol */
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: 600;
+/* --- 2. GAYA DASAR --- */
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-deep);
     color: var(--text-primary);
-    text-decoration: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+body.no-scroll { overflow: hidden; }
+
+/* --- 3. LAYOUT UTAMA --- */
+.hub-container-v2 { 
+    display: grid; 
+    grid-template-columns: 1fr 350px; 
+    gap: 24px; 
+    height: 90vh; 
+    padding: 24px; 
+    max-width: 1800px;
+    width: 95%;
+    margin: 0 auto;
+}
+.hub-card { 
+    background: var(--bg-surface); 
+    border: 1px solid var(--border-strong); 
+    border-radius: 12px; 
+    padding: 24px; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;
+}
+@media (max-width: 960px) { 
+    .hub-container-v2 { grid-template-columns: 1fr; height: auto; } 
+    .details-sidebar-panel { order: -1; max-height: 50vh; margin-bottom: 24px; } 
 }
 
-/* --- Baris untuk setiap acara --- */
-.fc-list-event {
-    padding: 16px 24px;
+/* --- 4. SIDEBAR --- */
+.sidebar-header { 
+    padding-bottom: 16px; 
+    margin-bottom: 16px; 
+    border-bottom: 1px solid var(--border-strong); 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+.sidebar-header h3 { margin:0; font-size: 18px; font-weight: 600; }
+.sidebar-content { flex-grow: 1; overflow-y: auto; padding-right: 8px; }
+.sidebar-section h4 { margin: 24px 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
+.sidebar-section-header { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+.ai-prompt-box {
+    background-color: var(--bg-deep);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+.ai-prompt-box h5 { margin: 0 0 4px 0; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.ai-prompt-box p { margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.ai-prompt-box .button-primary { width: 100%; }
+
+.item-list { list-style:none; margin:0; padding:0; display: flex; flex-direction: column; gap: 8px; }
+.sidebar-item { 
+    padding: 12px; 
+    border-radius: 8px; 
     cursor: pointer;
-    transition: background-color 0.2s ease;
-    border-bottom: 1px solid var(--border-faint) !important;
+    transition: background-color 0.2s ease; 
+    display: flex;
+    gap: 12px;
 }
-.fc-list-event:hover {
-    background-color: rgba(255, 255, 255, 0.04);
-}
-.fc-list-event:last-child {
-    border-bottom: none !important;
-}
+.sidebar-item:hover { background-color: rgba(255,255,255,0.05); }
+.item-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.item-title { font-weight: 500; color: var(--text-primary); }
+.item-description { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+.empty-item { color: var(--text-secondary); padding: 16px; text-align: center; }
 
-/* --- Titik warna di samping acara --- */
-.fc-list-event-dot {
-    border: 3px solid var(--bg-surface) !important; /* Memberi efek "inset" */
-    width: 12px;
-    height: 12px;
-}
+.task-category { margin-top: 16px; }
+.task-category-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--text-primary); font-size: 14px; font-weight: 600; }
+.task-category-header .icon { font-size: 16px; }
+.item-priority-urgent .item-title { color: var(--danger); }
+.item-priority-high .item-title { color: var(--warning); }
 
-/* --- Teks Waktu & Judul Acara --- */
-.fc-list-event-time {
-    color: var(--text-secondary);
-    font-size: 14px;
-}
-.fc-list-event-title {
-    color: var(--text-primary);
-    font-size: 15px;
-    font-weight: 500;
-}
-.fc-list-event-title a {
-    color: inherit;
-    text-decoration: none;
-}
+/* --- 5. KALENDER --- */
+:root { --fc-border-color: var(--border-strong); --fc-today-bg-color: rgba(59, 130, 246, 0.1); }
+#calendar { flex-grow: 1; min-height: 0; }
+.fc .fc-toolbar-title { color: var(--text-primary); font-size: 22px; font-weight: 600; }
+.fc .fc-button { background-color: var(--bg-surface) !important; color: var(--text-secondary) !important; border: 1px solid var(--border-strong) !important; transition: all 0.2s ease; }
+.fc .fc-button:hover { color: var(--text-primary) !important; border-color: var(--accent) !important; }
+.fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--accent) !important; color: white !important; border-color: var(--accent) !important; }
+.fc-daygrid-day-number, .fc-col-header-cell-cushion { color: var(--text-secondary); text-decoration: none; }
+.fc-list-day-cushion { background-color: var(--bg-deep) !important; padding: 12px 24px; font-size: 16px; font-weight: 600; color: var(--text-primary); text-decoration: none; }
+.fc-list-event { padding: 16px 24px; cursor: pointer; transition: background-color 0.2s ease; border-bottom: 1px solid var(--border-faint) !important; }
+.fc-list-event:hover { background-color: rgba(255,255,255,0.04); }
+.fc-list-event:last-child { border-bottom: none !important; }
+.fc-list-event-dot { border: 3px solid var(--bg-surface) !important; width: 12px; height: 12px; }
+.fc-list-event-time { color: var(--text-secondary); font-size: 14px; }
+.fc-list-event-title { color: var(--text-primary); font-size: 15px; font-weight: 500; }
+.fc-list-event-title a { color: inherit; text-decoration: none; }
 
-/* --- Menghilangkan bayangan aneh di antara hari --- */
-.fc-list-day-frame {
+/* Gaya untuk item tugas di dalam kalender */
+.fc-daygrid-event.fc-event-task {
     background-color: transparent !important;
+    border: 1px dashed var(--border-strong) !important;
+    color: var(--text-secondary) !important;
+    font-style: italic;
+    padding: 2px 4px;
 }
+.fc-daygrid-event.fc-event-task:hover { background-color: rgba(255,255,255,0.05) !important; color: var(--text-primary) !important; }
+.fc-list-event.fc-event-task .fc-list-event-title { color: var(--text-secondary) !important; font-style: italic; }
+.fc-list-event.fc-event-task:hover .fc-list-event-title { color: var(--text-primary) !important; }
+
+
+/* --- 6. MODAL & FORM --- */
+.modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+.modal-box { max-width: 640px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: 12px; }
+.modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border-strong); }
+.modal-header h3 { font-size: 18px; font-weight: 600; }
+.modal-close-btn::before, .modal-close-btn::after { background-color: var(--text-secondary); }
+.modal-form { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border-strong); background-color: var(--bg-deep); }
+.modal-content, .daily-agenda-list { padding: 24px; color: var(--text-secondary); }
+
+.form-row { display: flex; gap: 16px; align-items: center; }
+.input-box { width: 100%; background: var(--bg-deep); color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: 6px; padding: 12px 16px; font-size: 14px; font-family: var(--font-sans); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.input-box::placeholder { color: var(--text-secondary); }
+.input-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-focus-ring); }
+.input-textarea { min-height: 120px; resize: vertical; }
+
+.datetime-stack { display: flex; gap: 16px; }
+.datetime-card { flex: 1; background: var(--bg-deep); border-radius: 8px; padding: 16px; border: 1px solid var(--border-strong); }
+.datetime-card-header { color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; font-weight: 500; }
+
+.color-picker { display: flex; gap: 12px; align-items: center; }
+.color-option { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; background-clip: content-box; cursor: pointer; transition: all .2s ease; }
+.color-option:hover { transform: scale(1.1); }
+.color-option.selected { border-color: var(--accent); transform: scale(1.1); }
+
+/* --- 7. TOMBOL (BUTTONS) --- */
+.button-primary, .button-secondary, .button-danger, .button-add { 
+    border: 1px solid var(--border-strong); 
+    padding: 10px 18px; 
+    border-radius: 6px; 
+    font-weight: 500; font-size: 14px; 
+    cursor: pointer; 
+    transition: all .2s ease; 
+}
+.button-primary { background-color: var(--accent); color: white; border-color: var(--accent); }
+.button-primary:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); }
+.button-secondary { background-color: var(--bg-surface); color: var(--text-primary); }
+.button-secondary:hover { border-color: var(--text-primary); }
+.button-danger { background-color: transparent; color: var(--danger); border-color: var(--danger); }
+.button-danger:hover { background-color: var(--danger); color: white; }
+.button-add { padding: 0; width: 32px; height: 32px; font-size: 22px; line-height: 32px; color: var(--text-secondary); }
+.button-add:hover { color: var(--text-primary); border-color: var(--text-primary); }
+
 
 /* Tambahkan ini di dalam <style> */
 
-    .ai-prompt-box {
-        background-color: var(--bg-deep);
-        border: 1px solid var(--border-strong);
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 24px;
-        text-align: center;
+    /* Gaya untuk item tugas di dalam kalender (tampilan bulan/minggu) */
+    .fc-daygrid-event.fc-event-task {
+        background-color: transparent !important;
+        border: 1px dashed var(--border-strong) !important;
+        color: var(--text-secondary) !important;
+        font-style: italic;
+        padding: 2px 4px;
     }
-    .ai-prompt-box h5 {
-        margin: 0 0 4px 0;
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--text-primary);
+    .fc-daygrid-event.fc-event-task:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: var(--text-primary) !important;
     }
-    .ai-prompt-box p {
-        margin: 0 0 12px 0;
-        font-size: 13px;
-        color: var(--text-secondary);
-        line-height: 1.5;
+    
+    /* Gaya untuk tugas di tampilan daftar (list view) */
+    .fc-list-event.fc-event-task .fc-list-event-title {
+        color: var(--text-secondary) !important;
+        font-style: italic;
     }
-    .ai-prompt-box .button-primary {
-        width: 100%;
+    .fc-list-event.fc-event-task:hover .fc-list-event-title {
+        color: var(--text-primary) !important;
     }
 
-
-    </style>
+</style>
 
 {% endblock %}

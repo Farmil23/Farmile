@@ -9,6 +9,7 @@ from app.models import (User, Project, ProjectSubmission, ChatMessage,
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta
+import re
 
     # Tambahkan ini di app/routes.py
 from flask import session # Pastikan session diimpor dari flask
@@ -578,6 +579,16 @@ def ask_ai_from_hub():
     
     return redirect(url_for('routes.chatbot'))
 
+# Di dalam app/routes.py
+
+# Pastikan semua import yang relevan sudah ada di bagian atas file Anda
+from flask import session, redirect, url_for, current_app
+from app import db
+from app.models import ChatSession, ChatMessage
+from datetime import datetime
+
+# ...
+
 @bp.route('/chatbot')
 @login_required
 def chatbot():
@@ -587,16 +598,22 @@ def chatbot():
         events = context.get('events', [])
         tasks = context.get('tasks', [])
         
-        # Buat sesi chat baru khusus untuk konteks ini
-        new_session = ChatSession(user_id=current_user.id, title="Saran Jadwal dari Hub")
-        db.session.add(new_session)
-        db.session.flush()
+        # Cari sesi "Saran Jadwal dari Hub" yang sudah ada untuk pengguna ini
+        hub_session = ChatSession.query.filter_by(
+            user_id=current_user.id, 
+            title="Saran Jadwal dari Hub"
+        ).first()
 
-        # Buat prompt untuk AI agar merangkum jadwal
+        # Jika sesi tersebut tidak ada, buat baru
+        if not hub_session:
+            hub_session = ChatSession(user_id=current_user.id, title="Saran Jadwal dari Hub")
+            db.session.add(hub_session)
+        
+        # Buat prompt untuk AI
         event_list_str = "\n- ".join(events) if events else "Tidak ada acara."
         task_list_str = "\n- ".join(tasks) if tasks else "Tidak ada tugas."
         prompt = f"""
-        Sapa pengguna dengan ramah, sebutkan bahwa Anda melihat mereka meminta saran dari Personal Hub.
+        Sapa pengguna, sebutkan Anda melihat mereka meminta saran dari Personal Hub.
         Rangkum jadwal mereka hari ini secara singkat (berdasarkan data di bawah).
         Akhiri dengan pertanyaan terbuka untuk memulai percakapan.
         Data jadwal: Acara: {event_list_str}. Tugas: {task_list_str}.
@@ -604,7 +621,6 @@ def chatbot():
         
         ai_response_content = ""
         try:
-            # Panggil API AI Anda
             completion = ark_client.chat.completions.create(
                 model=current_app.config['MODEL_ENDPOINT_ID'],
                 messages=[{"role": "user", "content": prompt}]
@@ -612,19 +628,18 @@ def chatbot():
             ai_response_content = completion.choices[0].message.content
         except Exception as e:
             current_app.logger.error(f"AI Hub Context Error: {e}")
-            ai_response_content = f"Halo {current_user.name.split()[0]}! Sepertinya ada sedikit masalah saat saya mencoba melihat jadwalmu. Tapi jangan khawatir, ada yang bisa kubantu hari ini?"
+            ai_response_content = f"Halo {current_user.name.split()[0]}! Sepertinya ada sedikit masalah saat saya mencoba melihat jadwalmu. Ada yang bisa kubantu?"
 
-        # Tambahkan petunjuk bantuan di akhir sapaan AI
-        help_hint = "\n\n*(Jika Anda butuh format perintah, katakan saja 'bantuan'.)*"
+        help_hint = "\n\n*(Ketik 'bantuan' untuk melihat contoh perintah.)*"
         final_welcome_message = ai_response_content + help_hint
 
-        # Simpan pesan final yang sudah digabung
-        welcome_message = ChatMessage(session_id=new_session.id, user_id=current_user.id, role='assistant', content=final_welcome_message)
+        # Tambahkan pesan AI ke sesi yang sudah ada (atau yang baru dibuat)
+        welcome_message = ChatMessage(session_id=hub_session.id, user_id=current_user.id, role='assistant', content=final_welcome_message)
         db.session.add(welcome_message)
         db.session.commit()
         
-        # Arahkan pengguna ke sesi chat yang baru dibuat
-        return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
+        # Arahkan pengguna ke sesi khusus tersebut
+        return redirect(url_for('routes.chatbot_session', session_id=hub_session.id))
 
     # --- Skenario 2: Pengguna mengakses chatbot secara langsung ---
     # Cari sesi chat paling baru milik pengguna, apapun jenisnya
@@ -635,11 +650,10 @@ def chatbot():
         return redirect(url_for('routes.chatbot_session', session_id=latest_session.id))
     else:
         # Jika pengguna benar-benar baru, buat sesi umum pertama mereka
-        new_session = ChatSession(user_id=current_user.id, title="Percakapan Umum", project_id=None)
+        new_session = ChatSession(user_id=current_user.id, title="Percakapan Umum")
         db.session.add(new_session)
         db.session.flush()
         
-        # Buat pesan selamat datang dengan petunjuk bantuan
         welcome_message = ChatMessage(
             session_id=new_session.id, user_id=current_user.id, role='assistant',
             content=(
@@ -748,7 +762,6 @@ def edit_profile():
 #===============================================
 # FUNGSI-FUNGSI HELPER UNTUK AKSI AI
 # ===============================================
-
 def _execute_ai_action(user, action_data):
     """Fungsi pusat untuk memproses semua jenis aksi dari AI."""
     action = action_data.get("action")
@@ -759,14 +772,14 @@ def _execute_ai_action(user, action_data):
         if task:
             due_date_info = f" dengan deadline {task.due_date.strftime('%d %B, %H:%M')}." if task.due_date else "."
             return f"✅ Siap! Tugas '{task.title}' sudah saya tambahkan ke Personal Hub{due_date_info}"
-        return "Maaf, terjadi kesalahan saat mencoba menambahkan tugas."
+        return "Maaf, terjadi kesalahan. Pastikan Anda menyebutkan judul untuk tugas yang ingin ditambahkan."
 
     elif action == "add_event":
         event = _create_event_from_ai(user, payload)
         if event:
             time_info = f" pada {event.start_time.strftime('%d %B, %H:%M')}."
             return f"✅ Berhasil! Acara '{event.title}' sudah saya jadwalkan di kalender Anda{time_info}"
-        return "Maaf, terjadi kesalahan saat mencoba menambahkan acara."
+        return "Maaf, terjadi kesalahan. Pastikan Anda menyebutkan judul untuk acara yang ingin dijadwalkan."
 
     elif action == "delete_task":
         success, title = _delete_task_from_ai(user, payload)
@@ -783,28 +796,30 @@ def _execute_ai_action(user, action_data):
     return "Saya mendeteksi sebuah aksi, tapi saya belum bisa melakukannya saat ini."
 
 def _create_task_from_ai(user, payload):
-    """Membuat Task dari payload AI dan menyimpannya ke DB."""
+    """Membuat Task dari payload AI dengan validasi dan parsing waktu yang lebih baik."""
     try:
-        title = payload.get('title', 'Tugas Tanpa Judul dari AI')
+        title = payload.get('title')
+        if not title: return None
+
+        description = payload.get('description')
         priority = payload.get('priority', 'medium').lower()
-        if priority not in ['low', 'medium', 'high', 'urgent']:
-            priority = 'medium'
+        if priority not in ['low', 'medium', 'high', 'urgent']: priority = 'medium'
 
         due_date_str = payload.get('due_date')
         due_date = None
         if due_date_str:
+            # Mencoba parse format YYYY-MM-DD HH:MM
             try:
-                due_date = datetime.fromisoformat(due_date_str.replace("Z", "+00:00"))
+                due_date = datetime.strptime(due_date_str, '%Y-%m-%d %H:%M')
             except ValueError:
-                if "hari ini" in due_date_str.lower() and "jam" in due_date_str.lower():
+                # Fallback untuk parsing "besok jam HH:MM"
+                if "besok" in due_date_str.lower() and "jam" in due_date_str.lower():
                     time_parts = due_date_str.lower().split("jam")[1].strip().split(":")
-                    hour = int(time_parts[0]) if time_parts[0].isdigit() else datetime.now().hour
+                    hour = int(time_parts[0]) if time_parts[0].isdigit() else 0
                     minute = int(time_parts[1]) if len(time_parts) > 1 and time_parts[1].isdigit() else 0
-                    due_date = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
-                elif "besok" in due_date_str.lower():
-                    due_date = datetime.now() + timedelta(days=1)
+                    due_date = (datetime.now() + timedelta(days=1)).replace(hour=hour, minute=minute, second=0, microsecond=0)
         
-        new_task = Task(author=user, title=title, priority=priority, due_date=due_date, status='todo')
+        new_task = Task(author=user, title=title, description=description, priority=priority, due_date=due_date, status='todo')
         db.session.add(new_task)
         db.session.commit()
         return new_task
@@ -814,13 +829,23 @@ def _create_task_from_ai(user, payload):
         return None
 
 def _create_event_from_ai(user, payload):
-    """Membuat Event dari payload AI."""
+    """Membuat Event dari payload AI dengan validasi dan parsing waktu yang lebih baik."""
     try:
-        title = payload.get('title', 'Acara Tanpa Judul')
-        start_time_str = payload.get('start_time')
-        start_time = datetime.fromisoformat(start_time_str) if start_time_str else datetime.now()
+        title = payload.get('title')
+        if not title: return None
+
+        description = payload.get('description')
+        start_time_str = payload.get('start_time') # Contoh: "besok jam 17:00"
+        start_time = datetime.now() # Default jika waktu tidak valid
+
+        if start_time_str:
+            if "besok" in start_time_str.lower() and "jam" in start_time_str.lower():
+                time_parts = start_time_str.lower().split("jam")[1].strip().split(":")
+                hour = int(time_parts[0]) if time_parts[0].isdigit() else 0
+                minute = int(time_parts[1]) if len(time_parts) > 1 and time_parts[1].isdigit() else 0
+                start_time = (datetime.now() + timedelta(days=1)).replace(hour=hour, minute=minute, second=0, microsecond=0)
         
-        new_event = Event(author=user, title=title, start_time=start_time)
+        new_event = Event(author=user, title=title, description=description, start_time=start_time)
         db.session.add(new_event)
         db.session.commit()
         return new_event
@@ -863,21 +888,28 @@ def _update_task_from_ai(user, payload):
     
     
     
-    
+    # Di dalam file app/routes.py
+
+# Di dalam app/routes.py
+
 @bp.route('/chat-ai/<int:session_id>', methods=['POST'])
 @login_required
 def chat_ai(session_id):
+    # Validasi sesi dan pengguna
     session_data = ChatSession.query.get_or_404(session_id)
     if session_data.user_id != current_user.id:
         abort(403)
     
+    # Ambil dan validasi pesan dari pengguna
     user_message_content = request.get_json().get('message', '').strip()
     if not user_message_content:
         return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
 
+    # Simpan pesan pengguna ke database
     user_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='user', content=user_message_content)
     db.session.add(user_message)
 
+    # [1. Dapatkan Konteks Pengguna Secara Real-time]
     todays_events = Event.query.filter(db.func.date(Event.start_time) == datetime.utcnow().date(), Event.user_id == current_user.id).all()
     relevant_tasks = Task.query.filter(
         Task.user_id == current_user.id, Task.status != 'done',
@@ -891,20 +923,20 @@ def chat_ai(session_id):
         f"Daftar Tugas Aktif:\n- {task_list_str}"
     )
 
+    # [2. Definisikan Persona & Aturan Aksi untuk AI]
     system_prompt = (
         "[PERAN & IDENTITAS]\n"
-        "Anda adalah 'Farmile', seorang mentor AI personal yang sangat ahli untuk mahasiswa IT...\n\n"
+        "Anda adalah 'Farmile', seorang mentor AI personal yang sangat ahli untuk mahasiswa IT. Misi utama Anda adalah membimbing pengguna secara proaktif, bukan hanya menjawab pertanyaan.\n\n"
+        
         "[ATURAN PERILAKU]\n"
-        "1. PROAKTIF & KONtekstual: Selalu gunakan informasi pengguna yang diberikan...\n"
-        "2. JAWABAN DETAIL: Saat menjawab pertanyaan tentang jadwal atau tugas, format jawabanmu sebagai daftar ringkas, sertakan waktu atau deadline untuk setiap item.\n"
-        "3. PANDUAN PENGGUNA: Jika pengguna bertanya 'bantuan', 'help', 'perintah', atau 'format', berikan jawaban dalam format PANDUAN BANTUAN yang sudah ditentukan di bawah.\n"
-        "4. DETEKSI AKSI: Jika pengguna meminta untuk melakukan aksi (tambah, hapus, update), berikan respons HANYA dalam format JSON yang dibungkus tag [DO_ACTION]...\n\n"
-        "[FORMAT AKSI JSON]\n"
-        "- Tambah Tugas: [DO_ACTION]{\"action\": \"add_task\", ...}\n"
-        "- Tambah Acara: [DO_ACTION]{\"action\": \"add_event\", ...}\n"
-        "- Hapus Tugas: [DO_ACTION]{\"action\": \"delete_task\", ...}\n"
-        "- Update Tugas: [DO_ACTION]{\"action\": \"update_task\", ...}\n\n"
-        # [FORMAT PANDUAN BANTUAN BARU]
+        "1. PRIORITAS UTAMA - MODE MENTOR & BANTUAN KODING:\n"
+        "   Tugas utamamu adalah menjadi mentor. Jika pengguna mendeskripsikan masalah, kebingungan, atau meminta contoh kode ('tunjukan kodenya', 'gimana cara buatnya?'), JANGAN melakukan aksi. Berikan penjelasan yang jelas, pecah masalahnya, dan berikan contoh kode sederhana dalam blok Markdown. Ini BUKAN perintah untuk menambah tugas.\n\n"
+        "2. PROAKTIF & KONTEKSTUAL: Selalu gunakan informasi pengguna yang diberikan untuk memberikan jawaban yang sangat personal.\n"
+        "3. JAWABAN DETAIL: Saat menjawab pertanyaan tentang jadwal atau tugas, format jawabanmu sebagai daftar ringkas, sertakan waktu atau deadline untuk setiap item.\n"
+        "4. PANDUAN PENGGUNA: Jika pengguna bertanya 'bantuan', 'help', 'perintah', atau 'format', berikan jawaban HANYA dalam format PANDUAN BANTUAN di bawah.\n"
+        "5. DETEKSI AKSI EKSPLISIT:\n"
+        "   Hanya aktifkan mode aksi jika pengguna menggunakan kata kerja perintah yang JELAS dan EKSPLISIT (seperti: tambah, buat, jadwalkan, hapus, ganti, update). Jika ragu, selalu pilih mode mentor dan bertanya untuk konfirmasi. Jika aksi akan dilakukan, berikan respons HANYA dan EKSKLUSIF dalam format JSON yang dibungkus tag [DO_ACTION].\n\n"
+
         "[FORMAT PANDUAN BANTUAN]\n"
         "Tentu saja! Saya bisa membantu Anda mengelola jadwal dan tugas langsung dari percakapan ini. Anggap saja saya asisten pribadi Anda. 🤖\n\n"
         "Berikut adalah beberapa contoh cara Anda bisa memberi saya perintah:\n\n"
@@ -917,9 +949,23 @@ def chat_ai(session_id):
         "**✏️ Untuk Mengubah & Menghapus:**\n"
         "*\"Hapus tugasku yang judulnya 'Beli kopi'.\"*\n"
         "*\"Update prioritas tugas 'Revisi desain' menjadi high.\"`\n\n"
-        "Cukup katakan apa yang Anda butuhkan, dan saya akan coba mengaturnya untuk Anda!"
+        "Cukup katakan apa yang Anda butuhkan, dan saya akan coba mengaturnya untuk Anda!\n\n"
+
+        "[FORMAT AKSI JSON & CONTOH]\n"
+        "Contoh Permintaan: 'Farmile, tambah tugas: Tugas Algoritma if-else bercabang, deadline besok jam 6 pagi dan berikan deskripsi singkat'\n"
+        "Contoh Respons Anda:\n"
+        "[DO_ACTION]{\n"
+        "  \"action\": \"add_task\",\n"
+        "  \"payload\": {\n"
+        "    \"title\": \"Tugas Algoritma if-else bercabang\",\n"
+        "    \"due_date\": \"besok jam 06:00\",\n"
+        "    \"priority\": \"high\",\n"
+        "    \"description\": \"Mempelajari dan mengimplementasikan algoritma if-else dengan beberapa tingkat percabangan.\"\n"
+        "  }\n"
+        "}[/DO_ACTION]"
     )
     
+    # [3. Bangun Riwayat Pesan dengan Konteks yang Disuntikkan]
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"Konteks saya saat ini: {user_context_string}"},
@@ -930,33 +976,38 @@ def chat_ai(session_id):
     for msg in recent_history:
         messages.append({"role": msg.role, "content": msg.content})
 
+    # [4. Panggil API AI dan Proses Respons]
     try:
         completion = ark_client.chat.completions.create(model=current_app.config['MODEL_ENDPOINT_ID'], messages=messages)
         ai_response_content = completion.choices[0].message.content.strip()
 
         final_response_to_user = ""
         
-        if ai_response_content.startswith("[DO_ACTION]"):
+        # [5. Parser Cerdas untuk Deteksi dan Eksekusi Aksi]
+        action_match = re.search(r"\[DO_ACTION\](.*?)\[/DO_ACTION\]", ai_response_content, re.DOTALL)
+        
+        if action_match:
             try:
-                action_json_str = ai_response_content.split('[DO_ACTION]')[1].split('[/DO_ACTION]')[0]
+                action_json_str = action_match.group(1).strip()
                 action_data = json.loads(action_json_str)
                 final_response_to_user = _execute_ai_action(current_user, action_data)
             except Exception as e:
                 current_app.logger.error(f"Gagal parsing aksi AI: {e}")
-                final_response_to_user = "Maaf, saya sedikit bingung. Bisa ulangi permintaan Anda?"
+                final_response_to_user = "Maaf, saya sedikit bingung dengan format aksi. Bisa ulangi permintaan Anda?"
         else:
             final_response_to_user = ai_response_content
 
+        # Simpan balasan final ke database dan kirim ke pengguna
         ai_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='assistant', content=final_response_to_user)
         db.session.add(ai_message)
         db.session.commit()
         
         return jsonify({'response': final_response_to_user})
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Chat AI Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI, silakan coba lagi.'}), 500
-
 # ===============================================
 # RUTE PERSONAL HUB
 # ===============================================
@@ -986,32 +1037,69 @@ def task_to_dict(task):
         'due_date': task.due_date.isoformat() if task.due_date else None,
         'priority': task.priority, 'status': task.status
     }
-
 # Di dalam app/routes.py
 
-# --- GANTI FUNGSI get_events() LAMA DENGAN INI ---
+# GANTI FUNGSI get_events() LAMA DENGAN VERSI BARU INI
 @bp.route('/api/hub/events', methods=['GET'])
 @login_required
 def get_events():
     start_str = request.args.get('start')
     end_str = request.args.get('end')
-    query = Event.query.filter_by(author=current_user)
+    
+    combined_items = []
     
     if start_str and end_str:
         try:
-            # PERBAIKAN: Langsung parse string ISO tanpa memotongnya.
-            # Ini akan menjaga informasi waktu yang dikirim dari frontend.
             start_date = datetime.fromisoformat(start_str)
             end_date = datetime.fromisoformat(end_str)
+
+            # 1. Ambil semua ACARA dalam rentang tanggal
+            events = Event.query.filter(
+                Event.user_id == current_user.id,
+                Event.start_time.between(start_date, end_date)
+            ).all()
             
-            # Gunakan .between() untuk query yang lebih bersih dan akurat
-            query = query.filter(Event.start_time.between(start_date, end_date))
-        except (ValueError, TypeError):
-            # Jika format salah, abaikan filter.
-            pass
+            for event in events:
+                combined_items.append({
+                    'id': f"event-{event.id}",
+                    'title': event.title,
+                    'start': event.start_time.isoformat(),
+                    'end': event.end_time.isoformat() if event.end_time else None,
+                    'backgroundColor': event.color or '#3B82F6',
+                    'borderColor': event.color or '#3B82F6',
+                    'extendedProps': {
+                        'item_type': 'event',
+                        'description': event.description,
+                        'link': event.link
+                    }
+                })
+
+            # 2. Ambil semua TUGAS yang jatuh tempo dalam rentang tanggal
+            tasks = Task.query.filter(
+                Task.user_id == current_user.id,
+                Task.due_date.between(start_date, end_date)
+            ).all()
+
+            for task in tasks:
+                # Format tugas menjadi objek yang dimengerti oleh FullCalendar
+                combined_items.append({
+                    'id': f"task-{task.id}",
+                    'title': f"✔️ {task.title}", # Tambahkan ikon centang pada judul
+                    'start': task.due_date.isoformat(),
+                    'allDay': True, # Anggap tugas sebagai acara seharian pada tanggal jatuh temponya
+                    'className': 'fc-event-task', # Class CSS khusus untuk tugas
+                    'extendedProps': {
+                        'item_type': 'task',
+                        # Sertakan semua data yang dibutuhkan oleh modal
+                        'original_task': task_to_dict(task) 
+                    }
+                })
+        except Exception as e:
+            current_app.logger.error(f"Error getting calendar items: {e}")
             
-    events = query.all()
-    return jsonify([event_to_dict(event) for event in events])
+    return jsonify(combined_items)
+
+
 
 @bp.route('/api/hub/events', methods=['POST'])
 @login_required
