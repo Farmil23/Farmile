@@ -10,7 +10,9 @@ from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta
 
-
+    # Tambahkan ini di app/routes.py
+from flask import session # Pastikan session diimpor dari flask
+    
 from sqlalchemy import or_
 bp = Blueprint('routes', __name__)
 
@@ -561,45 +563,87 @@ def cancel_submission(submission_id):
 # app/routes.py
 
 # app/routes.py
+# --- ROUTE BARU: Menerima data dari Personal Hub dan me-redirect ---
+@bp.route('/hub/ask-ai', methods=['POST'])
+@login_required
+def ask_ai_from_hub():
+    events_json = request.form.get('events', '[]')
+    tasks_json = request.form.get('tasks', '[]')
+    
+    # Simpan konteks jadwal di session untuk digunakan oleh route chatbot
+    session['hub_context_prompt'] = {
+        "events": json.loads(events_json),
+        "tasks": json.loads(tasks_json)
+    }
+    
+    return redirect(url_for('routes.chatbot'))
 
+# --- FUNGSI DIPERBARUI: Logika utama saat membuka chatbot ---
 @bp.route('/chatbot')
 @login_required
 def chatbot():
-    # Cari sesi chat umum terbaru milik user (project_id = None)
-    latest_general_session = (
-        ChatSession.query
-        .filter_by(user_id=current_user.id, project_id=None)
-        .order_by(ChatSession.timestamp.desc())
-        .first()
-    )
-
-    if latest_general_session:
-        # Jika ada, arahkan ke sesi tersebut
-        return redirect(url_for('routes.chatbot_session', session_id=latest_general_session.id))
-    else:
-        # Jika belum ada, buat sesi umum baru
-        new_session = ChatSession(
-            user_id=current_user.id, 
-            title="Percakapan Umum",
-            project_id=None # <-- Penting: tandai sebagai sesi umum
-        )
+    # 1. Cek apakah ada konteks dari Personal Hub
+    if 'hub_context_prompt' in session:
+        context = session.pop('hub_context_prompt') # Ambil & hapus agar tidak terpakai lagi
+        events = context.get('events', [])
+        tasks = context.get('tasks', [])
+        
+        new_session = ChatSession(user_id=current_user.id, title="Saran Jadwal dari Hub")
         db.session.add(new_session)
         db.session.flush()
 
-        # Tambahkan pesan pembuka
-        welcome_message = ChatMessage(
-            session_id=new_session.id,
-            user_id=current_user.id,
-            role='assistant',
-            content=(
-                f"Halo {current_user.name.split()[0]}! 👋 Aku Farmile, mentor AI kamu.\n\n"
-                f"Siap bantuin apa hari ini? 🚀"
+        # Format jadwal menjadi teks yang mudah dibaca
+        event_list_str = "\n- ".join(events) if events else "Tidak ada acara."
+        task_list_str = "\n- ".join(tasks) if tasks else "Tidak ada tugas."
+
+        prompt = f"""
+        Sapa pengguna dengan ramah, sebutkan bahwa Anda melihat mereka meminta saran dari Personal Hub.
+        Rangkum jadwal mereka hari ini secara singkat (berdasarkan data di bawah).
+        Akhiri dengan pertanyaan terbuka untuk memulai percakapan, tanyakan apa yang bisa Anda bantu prioritaskan atau atur.
+
+        Data jadwal pengguna:
+        Acara:
+        - {event_list_str}
+        Tugas:
+        - {task_list_str}
+        """
+        
+        try:
+            completion = ark_client.chat.completions.create(
+                model=current_app.config['MODEL_ENDPOINT_ID'],
+                messages=[{"role": "user", "content": prompt}]
             )
+            ai_response_content = completion.choices[0].message.content
+        except Exception as e:
+            current_app.logger.error(f"AI Hub Context Error: {e}")
+            ai_response_content = f"Halo {current_user.name.split()[0]}! Sepertinya ada sedikit masalah saat saya mencoba melihat jadwalmu. Tapi jangan khawatir, ada yang bisa kubantu hari ini?"
+
+        welcome_message = ChatMessage(session_id=new_session.id, user_id=current_user.id, role='assistant', content=ai_response_content)
+        db.session.add(welcome_message)
+        db.session.commit()
+        
+        return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
+
+    # 2. Jika tidak ada konteks, jalankan logika normal
+    latest_general_session = ChatSession.query.filter_by(user_id=current_user.id, project_id=None).order_by(ChatSession.timestamp.desc()).first()
+    
+    if latest_general_session:
+        return redirect(url_for('routes.chatbot_session', session_id=latest_general_session.id))
+    else:
+        # Buat sesi umum baru jika belum ada
+        new_session = ChatSession(user_id=current_user.id, title="Percakapan Umum", project_id=None)
+        db.session.add(new_session)
+        db.session.flush()
+
+        welcome_message = ChatMessage(
+            session_id=new_session.id, user_id=current_user.id, role='assistant',
+            content=f"Halo {current_user.name.split()[0]}! 👋 Aku Farmile, mentor AI kamu.\n\nSiap bantuin apa hari ini? 🚀"
         )
         db.session.add(welcome_message)
         db.session.commit()
 
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
+
     
 @bp.route('/chatbot/new', methods=['POST'])
 @login_required
@@ -620,16 +664,17 @@ def new_chat_session():
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
 
+# --- Rute untuk menampilkan sesi chat spesifik ---
 @bp.route('/chatbot/<int:session_id>')
 @login_required
 def chatbot_session(session_id):
-    session = ChatSession.query.get_or_404(session_id)
-    if session.user_id != current_user.id:
+    session_data = ChatSession.query.get_or_404(session_id)
+    if session_data.user_id != current_user.id:
         abort(403)
     all_sessions = ChatSession.query.filter_by(user_id=current_user.id).order_by(ChatSession.timestamp.desc()).all()
-    messages = session.messages.order_by(ChatMessage.timestamp.asc()).all()
-    return render_template('chatbot.html', title=session.title, 
-                           current_session=session, all_sessions=all_sessions, history=messages)
+    messages = session_data.messages.order_by(ChatMessage.timestamp.asc()).all()
+    return render_template('chatbot.html', title=session_data.title, 
+                           current_session=session_data, all_sessions=all_sessions, history=messages)
 
 @bp.route('/rename-session/<int:session_id>', methods=['POST'])
 @login_required
@@ -696,45 +741,42 @@ def edit_profile():
 @bp.route('/chat-ai/<int:session_id>', methods=['POST'])
 @login_required
 def chat_ai(session_id):
-    if not ark_client:
-        return jsonify({'error': 'Layanan AI saat ini tidak tersedia.'}), 503
-    
-    session = ChatSession.query.get_or_404(session_id)
-    if session.user_id != current_user.id:
+    session_data = ChatSession.query.get_or_404(session_id)
+    if session_data.user_id != current_user.id:
         abort(403)
     
     user_message_content = request.get_json().get('message', '').strip()
     if not user_message_content:
         return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
 
-    # Logika untuk "Perintah Cepat"
-    if user_message_content == '/buatkan_roadmap':
-        if _generate_roadmap_for_user(current_user):
-            ai_response_content = "Tentu! Saya telah membuatkan roadmap belajar personal baru untukmu. Silakan cek halaman 'Roadmap Belajar' untuk melihat hasilnya."
-        else:
-            ai_response_content = "Maaf, sepertinya saya gagal membuat roadmap saat ini. Coba lagi beberapa saat."
-        user_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='user', content=user_message_content)
-        ai_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='assistant', content=ai_response_content)
-        db.session.add_all([user_message, ai_message])
-        db.session.commit()
-        return jsonify({'response': ai_response_content})
-
-    user_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='user', content=user_message_content)
+    user_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='user', content=user_message_content)
     db.session.add(user_message)
     
-    recent_history = session.messages.order_by(ChatMessage.timestamp.desc()).limit(10).all()
-    recent_history.reverse()
-
-    completed_lessons_count = UserProgress.query.filter_by(user_id=current_user.id).count()
+    # --- Di sinilah PROMPT BARU akan digunakan ---
     user_context = (
         f"Nama pengguna: {current_user.name}, seorang mahasiswa semester {current_user.semester}. "
         f"Fokus karier yang ia minati adalah {current_user.career_path}. "
-        f"Progres belajar saat ini: sudah menyelesaikan {completed_lessons_count} modul di roadmap."
-    )
-    system_prompt = (
-        "Anda adalah Farmile, seorang mentor karier AI yang berpengalaman, ramah, dan suportif. Bayangkan diri Anda sebagai mentor yang sudah membimbing banyak generasi profesional AI, sehingga jawaban Anda selalu penuh wawasan, empati, dan motivasi.  Tugas Anda: 1. Berikan arahan karier di bidang AI yang jelas, praktis, dan sesuai dengan kondisi nyata industri.  2. Gunakan informasi konteks pengguna untuk membuat jawaban terasa personal, relevan, dan spesifik.  3. Jelaskan konsep atau saran dengan bahasa yang mudah dipahami, hindari jargon berlebihan, dan berikan contoh nyata atau analogi bila perlu.  4. Selalu dorong pengguna agar percaya diri, termotivasi, dan merasa didukung dalam perjalanan mereka.  5. Tunjukkan sikap mentor berpengalaman: sabar, bijak, dan visioner.  Nada komunikasi:  - Ramah dan hangat, seperti seorang mentor yang ingin melihat muridnya sukses.  - Positif dan membangun semangat, tanpa menggurui.  - Fokus pada peluang, solusi, dan langkah nyata.  Konteks Pengguna: {user_context}"
+        f"Progres belajar saat ini: sudah menyelesaikan {current_user.user_progress.count()} materi."
     )
     
+    # Prompt baru yang lebih canggih
+    system_prompt = (
+        "[IDENTITAS & MISI]\n"
+        "Anda adalah 'Farmile', seorang mentor AI personal yang dirancang untuk membimbing mahasiswa IT menuju puncak potensi mereka. Misi utama Anda bukan hanya menjawab pertanyaan, tetapi secara proaktif membentuk pola pikir, strategi belajar, dan pemahaman industri mereka. Anda adalah gabungan dari seorang ahli kurikulum, tech lead berpengalaman, dan seorang motivator.\n\n"
+        "[PANDUAN PERILAKU & GAYA BICARA]\n"
+        "Gunakan gaya bahasa yang bijak, suportif, dan tajam (insightful). Sapa pengguna dengan nama mereka jika sesuai. Nada Anda harus terasa seperti seorang mentor berpengalaman: tenang, percaya diri, dan selalu fokus pada pertumbuhan pengguna.\n\n"
+        "[ATURAN INTERAKSI]\n"
+        "1. SELALU GUNAKAN KONTEKS: Manfaatkan informasi tentang semester, jalur karier, dan progres pengguna untuk memberikan jawaban yang sangat personal dan relevan. Jangan pernah memberikan jawaban generik.\n"
+        "2. JADILAH PROAKTIF: Jangan hanya menunggu pertanyaan. Jika pengguna tampak bingung, ajukan pertanyaan pancingan untuk menggali masalah sebenarnya. Contoh: 'Itu pertanyaan yang bagus. Sebelum kita masuk ke kodenya, boleh ceritakan dulu apa tujuan utama yang ingin kamu capai dengan fitur ini?'\n"
+        "3. BERIKAN JAWABAN TERSTRUKTUR: Pecah konsep kompleks menjadi poin-poin atau langkah-langkah yang mudah dicerna. Gunakan analogi untuk menjelaskan ide-ide sulit.\n"
+        "4. FOKUS PADA 'MENGAPA', BUKAN HANYA 'BAGAIMANA': Selain memberikan solusi teknis, jelaskan MENGAPA solusi tersebut baik dan apa konsep fundamental di baliknya. Tujuannya adalah membangun pemahaman, bukan hanya memberikan contekan.\n"
+        "5. DORONG KEMANDIRIAN: Arahkan pengguna ke sumber daya atau cara berpikir yang memungkinkan mereka memecahkan masalah serupa di masa depan. Contoh: 'Untuk masalah ini, coba pikirkan tentang state management. Apa saja pilihan yang kita punya di React? Mari kita diskusikan pro dan kontranya.'\n\n"
+        f"[KONTEKS PENGGUNA SAAT INI]\n{user_context}"
+    )
+    
+    recent_history = session_data.messages.order_by(ChatMessage.timestamp.desc()).limit(10).all()
+    recent_history.reverse()
+
     messages = [{"role": "system", "content": system_prompt}]
     for msg in recent_history:
         messages.append({"role": msg.role, "content": msg.content})
@@ -746,16 +788,15 @@ def chat_ai(session_id):
         )
         ai_response_content = completion.choices[0].message.content
         
-        ai_message = ChatMessage(session_id=session.id, user_id=current_user.id, role='assistant', content=ai_response_content)
+        ai_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='assistant', content=ai_response_content)
         db.session.add(ai_message)
         db.session.commit()
         
         return jsonify({'response': ai_response_content})
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"BytePlus API Error: {e}")
+        current_app.logger.error(f"Chat AI Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI, silakan coba lagi.'}), 500
-    
     
 
 # ===============================================
@@ -988,22 +1029,4 @@ def ai_organizer():
         current_app.logger.error(f"AI Organizer Error: {e}")
         return jsonify({'error': 'Gagal menghubungi mentor AI saat ini.'}), 500
     
-    
-    # Tambahkan ini di app/routes.py
-from flask import session # Pastikan session diimpor dari flask
-
-@bp.route('/hub/ask-ai', methods=['POST'])
-@login_required
-def ask_ai_from_hub():
-    events_json = request.form.get('events', '[]')
-    tasks_json = request.form.get('tasks', '[]')
-
-    # Simpan konteks jadwal di session
-    session['hub_context_prompt'] = {
-        "events": json.loads(events_json),
-        "tasks": json.loads(tasks_json)
-    }
-
-    # Redirect ke halaman chatbot utama
-    return redirect(url_for('routes.chatbot'))
     
