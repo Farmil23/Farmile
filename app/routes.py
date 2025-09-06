@@ -578,37 +578,33 @@ def ask_ai_from_hub():
     
     return redirect(url_for('routes.chatbot'))
 
-# --- FUNGSI DIPERBARUI: Logika utama saat membuka chatbot ---
 @bp.route('/chatbot')
 @login_required
 def chatbot():
-    # 1. Cek apakah ada konteks dari Personal Hub
+    # --- Skenario 1: Pengguna datang dari Personal Hub ---
     if 'hub_context_prompt' in session:
-        context = session.pop('hub_context_prompt') # Ambil & hapus agar tidak terpakai lagi
+        context = session.pop('hub_context_prompt')
         events = context.get('events', [])
         tasks = context.get('tasks', [])
         
+        # Buat sesi chat baru khusus untuk konteks ini
         new_session = ChatSession(user_id=current_user.id, title="Saran Jadwal dari Hub")
         db.session.add(new_session)
         db.session.flush()
 
-        # Format jadwal menjadi teks yang mudah dibaca
+        # Buat prompt untuk AI agar merangkum jadwal
         event_list_str = "\n- ".join(events) if events else "Tidak ada acara."
         task_list_str = "\n- ".join(tasks) if tasks else "Tidak ada tugas."
-
         prompt = f"""
         Sapa pengguna dengan ramah, sebutkan bahwa Anda melihat mereka meminta saran dari Personal Hub.
         Rangkum jadwal mereka hari ini secara singkat (berdasarkan data di bawah).
-        Akhiri dengan pertanyaan terbuka untuk memulai percakapan, tanyakan apa yang bisa Anda bantu prioritaskan atau atur.
-
-        Data jadwal pengguna:
-        Acara:
-        - {event_list_str}
-        Tugas:
-        - {task_list_str}
+        Akhiri dengan pertanyaan terbuka untuk memulai percakapan.
+        Data jadwal: Acara: {event_list_str}. Tugas: {task_list_str}.
         """
         
+        ai_response_content = ""
         try:
+            # Panggil API AI Anda
             completion = ark_client.chat.completions.create(
                 model=current_app.config['MODEL_ENDPOINT_ID'],
                 messages=[{"role": "user", "content": prompt}]
@@ -618,30 +614,44 @@ def chatbot():
             current_app.logger.error(f"AI Hub Context Error: {e}")
             ai_response_content = f"Halo {current_user.name.split()[0]}! Sepertinya ada sedikit masalah saat saya mencoba melihat jadwalmu. Tapi jangan khawatir, ada yang bisa kubantu hari ini?"
 
-        welcome_message = ChatMessage(session_id=new_session.id, user_id=current_user.id, role='assistant', content=ai_response_content)
+        # Tambahkan petunjuk bantuan di akhir sapaan AI
+        help_hint = "\n\n*(Jika Anda butuh format perintah, katakan saja 'bantuan'.)*"
+        final_welcome_message = ai_response_content + help_hint
+
+        # Simpan pesan final yang sudah digabung
+        welcome_message = ChatMessage(session_id=new_session.id, user_id=current_user.id, role='assistant', content=final_welcome_message)
         db.session.add(welcome_message)
         db.session.commit()
         
+        # Arahkan pengguna ke sesi chat yang baru dibuat
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
-    # 2. Jika tidak ada konteks, jalankan logika normal
-    latest_general_session = ChatSession.query.filter_by(user_id=current_user.id, project_id=None).order_by(ChatSession.timestamp.desc()).first()
-    
-    if latest_general_session:
-        return redirect(url_for('routes.chatbot_session', session_id=latest_general_session.id))
+    # --- Skenario 2: Pengguna mengakses chatbot secara langsung ---
+    # Cari sesi chat paling baru milik pengguna, apapun jenisnya
+    latest_session = ChatSession.query.filter_by(user_id=current_user.id).order_by(ChatSession.timestamp.desc()).first()
+
+    if latest_session:
+        # Jika ada riwayat, langsung arahkan ke sesi terakhir
+        return redirect(url_for('routes.chatbot_session', session_id=latest_session.id))
     else:
-        # Buat sesi umum baru jika belum ada
+        # Jika pengguna benar-benar baru, buat sesi umum pertama mereka
         new_session = ChatSession(user_id=current_user.id, title="Percakapan Umum", project_id=None)
         db.session.add(new_session)
         db.session.flush()
-
+        
+        # Buat pesan selamat datang dengan petunjuk bantuan
         welcome_message = ChatMessage(
             session_id=new_session.id, user_id=current_user.id, role='assistant',
-            content=f"Halo {current_user.name.split()[0]}! 👋 Aku Farmile, mentor AI kamu.\n\nSiap bantuin apa hari ini? 🚀"
+            content=(
+                f"Halo {current_user.name.split()[0]}! 👋 Aku Farmile, mentor AI kamu.\n\n"
+                f"Siap bantuin apa hari ini? 🚀\n\n"
+                f"**(Pssst... kamu bisa ketik 'bantuan' untuk melihat semua perintah keren yang bisa aku lakukan!)**"
+            )
         )
         db.session.add(welcome_message)
         db.session.commit()
-
+        
+        # Arahkan ke sesi pertama mereka
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
     
@@ -735,9 +745,125 @@ def edit_profile():
     return render_template('edit_profile.html', title="Edit Profil")
 
 
+#===============================================
+# FUNGSI-FUNGSI HELPER UNTUK AKSI AI
 # ===============================================
-# RUTE API UNTUK AI
-# ===============================================
+
+def _execute_ai_action(user, action_data):
+    """Fungsi pusat untuk memproses semua jenis aksi dari AI."""
+    action = action_data.get("action")
+    payload = action_data.get("payload", {})
+
+    if action == "add_task":
+        task = _create_task_from_ai(user, payload)
+        if task:
+            due_date_info = f" dengan deadline {task.due_date.strftime('%d %B, %H:%M')}." if task.due_date else "."
+            return f"✅ Siap! Tugas '{task.title}' sudah saya tambahkan ke Personal Hub{due_date_info}"
+        return "Maaf, terjadi kesalahan saat mencoba menambahkan tugas."
+
+    elif action == "add_event":
+        event = _create_event_from_ai(user, payload)
+        if event:
+            time_info = f" pada {event.start_time.strftime('%d %B, %H:%M')}."
+            return f"✅ Berhasil! Acara '{event.title}' sudah saya jadwalkan di kalender Anda{time_info}"
+        return "Maaf, terjadi kesalahan saat mencoba menambahkan acara."
+
+    elif action == "delete_task":
+        success, title = _delete_task_from_ai(user, payload)
+        if success:
+            return f"🗑️ Oke, tugas '{title}' sudah berhasil saya hapus."
+        return f"Maaf, saya tidak dapat menemukan tugas dengan judul '{title}' untuk dihapus."
+
+    elif action == "update_task":
+        task = _update_task_from_ai(user, payload)
+        if task:
+            return f"✏️ Tugas '{task.title}' berhasil diperbarui."
+        return f"Maaf, saya tidak dapat menemukan tugas '{payload.get('original_title')}' untuk diperbarui."
+
+    return "Saya mendeteksi sebuah aksi, tapi saya belum bisa melakukannya saat ini."
+
+def _create_task_from_ai(user, payload):
+    """Membuat Task dari payload AI dan menyimpannya ke DB."""
+    try:
+        title = payload.get('title', 'Tugas Tanpa Judul dari AI')
+        priority = payload.get('priority', 'medium').lower()
+        if priority not in ['low', 'medium', 'high', 'urgent']:
+            priority = 'medium'
+
+        due_date_str = payload.get('due_date')
+        due_date = None
+        if due_date_str:
+            try:
+                due_date = datetime.fromisoformat(due_date_str.replace("Z", "+00:00"))
+            except ValueError:
+                if "hari ini" in due_date_str.lower() and "jam" in due_date_str.lower():
+                    time_parts = due_date_str.lower().split("jam")[1].strip().split(":")
+                    hour = int(time_parts[0]) if time_parts[0].isdigit() else datetime.now().hour
+                    minute = int(time_parts[1]) if len(time_parts) > 1 and time_parts[1].isdigit() else 0
+                    due_date = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
+                elif "besok" in due_date_str.lower():
+                    due_date = datetime.now() + timedelta(days=1)
+        
+        new_task = Task(author=user, title=title, priority=priority, due_date=due_date, status='todo')
+        db.session.add(new_task)
+        db.session.commit()
+        return new_task
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Gagal membuat tugas dari AI: {e}")
+        return None
+
+def _create_event_from_ai(user, payload):
+    """Membuat Event dari payload AI."""
+    try:
+        title = payload.get('title', 'Acara Tanpa Judul')
+        start_time_str = payload.get('start_time')
+        start_time = datetime.fromisoformat(start_time_str) if start_time_str else datetime.now()
+        
+        new_event = Event(author=user, title=title, start_time=start_time)
+        db.session.add(new_event)
+        db.session.commit()
+        return new_event
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Gagal membuat event dari AI: {e}")
+        return None
+
+def _delete_task_from_ai(user, payload):
+    """Menghapus Task berdasarkan judul."""
+    title = payload.get('title')
+    if not title: return False, ""
+    
+    task_to_delete = Task.query.filter_by(author=user, title=title).first()
+    
+    if task_to_delete:
+        db.session.delete(task_to_delete)
+        db.session.commit()
+        return True, title
+    return False, title
+
+def _update_task_from_ai(user, payload):
+    """Mengupdate Task berdasarkan judul asli."""
+    original_title = payload.get('original_title')
+    new_data = payload.get('new_data', {})
+    if not original_title or not new_data: return None
+
+    task_to_update = Task.query.filter_by(author=user, title=original_title).first()
+    
+    if task_to_update:
+        task_to_update.title = new_data.get('title', task_to_update.title)
+        task_to_update.priority = new_data.get('priority', task_to_update.priority)
+        db.session.commit()
+        return task_to_update
+    return None
+
+    
+    
+    
+    
+    
+    
+    
 @bp.route('/chat-ai/<int:session_id>', methods=['POST'])
 @login_required
 def chat_ai(session_id):
@@ -751,53 +877,85 @@ def chat_ai(session_id):
 
     user_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='user', content=user_message_content)
     db.session.add(user_message)
-    
-    # --- Di sinilah PROMPT BARU akan digunakan ---
-    user_context = (
-        f"Nama pengguna: {current_user.name}, seorang mahasiswa semester {current_user.semester}. "
-        f"Fokus karier yang ia minati adalah {current_user.career_path}. "
-        f"Progres belajar saat ini: sudah menyelesaikan {current_user.user_progress.count()} materi."
+
+    todays_events = Event.query.filter(db.func.date(Event.start_time) == datetime.utcnow().date(), Event.user_id == current_user.id).all()
+    relevant_tasks = Task.query.filter(
+        Task.user_id == current_user.id, Task.status != 'done',
+        or_(db.func.date(Task.due_date) <= datetime.utcnow().date(), Task.due_date == None)
+    ).all()
+    event_list_str = "\n- ".join([f"{e.title} (pukul {e.start_time.strftime('%H:%M')})" for e in todays_events]) or "Tidak ada"
+    task_list_str = "\n- ".join([f"{t.title} (deadline: {t.due_date.strftime('%d %b, %H:%M') if t.due_date else 'N/A'})" for t in relevant_tasks]) or "Tidak ada"
+    user_context_string = (
+        f"Nama pengguna: {current_user.name}.\n"
+        f"Jadwal Acara Hari Ini:\n- {event_list_str}\n"
+        f"Daftar Tugas Aktif:\n- {task_list_str}"
     )
-    
-    # Prompt baru yang lebih canggih
+
     system_prompt = (
-        "[IDENTITAS & MISI]\n"
-        "Anda adalah 'Farmile', seorang mentor AI personal yang dirancang untuk membimbing mahasiswa IT menuju puncak potensi mereka. Misi utama Anda bukan hanya menjawab pertanyaan, tetapi secara proaktif membentuk pola pikir, strategi belajar, dan pemahaman industri mereka. Anda adalah gabungan dari seorang ahli kurikulum, tech lead berpengalaman, dan seorang motivator.\n\n"
-        "[PANDUAN PERILAKU & GAYA BICARA]\n"
-        "Gunakan gaya bahasa yang bijak, suportif, dan tajam (insightful). Sapa pengguna dengan nama mereka jika sesuai. Nada Anda harus terasa seperti seorang mentor berpengalaman: tenang, percaya diri, dan selalu fokus pada pertumbuhan pengguna.\n\n"
-        "[ATURAN INTERAKSI]\n"
-        "1. SELALU GUNAKAN KONTEKS: Manfaatkan informasi tentang semester, jalur karier, dan progres pengguna untuk memberikan jawaban yang sangat personal dan relevan. Jangan pernah memberikan jawaban generik.\n"
-        "2. JADILAH PROAKTIF: Jangan hanya menunggu pertanyaan. Jika pengguna tampak bingung, ajukan pertanyaan pancingan untuk menggali masalah sebenarnya. Contoh: 'Itu pertanyaan yang bagus. Sebelum kita masuk ke kodenya, boleh ceritakan dulu apa tujuan utama yang ingin kamu capai dengan fitur ini?'\n"
-        "3. BERIKAN JAWABAN TERSTRUKTUR: Pecah konsep kompleks menjadi poin-poin atau langkah-langkah yang mudah dicerna. Gunakan analogi untuk menjelaskan ide-ide sulit.\n"
-        "4. FOKUS PADA 'MENGAPA', BUKAN HANYA 'BAGAIMANA': Selain memberikan solusi teknis, jelaskan MENGAPA solusi tersebut baik dan apa konsep fundamental di baliknya. Tujuannya adalah membangun pemahaman, bukan hanya memberikan contekan.\n"
-        "5. DORONG KEMANDIRIAN: Arahkan pengguna ke sumber daya atau cara berpikir yang memungkinkan mereka memecahkan masalah serupa di masa depan. Contoh: 'Untuk masalah ini, coba pikirkan tentang state management. Apa saja pilihan yang kita punya di React? Mari kita diskusikan pro dan kontranya.'\n\n"
-        f"[KONTEKS PENGGUNA SAAT INI]\n{user_context}"
+        "[PERAN & IDENTITAS]\n"
+        "Anda adalah 'Farmile', seorang mentor AI personal yang sangat ahli untuk mahasiswa IT...\n\n"
+        "[ATURAN PERILAKU]\n"
+        "1. PROAKTIF & KONtekstual: Selalu gunakan informasi pengguna yang diberikan...\n"
+        "2. JAWABAN DETAIL: Saat menjawab pertanyaan tentang jadwal atau tugas, format jawabanmu sebagai daftar ringkas, sertakan waktu atau deadline untuk setiap item.\n"
+        "3. PANDUAN PENGGUNA: Jika pengguna bertanya 'bantuan', 'help', 'perintah', atau 'format', berikan jawaban dalam format PANDUAN BANTUAN yang sudah ditentukan di bawah.\n"
+        "4. DETEKSI AKSI: Jika pengguna meminta untuk melakukan aksi (tambah, hapus, update), berikan respons HANYA dalam format JSON yang dibungkus tag [DO_ACTION]...\n\n"
+        "[FORMAT AKSI JSON]\n"
+        "- Tambah Tugas: [DO_ACTION]{\"action\": \"add_task\", ...}\n"
+        "- Tambah Acara: [DO_ACTION]{\"action\": \"add_event\", ...}\n"
+        "- Hapus Tugas: [DO_ACTION]{\"action\": \"delete_task\", ...}\n"
+        "- Update Tugas: [DO_ACTION]{\"action\": \"update_task\", ...}\n\n"
+        # [FORMAT PANDUAN BANTUAN BARU]
+        "[FORMAT PANDUAN BANTUAN]\n"
+        "Tentu saja! Saya bisa membantu Anda mengelola jadwal dan tugas langsung dari percakapan ini. Anggap saja saya asisten pribadi Anda. 🤖\n\n"
+        "Berikut adalah beberapa contoh cara Anda bisa memberi saya perintah:\n\n"
+        "**🗓️ Untuk Menambah Jadwal:**\n"
+        "*\"Farmile, tolong tambahkan tugas baru: Kerjakan bab 3 skripsi, deadline besok jam 8 malam.\"*\n"
+        "*\"Jadwalkan acara 'Meeting dengan Klien' untuk hari Senin jam 1 siang.\"`\n\n"
+        "**🔍 Untuk Melihat Jadwal:**\n"
+        "*\"Tugas apa saja yang harus kuselesaikan hari ini?\"*\n"
+        "*\"Coba lihat jadwalku untuk minggu depan.\"`\n\n"
+        "**✏️ Untuk Mengubah & Menghapus:**\n"
+        "*\"Hapus tugasku yang judulnya 'Beli kopi'.\"*\n"
+        "*\"Update prioritas tugas 'Revisi desain' menjadi high.\"`\n\n"
+        "Cukup katakan apa yang Anda butuhkan, dan saya akan coba mengaturnya untuk Anda!"
     )
     
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Konteks saya saat ini: {user_context_string}"},
+        {"role": "assistant", "content": "Baik, konteks Anda sudah saya pahami. Siap membantu."}
+    ]
     recent_history = session_data.messages.order_by(ChatMessage.timestamp.desc()).limit(10).all()
     recent_history.reverse()
-
-    messages = [{"role": "system", "content": system_prompt}]
     for msg in recent_history:
         messages.append({"role": msg.role, "content": msg.content})
-    
+
     try:
-        completion = ark_client.chat.completions.create(
-            model=current_app.config['MODEL_ENDPOINT_ID'],
-            messages=messages
-        )
-        ai_response_content = completion.choices[0].message.content
+        completion = ark_client.chat.completions.create(model=current_app.config['MODEL_ENDPOINT_ID'], messages=messages)
+        ai_response_content = completion.choices[0].message.content.strip()
+
+        final_response_to_user = ""
         
-        ai_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='assistant', content=ai_response_content)
+        if ai_response_content.startswith("[DO_ACTION]"):
+            try:
+                action_json_str = ai_response_content.split('[DO_ACTION]')[1].split('[/DO_ACTION]')[0]
+                action_data = json.loads(action_json_str)
+                final_response_to_user = _execute_ai_action(current_user, action_data)
+            except Exception as e:
+                current_app.logger.error(f"Gagal parsing aksi AI: {e}")
+                final_response_to_user = "Maaf, saya sedikit bingung. Bisa ulangi permintaan Anda?"
+        else:
+            final_response_to_user = ai_response_content
+
+        ai_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='assistant', content=final_response_to_user)
         db.session.add(ai_message)
         db.session.commit()
         
-        return jsonify({'response': ai_response_content})
+        return jsonify({'response': final_response_to_user})
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Chat AI Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI, silakan coba lagi.'}), 500
-    
 
 # ===============================================
 # RUTE PERSONAL HUB
