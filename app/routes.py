@@ -589,6 +589,9 @@ from datetime import datetime
 
 # ...
 
+# Di dalam app/routes.py
+# Di dalam app/routes.py
+
 @bp.route('/chatbot')
 @login_required
 def chatbot():
@@ -598,7 +601,7 @@ def chatbot():
         events = context.get('events', [])
         tasks = context.get('tasks', [])
         
-        # Cari sesi "Saran Jadwal dari Hub" yang sudah ada untuk pengguna ini
+        # Cari sesi "Saran Jadwal dari Hub" yang sudah ada
         hub_session = ChatSession.query.filter_by(
             user_id=current_user.id, 
             title="Saran Jadwal dari Hub"
@@ -608,12 +611,14 @@ def chatbot():
         if not hub_session:
             hub_session = ChatSession(user_id=current_user.id, title="Saran Jadwal dari Hub")
             db.session.add(hub_session)
+            # SOLUSI KUNCI: Paksa database untuk membuat ID untuk sesi baru ini SEKARANG JUGA
+            db.session.flush() 
         
         # Buat prompt untuk AI
         event_list_str = "\n- ".join(events) if events else "Tidak ada acara."
         task_list_str = "\n- ".join(tasks) if tasks else "Tidak ada tugas."
         prompt = f"""
-        Sapa pengguna, sebutkan Anda melihat mereka meminta saran dari Personal Hub.
+        Sapa pengguna, sebutkan bahwa Anda melihat mereka meminta saran dari Personal Hub.
         Rangkum jadwal mereka hari ini secara singkat (berdasarkan data di bawah).
         Akhiri dengan pertanyaan terbuka untuk memulai percakapan.
         Data jadwal: Acara: {event_list_str}. Tugas: {task_list_str}.
@@ -633,23 +638,22 @@ def chatbot():
         help_hint = "\n\n*(Ketik 'bantuan' untuk melihat contoh perintah.)*"
         final_welcome_message = ai_response_content + help_hint
 
-        # Tambahkan pesan AI ke sesi yang sudah ada (atau yang baru dibuat)
+        # Buat pesan baru. Sekarang `hub_session.id` dijamin memiliki nilai.
         welcome_message = ChatMessage(session_id=hub_session.id, user_id=current_user.id, role='assistant', content=final_welcome_message)
         db.session.add(welcome_message)
+        
+        # Simpan semua perubahan (sesi baru jika ada, dan pesan baru)
         db.session.commit()
         
-        # Arahkan pengguna ke sesi khusus tersebut
         return redirect(url_for('routes.chatbot_session', session_id=hub_session.id))
 
     # --- Skenario 2: Pengguna mengakses chatbot secara langsung ---
-    # Cari sesi chat paling baru milik pengguna, apapun jenisnya
     latest_session = ChatSession.query.filter_by(user_id=current_user.id).order_by(ChatSession.timestamp.desc()).first()
 
     if latest_session:
-        # Jika ada riwayat, langsung arahkan ke sesi terakhir
         return redirect(url_for('routes.chatbot_session', session_id=latest_session.id))
     else:
-        # Jika pengguna benar-benar baru, buat sesi umum pertama mereka
+        # Untuk pengguna yang benar-benar baru, logika ini sudah benar
         new_session = ChatSession(user_id=current_user.id, title="Percakapan Umum")
         db.session.add(new_session)
         db.session.flush()
@@ -665,9 +669,7 @@ def chatbot():
         db.session.add(welcome_message)
         db.session.commit()
         
-        # Arahkan ke sesi pertama mereka
         return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
-
     
 @bp.route('/chatbot/new', methods=['POST'])
 @login_required

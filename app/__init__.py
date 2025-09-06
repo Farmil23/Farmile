@@ -12,63 +12,80 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from markupsafe import Markup
 
+# Inisialisasi Ekstensi di luar factory
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
-login_manager.login_view = 'routes.login'
+login_manager.login_view = 'routes.login' # Arahkan ke route login Anda
 oauth = OAuth()
 ark_client = None
 
+# Fungsi User Loader untuk Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    from app.models import User
+    return User.query.get(int(user_id))
+
+# --- Konfigurasi Custom untuk Flask-Admin ---
+class SecureModelView(ModelView):
+    """
+    ModelView dasar yang memeriksa apakah pengguna sudah login dan merupakan admin.
+    """
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.is_admin
+
+    def inaccessible_callback(self, name, **kwargs):
+        # Arahkan ke halaman login jika akses ditolak
+        return redirect(url_for('routes.login', next=request.url))
+
+class UserView(SecureModelView):
+    """Kustomisasi tampilan untuk model User."""
+    # Kolom yang ingin ditampilkan di daftar
+    column_list = ('id', 'name', 'email', 'semester', 'career_path', 'is_admin')
+    # Kolom yang bisa digunakan untuk mencari
+    column_searchable_list = ('name', 'email')
+    # Kolom yang bisa difilter
+    column_filters = ('is_admin', 'semester', 'career_path')
+    # Membuat kolom email bisa di-klik
+    column_formatters = {
+        'email': lambda view, context, model, name: Markup(f'<a href="mailto:{model.email}">{model.email}</a>')
+    }
+
+class TaskView(SecureModelView):
+    """Kustomisasi tampilan untuk model Task."""
+    column_list = ('id', 'title', 'author', 'due_date', 'priority', 'status')
+    column_searchable_list = ('title', 'author.name')
+    column_filters = ('priority', 'status', 'due_date')
+
+class EventView(SecureModelView):
+    """Kustomisasi tampilan untuk model Event."""
+    column_list = ('id', 'title', 'author', 'start_time', 'end_time')
+    column_searchable_list = ('title', 'author.name')
+    column_filters = ('start_time',)
+
 
 def create_app(config_class=Config):
+    """
+    App Factory untuk membuat instance aplikasi Flask.
+    """
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    from flask import redirect, url_for, request
+    # 1. Inisialisasi Ekstensi
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
+    oauth.init_app(app)
 
-    # --- MULAI KONFIGURASI FLASK-ADMIN ---
-    
-    class SecureModelView(ModelView):
-        def is_accessible(self):
-            return current_user.is_authenticated and current_user.is_admin
+    # 2. Konfigurasi Klien Eksternal (OAuth & AI)
+    oauth.register(
+        name='google',
+        client_id=app.config['GOOGLE_CLIENT_ID'],
+        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'}
+    )
 
-        def inaccessible_callback(self, name, **kwargs):
-            return redirect(url_for('routes.login'))
-    
-    class LessonView(SecureModelView):
-        column_list = ('id', 'title', 'order', 'module', 'module_id')
-        column_labels = {
-            'module': 'Modul',
-            'module_id': 'ID Modul'
-        }
-        
-    class ModuleView(SecureModelView):
-        column_list = ('id', 'title', 'description', 'order', 'career_path')
-        column_exclude_list = ['lessons', 'projects']
-        
-        def _list_formatter_lessons(view, context, model, name):
-            count = len(model.lessons) 
-            return Markup(f'<a href="{url_for("lesson.index_view", search=model.title)}">{count} pelajaran</a>')
-        
-        column_formatters = {
-            'lessons': _list_formatter_lessons
-        }
-
-    admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4')
-
-    from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission
-
-    admin.add_view(SecureModelView(User, db.session))
-    admin.add_view(SecureModelView(Roadmap, db.session))
-    
-    admin.add_view(ModuleView(Module, db.session, name='Modules'))
-    admin.add_view(LessonView(Lesson, db.session))
-    
-    admin.add_view(SecureModelView(Project, db.session))
-    admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions"))
-
-    # --- SELESAI KONFIGURASI FLASK-ADMIN ---
-    
     global ark_client
     try:
         api_key = app.config.get('ARK_API_KEY')
@@ -80,26 +97,28 @@ def create_app(config_class=Config):
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")
         ark_client = None
 
-    db.init_app(app)
-    migrate.init_app(app, db)
-    login_manager.init_app(app)
-    oauth.init_app(app)
+    # 3. Konfigurasi Flask-Admin
+    from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event
+    admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 
-    oauth.register(
-        name='google',
-        client_id=app.config['GOOGLE_CLIENT_ID'],
-        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
+    # Tambahkan view untuk setiap model dengan kustomisasi
+    admin.add_view(UserView(User, db.session))
+    admin.add_view(TaskView(Task, db.session))
+    admin.add_view(EventView(Event, db.session))
+    admin.add_view(SecureModelView(Roadmap, db.session))
+    admin.add_view(SecureModelView(Module, db.session))
+    admin.add_view(SecureModelView(Lesson, db.session))
+    admin.add_view(SecureModelView(Project, db.session))
+    admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions"))
 
-    # Daftarkan perintah CLI kustom yang telah kita buat
-    from app import commands
-    app.cli.add_command(commands.ensure_admin)
-
+    # 4. Daftarkan Blueprints & Perintah CLI
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)
     
+    from app import commands
+    app.cli.add_command(commands.ensure_admin)
+
+    # 5. Konfigurasi Logging (untuk produksi)
     if not app.debug and not app.testing:
         if not os.path.exists('logs'):
             os.mkdir('logs')
@@ -112,9 +131,3 @@ def create_app(config_class=Config):
         app.logger.info('Farsight app startup')
 
     return app
-
-from app import models
-
-@login_manager.user_loader
-def load_user(user_id):
-    return models.User.query.get(int(user_id))

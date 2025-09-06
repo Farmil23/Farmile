@@ -1,38 +1,29 @@
+# Di dalam file app/commands.py
+
 import click
 from flask.cli import with_appcontext
-from . import db
-from .models import User
+from app import db
+from app.models import User
 
-@click.command(name='ensure_admin')
+@click.command('ensure-admin')
+@click.option('--email', prompt='Masukkan email admin', help='Email pengguna yang akan dijadikan admin.')
 @with_appcontext
-def ensure_admin():
-    """
-    Memastikan user admin ada dan memiliki status admin.
-    Jika user tidak ada, user akan dibuat.
-    Jika user ada tetapi bukan admin, statusnya akan diupdate.
-    """
-    admin_email = 'farmiljobs@gmail.com'
-    user = User.query.filter_by(email=admin_email).first()
-
+def ensure_admin(email):
+    """Mencari pengguna berdasarkan email dan menjadikannya admin."""
+    
+    # Cari pengguna di database
+    user = User.query.filter_by(email=email).first()
+    
     if not user:
-        # Jika user sama sekali tidak ada, buat baru
-        print(f"User dengan email {admin_email} tidak ditemukan. Membuat user baru...")
-        admin = User(
-            name="Admin Farmil",
-            email=admin_email,
-            is_admin=True,
-            has_completed_onboarding=True, # Sesuaikan field ini jika perlu
-            google_id='admin_manual_id'      # Tambahkan nilai placeholder ini
-        )
-        db.session.add(admin)
-        db.session.commit()
-        print(f"Admin '{admin_email}' berhasil dibuat.")
-    elif not user.is_admin:
-        # Jika user ada tapi bukan admin, update statusnya
-        print(f"User '{admin_email}' ditemukan, mengubah status menjadi admin...")
-        user.is_admin = True
-        db.session.commit()
-        print(f"User '{admin_email}' berhasil diupdate menjadi admin.")
-    else:
-        # Jika user sudah ada dan sudah menjadi admin
-        print(f"User '{admin_email}' sudah menjadi admin.")
+        click.echo(f"Error: Pengguna dengan email '{email}' tidak ditemukan.")
+        return
+
+    if user.is_admin:
+        click.echo(f"Info: Pengguna '{user.name}' ({user.email}) sudah menjadi admin.")
+        return
+
+    # Jadikan pengguna sebagai admin
+    user.is_admin = True
+    db.session.commit()
+    
+    click.echo(f"Sukses! Pengguna '{user.name}' ({user.email}) sekarang adalah admin.")

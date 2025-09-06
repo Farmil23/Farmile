@@ -21,8 +21,8 @@ class User(UserMixin, db.Model):
     user_progress = db.relationship('UserProgress', backref='user', lazy='dynamic', cascade="all, delete-orphan")
     
     # Relasi ke fitur baru Personal Hub
-    tasks = db.relationship('Task', backref='author', lazy='dynamic', cascade="all, delete-orphan")
-    events = db.relationship('Event', backref='author', lazy='dynamic', cascade="all, delete-orphan")
+    tasks = db.relationship('Task', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
+    events = db.relationship('Event', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='author', lazy='dynamic', cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -127,6 +127,8 @@ class Task(db.Model):
     # Opsional: Tautkan tugas ke Lesson atau Project
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=True)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
+    
+    author = db.relationship('User', back_populates='tasks')
 
     def __repr__(self):
         return f"<Task {self.title}>"
@@ -141,6 +143,9 @@ class Event(db.Model):
     end_time = db.Column(db.DateTime, nullable=True)
     link = db.Column(db.String(500), nullable=True) # Untuk link Zoom/GMeet
     color = db.Column(db.String(7), nullable=True, default='#3788d8') # Warna default biru FullCalendar
+    
+    author = db.relationship('User', back_populates='events')
+    
 
     def __repr__(self):
         return f"<Event {self.title}>"
