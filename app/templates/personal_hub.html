@@ -245,62 +245,71 @@
                 
                 dailyAgendaContent.innerHTML = '';
                 
-                let eventsHtml = '<h4>Acara</h4>';
+                const eventHeader = document.createElement('h4');
+                eventHeader.textContent = 'Acara';
+                dailyAgendaContent.appendChild(eventHeader);
+    
                 if (events.length === 0) {
-                    eventsHtml += "<p class='empty-item'>Tidak ada acara terjadwal.</p>";
+                    const p = document.createElement('p');
+                    p.className = 'empty-item';
+                    p.textContent = 'Tidak ada acara terjadwal.';
+                    dailyAgendaContent.appendChild(p);
                 } else {
-                    eventsHtml += '<ul class="daily-agenda-list">';
+                    const list = document.createElement('ul');
+                    list.className = 'daily-agenda-list';
                     events.forEach(event => {
+                        const li = document.createElement('li');
+                        li.className = 'agenda-item';
                         const startTime = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                        
-                        let descriptionHtml = '';
-                        if (event.extendedProps.description) {
-                            descriptionHtml = `<p class="agenda-item-detail">${event.extendedProps.description}</p>`;
-                        }
-    
-                        eventsHtml += `
-                            <li class="agenda-item">
-                                <div class="agenda-item-title">
-                                    <span class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></span>
-                                    ${startTime} - ${event.title}
-                                </div>
-                                ${descriptionHtml}
-                            </li>`;
+                        let descriptionHtml = event.extendedProps.description ? `<p class="agenda-item-detail">${event.extendedProps.description}</p>` : '';
+                        li.innerHTML = `
+                            <div class="agenda-item-title">
+                                <span class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></span>
+                                ${startTime} - ${event.title}
+                            </div>
+                            ${descriptionHtml}
+                        `;
+                        li.addEventListener('click', () => {
+                            dailyAgendaModal.classList.remove('visible');
+                            openEventModal(event);
+                        });
+                        list.appendChild(li);
                     });
-                    eventsHtml += '</ul>';
+                    dailyAgendaContent.appendChild(list);
                 }
-                dailyAgendaContent.innerHTML += eventsHtml;
     
-                let tasksHtml = '<h4 style="margin-top: 1rem;">Tugas</h4>';
+                const taskHeader = document.createElement('h4');
+                taskHeader.textContent = 'Tugas';
+                taskHeader.style.marginTop = '1rem';
+                dailyAgendaContent.appendChild(taskHeader);
+    
                 if (tasks.length === 0) {
-                    tasksHtml += "<p class='empty-item'>Tidak ada tugas untuk hari ini.</p>";
+                    const p = document.createElement('p');
+                    p.className = 'empty-item';
+                    p.textContent = 'Tidak ada tugas untuk hari ini.';
+                    dailyAgendaContent.appendChild(p);
                 } else {
-                    tasksHtml += '<ul class="daily-agenda-list">';
+                    const list = document.createElement('ul');
+                    list.className = 'daily-agenda-list';
                     tasks.forEach(taskItem => {
                         const task = taskItem.extendedProps.original_task;
-                        
-                        let deadlineHtml = '';
-                        if (task.due_date) {
-                            const deadline = new Date(task.due_date);
-                            const timeString = deadline.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                            deadlineHtml = `<p class="agenda-item-detail"><strong>Deadline:</strong> ${timeString}</p>`;
-                        }
-    
-                        let descriptionHtml = '';
-                        if (task.description) {
-                            descriptionHtml = `<p class="agenda-item-detail">${task.description}</p>`;
-                        }
-    
-                        tasksHtml += `
-                            <li class="agenda-item">
-                                <div class="agenda-item-title">✔️ ${task.title} (Prioritas: ${task.priority})</div>
-                                ${descriptionHtml}
-                                ${deadlineHtml}
-                            </li>`;
+                        const li = document.createElement('li');
+                        li.className = 'agenda-item';
+                        let deadlineHtml = task.due_date ? `<p class="agenda-item-detail"><strong>Deadline:</strong> ${new Date(task.due_date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>` : '';
+                        let descriptionHtml = task.description ? `<p class="agenda-item-detail">${task.description}</p>` : '';
+                        li.innerHTML = `
+                            <div class="agenda-item-title">✔️ ${task.title} (Prioritas: ${task.priority})</div>
+                            ${descriptionHtml}
+                            ${deadlineHtml}
+                        `;
+                        li.addEventListener('click', () => {
+                            dailyAgendaModal.classList.remove('visible');
+                            openTaskModal(task);
+                        });
+                        list.appendChild(li);
                     });
-                    tasksHtml += '</ul>';
+                    dailyAgendaContent.appendChild(list);
                 }
-                dailyAgendaContent.innerHTML += tasksHtml;
     
             } catch (error) {
                 console.error("Gagal memuat agenda harian:", error);
@@ -343,13 +352,34 @@
             }
             events.forEach(event => {
                 const li = document.createElement('li');
-                li.className = 'sidebar-item';
+                li.className = 'agenda-item';
+                
                 const timeString = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const colorDot = `<div class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></div>`;
-                li.innerHTML = `${colorDot}<div class="item-main-content"><div class="item-header"><span class="item-title">${event.title}</span></div><p class="item-description">${timeString}</p></div>`;
+                
+                let descriptionHtml = '';
+                if (event.extendedProps.description) {
+                    descriptionHtml = `<p class="agenda-item-detail">${event.extendedProps.description}</p>`;
+                }
+    
+                li.innerHTML = `
+                    <div class="agenda-item-title">
+                        <span class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></span>
+                        ${event.title}
+                    </div>
+                    <p class="agenda-item-detail">${timeString}</p>
+                    ${descriptionHtml}
+                `;
+                
                 li.addEventListener('click', () => {
-                    const calEvent = calendar.getEventById(event.id);
-                    if (calEvent) openEventModal(calEvent);
+                    const eventDataForModal = {
+                        id: event.id,
+                        title: event.title,
+                        start: event.start,
+                        end: event.end,
+                        backgroundColor: event.backgroundColor,
+                        extendedProps: event.extendedProps
+                    };
+                    openEventModal(eventDataForModal);
                 });
                 listElement.appendChild(li);
             });
@@ -371,15 +401,28 @@
                     hasTasks = true;
                     const categoryDiv = document.createElement('div');
                     categoryDiv.className = 'task-category';
+                    
                     let tasksHtml = `<div class="task-category-header"><span class="icon">${category.icon}</span> ${category.title}</div><ul class="item-list">`;
+                    
                     category.tasks.forEach(task => {
-                        const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID')}` : 'Tanpa batas waktu';
-                        tasksHtml += `<li class="sidebar-item" data-task-id="${task.id}"><div class="item-main-content"><div class="item-header"><span class="item-title">${task.title}</span></div><p class="item-description">${dueDateString}</p></div></li>`;
+                        const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'numeric', year: 'numeric'})}` : 'Tanpa batas waktu';
+                        
+                        let descriptionHtml = '';
+                        if (task.description) {
+                            descriptionHtml = `<p class="agenda-item-detail">${task.description}</p>`;
+                        }
+    
+                        tasksHtml += `
+                            <li class="agenda-item" data-task-id="${task.id}">
+                                <div class="agenda-item-title">${task.title}</div>
+                                ${descriptionHtml}
+                                <p class="agenda-item-detail">${dueDateString}</p>
+                            </li>`;
                     });
                     tasksHtml += `</ul>`;
                     categoryDiv.innerHTML = tasksHtml;
                     container.appendChild(categoryDiv);
-                    categoryDiv.querySelectorAll('.sidebar-item').forEach(item => {
+                    categoryDiv.querySelectorAll('.agenda-item').forEach(item => {
                         item.addEventListener('click', () => {
                             const taskId = item.dataset.taskId;
                             const taskData = tasks.find(t => t.id == taskId);
@@ -394,7 +437,7 @@
         function openEventModal(event) {
             eventForm.reset();
             document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-            if (event && event.extendedProps.item_type === 'event') {
+            if (event && event.extendedProps && event.extendedProps.item_type === 'event') {
                 eventModalTitle.textContent = "Edit Acara";
                 eventIdInput.value = event.id;
                 document.getElementById('eventTitle').value = event.title;
@@ -413,7 +456,7 @@
             } else {
                 eventModalTitle.textContent = "Acara Baru";
                 eventIdInput.value = '';
-                const initialDate = event || new Date(); // event is a date object on dateClick
+                const initialDate = event || new Date(); 
                 startDatePicker.setDate(initialDate, true);
                 startTimePicker.clear();
                 endDatePicker.clear();
@@ -519,8 +562,8 @@
         function handleAIOrganizerClick() {
             aiOrganizerBtn.disabled = true;
             aiOrganizerBtn.textContent = 'Mengarahkan...';
-            const events = Array.from(sidebarEventsList.querySelectorAll('.sidebar-item .item-title')).map(el => el.textContent);
-            const tasks = Array.from(document.querySelectorAll('#task-categories-container .sidebar-item .item-title')).map(el => el.textContent);
+            const events = Array.from(sidebarEventsList.querySelectorAll('.agenda-item .agenda-item-title')).map(el => el.textContent.trim());
+            const tasks = Array.from(document.querySelectorAll('#task-categories-container .agenda-item .agenda-item-title')).map(el => el.textContent.trim());
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = "{{ url_for('routes.ask_ai_from_hub') }}";
@@ -567,7 +610,6 @@
         loadTodaysAgenda();
     });
     </script>
-
 
 <style>
 /* --- 1. FONT & VARIABEL UTAMA --- */
@@ -803,8 +845,101 @@ body.no-scroll { overflow: hidden; }
         }
 
 
-        
-        
+        /* Tambahkan ini ke CSS Anda */
+
+.task-category {
+    margin-bottom: 20px; /* Jarak antar kategori tugas */
+}
+
+.task-category-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e0e0e0; /* Warna lebih cerah untuk header */
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Jarak antara ikon dan teks */
+    padding-bottom: 5px; /* Sedikit padding di bawah teks */
+    border-bottom: 1px solid #4a4a4a; /* Garis tipis di bawah header kategori */
+}
+
+.task-category-header .icon {
+    font-size: 1.2rem; /* Ukuran ikon kategori */
+}
+
+/* Penyesuaian untuk item acara di sidebar agar dot warnanya muncul */
+#sidebar-events .agenda-item .agenda-item-title {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Jarak antara dot warna dan teks */
+}
+
+/* Tambahkan ini ke CSS Anda untuk mengatur lapisan modal */
+
+/* Atur z-index dasar untuk semua overlay modal */
+.modal-overlay {
+    z-index: 1000;
+}
+
+/* Modal agenda harian berada di lapisan dasar */
+#dailyAgendaModal {
+    z-index: 1000;
+}
+
+/* Pastikan modal edit dan konfirmasi selalu di atas modal agenda */
+#eventModal,
+#taskModal,
+#confirmDeleteModal {
+    z-index: 1010; /* Nilai lebih tinggi, jadi pasti di atas */
+}
+
+
+/* Di dalam file CSS Anda */
+
+.agenda-item {
+    background-color: #2c3e50;
+    border: 1px solid #34495e;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+
+    /* --- TAMBAHKAN 3 BARIS INI --- */
+    position: relative; /* Wajib ada agar z-index berfungsi */
+    z-index: 2;         /* Menaikkan item ini ke lapisan yang lebih tinggi */
+    cursor: pointer;    /* Mengubah kursor menjadi tangan saat di atas item */
+}
+
+/* Pastikan tidak ada elemen lain yang menghalangi */
+.agenda-item::before,
+.agenda-item::after {
+    z-index: -1; /* Pastikan pseudo-elemen berada di belakang */
+}
+
+/* Pastikan konten modal berada di atas latar belakangnya sendiri */
+.modal-content {
+    position: relative; /* Mengaktifkan stacking context */
+    z-index: 1002;      /* Pastikan konten di atas overlay (yang z-index-nya 1000) */
+}
+
+/* Jadikan item agenda sebagai target klik utama di dalam modal */
+.agenda-item {
+    background-color: #2c3e50;
+    border: 1px solid #34495e;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+
+    /* --- INI BAGIAN PALING PENTING --- */
+    position: relative; /* Wajib ada agar z-index berfungsi */
+    z-index: 2;         /* Menaikkan item ini di atas elemen lain di dalam modal */
+    cursor: pointer;    /* Mengubah kursor menjadi tangan (feedback visual) */
+}
+
+/* (Opsional) Mengubah warna saat dihover untuk feedback yang lebih baik */
+.agenda-item:hover {
+    border-color: #4e6a85;
+    background-color: #314960;
+}
 </style>
 
 {% endblock %}
