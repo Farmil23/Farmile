@@ -10,7 +10,7 @@ from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta
 import re
-
+import pytz
     # Tambahkan ini di app/routes.py
 from flask import session # Pastikan session diimpor dari flask
     
@@ -62,6 +62,70 @@ def _generate_roadmap_for_user(user):
         db.session.rollback()
         current_app.logger.error(f"Gagal membuat roadmap: {e}")
         return False
+
+
+
+# GANTI FUNGSI LAMA DENGAN VERSI BARU YANG JAUH LEBIH PINTAR INI
+def _parse_human_readable_time(time_str: str) -> datetime:
+    """
+    Menerjemahkan string waktu bahasa manusia (e.g., 'besok jam 3 sore', '9 september jam 2') 
+    menjadi objek datetime yang akurat.
+    """
+    now = datetime.now()
+    time_str_lower = time_str.lower()
+    
+    # --- LOGIKA BARU UNTUK PARSING TANGGAL SPESIFIK ---
+    base_date = now
+    
+    month_map = {
+        'januari': 1, 'februari': 2, 'maret': 3, 'april': 4, 'mei': 5, 'juni': 6, 
+        'juli': 7, 'agustus': 8, 'september': 9, 'oktober': 10, 'november': 11, 'desember': 12
+    }
+
+    # Coba cari format "tanggal bulan" (e.g., "9 september")
+    date_match = re.search(r'(\d{1,2})\s+(' + '|'.join(month_map.keys()) + r')', time_str_lower)
+    
+    if date_match:
+        day = int(date_match.group(1))
+        month_name = date_match.group(2)
+        month = month_map[month_name]
+        year = now.year
+        
+        # Jika tanggal yang disebutkan sudah lewat tahun ini, asumsikan tahun depan
+        if now.month > month or (now.month == month and now.day > day):
+            year += 1
+            
+        try:
+            base_date = base_date.replace(year=year, month=month, day=day)
+        except ValueError:
+            # Menangani tanggal tidak valid seperti 31 Februari
+            pass 
+    elif "besok" in time_str_lower:
+        base_date = now + timedelta(days=1)
+    # Jika tidak ada tanggal spesifik atau "besok", maka default-nya adalah hari ini (base_date = now)
+
+    # --- Logika parsing waktu (jam dan menit) yang sudah ada ---
+    match = re.search(r'(\d{1,2})[:.]?(\d{2})?|(\d{1,2})\s?(pagi|siang|sore|malam)', time_str_lower)
+    if not match:
+        # Jika tidak ada jam, set default ke jam 9 pagi
+        return base_date.replace(hour=9, minute=0, second=0, microsecond=0)
+
+    hour, minute = 0, 0
+    g = match.groups()
+    if g[0]:
+        hour = int(g[0])
+        minute = int(g[1]) if g[1] else 0
+    elif g[2]:
+        hour = int(g[2])
+        period = g[3]
+        if period in ['sore', 'malam'] and hour < 12:
+            hour += 12
+        if period == 'pagi' and hour == 12: hour = 0
+        if period == 'malam' and hour == 12:
+             hour = 0
+             base_date += timedelta(days=1)
+
+    return base_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
 # ===============================================
 # RUTE UTAMA & ONBOARDING
@@ -783,18 +847,31 @@ def _execute_ai_action(user, action_data):
             return f"✅ Berhasil! Acara '{event.title}' sudah saya jadwalkan di kalender Anda{time_info}"
         return "Maaf, terjadi kesalahan. Pastikan Anda menyebutkan judul untuk acara yang ingin dijadwalkan."
 
-    elif action == "delete_task":
-        success, title = _delete_task_from_ai(user, payload)
-        if success:
-            return f"🗑️ Oke, tugas '{title}' sudah berhasil saya hapus."
-        return f"Maaf, saya tidak dapat menemukan tugas dengan judul '{title}' untuk dihapus."
-
     elif action == "update_task":
         task = _update_task_from_ai(user, payload)
         if task:
             return f"✏️ Tugas '{task.title}' berhasil diperbarui."
         return f"Maaf, saya tidak dapat menemukan tugas '{payload.get('original_title')}' untuk diperbarui."
 
+    elif action == "update_event":
+        event = _update_event_from_ai(user, payload)
+        if event:
+            return f"✅ Sip! Jadwal untuk '{event.title}' sudah diubah ke {event.start_time.strftime('%d %B, %H:%M')}."
+        return f"Maaf, saya tidak dapat menemukan acara '{payload.get('original_title')}' untuk diubah."
+
+    elif action == "delete_task":
+        success, title = _delete_task_from_ai(user, payload)
+        if success:
+            return f"🗑️ Oke, tugas '{title}' sudah berhasil saya hapus."
+        return f"Maaf, saya tidak dapat menemukan tugas dengan judul '{title}' untuk dihapus."
+
+    elif action == "delete_event":
+        success, title = _delete_event_from_ai(user, payload)
+        if success:
+            return f"🗑️ Oke, acara '{title}' sudah berhasil saya hapus dari jadwal Anda."
+        return f"Maaf, saya tidak dapat menemukan acara dengan judul '{title}' untuk dihapus."
+
+    # Respons fallback jika aksi tidak dikenali
     return "Saya mendeteksi sebuah aksi, tapi saya belum bisa melakukannya saat ini."
 
 def _create_task_from_ai(user, payload):
@@ -856,43 +933,148 @@ def _create_event_from_ai(user, payload):
         current_app.logger.error(f"Gagal membuat event dari AI: {e}")
         return None
 
+
+# GANTI FUNGSI LAMA DENGAN VERSI BARU YANG LEBIH CERDAS INI
 def _delete_task_from_ai(user, payload):
-    """Menghapus Task berdasarkan judul."""
-    title = payload.get('title')
-    if not title: return False, ""
+    """
+    Menghapus Task secara fleksibel, membersihkan input dari AI 
+    dan menangani konteks waktu.
+    """
+    title_raw = payload.get('title')
+    time_context = payload.get('time_context')
     
-    task_to_delete = Task.query.filter_by(author=user, title=title).first()
+    if not title_raw: 
+        return False, ""
+    
+    # 1. Cerdaskan ekstraksi kata kunci dari judul mentah
+    # Daftar kata-kata umum yang harus diabaikan
+    stop_words = ["tugas", "acara", "hapus", "kerjakan", "itu", "ini", "dari", "jadwal", "saya", "aku"]
+    
+    # Bersihkan judul dari stop words
+    cleaned_title_words = [word for word in title_raw.lower().split() if word not in stop_words]
+    
+    if not cleaned_title_words:
+        # Jika tidak ada kata kunci tersisa setelah dibersihkan
+        return False, title_raw
+        
+    # Ambil kata kunci utama (biasanya kata pertama setelah dibersihkan)
+    keyword = cleaned_title_words[0]
+
+    # 2. Lakukan query ke database dengan kata kunci yang sudah bersih
+    query = Task.query.filter(
+        Task.author == user,
+        Task.title.ilike(f"%{keyword}%")  # Cari tugas yang mengandung kata kunci
+    )
+    
+    # 3. Tambahkan filter waktu jika ada
+    if time_context == "hari ini":
+        today = datetime.utcnow().date()
+        query = query.filter(db.func.date(Task.due_date) == today)
+    
+    # Ambil tugas terbaru yang cocok dengan kriteria
+    task_to_delete = query.order_by(Task.id.desc()).first()
     
     if task_to_delete:
+        original_title = task_to_delete.title
         db.session.delete(task_to_delete)
         db.session.commit()
-        return True, title
+        return True, original_title # Kembalikan judul asli untuk konfirmasi
+        
+    return False, keyword # Kembalikan kata kunci jika tidak ditemukan
+
+
+def _delete_event_from_ai(user, payload):
+    """Menghapus Event berdasarkan judul dan konteks waktu (jika ada)."""
+    title = payload.get('title')
+    time_context = payload.get('time_context')  # e.g., "hari ini"
+    
+    if not title:
+        return False, ""
+    
+    # Mulai query dasar dengan pencarian judul yang fleksibel
+    query = Event.query.filter(
+        Event.author == user,
+        Event.title.ilike(f"%{title}%")
+    )
+    
+    # Tambahkan filter waktu jika pengguna menyediakannya
+    if time_context == "hari ini":
+        today = datetime.utcnow().date()
+        query = query.filter(db.func.date(Event.start_time) == today)
+        
+    # Ambil acara terbaru yang cocok dengan kriteria
+    event_to_delete = query.order_by(Event.id.desc()).first()
+    
+    if event_to_delete:
+        original_title = event_to_delete.title
+        db.session.delete(event_to_delete)
+        db.session.commit()
+        return True, original_title  # Kembalikan judul asli untuk konfirmasi
+        
     return False, title
 
+# GANTI FUNGSI LAMA DI routes.py DENGAN VERSI LENGKAP INI
+
 def _update_task_from_ai(user, payload):
-    """Mengupdate Task berdasarkan judul asli."""
+    """
+    Mengupdate Task berdasarkan judul asli, sekarang dengan kemampuan
+    untuk mengubah judul, prioritas, dan tanggal jatuh tempo (due_date).
+    """
+    original_title = payload.get('original_title')
+    new_data = payload.get('new_data', {})
+    
+    if not original_title or not new_data: 
+        return None
+
+    # Gunakan .ilike() untuk pencarian judul yang tidak case-sensitive dan lebih fleksibel
+    task_to_update = Task.query.filter(
+        Task.author == user, 
+        Task.title.ilike(f"%{original_title}%")
+    ).order_by(Task.id.desc()).first()
+    
+    if task_to_update:
+        # Update atribut yang ada di payload
+        task_to_update.title = new_data.get('title', task_to_update.title)
+        task_to_update.priority = new_data.get('priority', task_to_update.priority)
+        
+        # --- INI BAGIAN YANG HILANG DAN SEKARANG DITAMBAHKAN ---
+        if 'due_date' in new_data:
+            # Menggunakan parser waktu cerdas yang sudah kita buat sebelumnya
+            due_date_str = new_data['due_date']
+            if due_date_str:
+                task_to_update.due_date = _parse_human_readable_time(due_date_str)
+        # ---------------------------------------------------------
+        
+        db.session.commit()
+        return task_to_update
+        
+    return None
+def _update_event_from_ai(user, payload):
+    """Mengupdate Event berdasarkan judul asli."""
     original_title = payload.get('original_title')
     new_data = payload.get('new_data', {})
     if not original_title or not new_data: return None
 
-    task_to_update = Task.query.filter_by(author=user, title=original_title).first()
-    
-    if task_to_update:
-        task_to_update.title = new_data.get('title', task_to_update.title)
-        task_to_update.priority = new_data.get('priority', task_to_update.priority)
+    # Cari event terakhir dengan judul yang cocok (paling relevan)
+    event_to_update = Event.query.filter(
+        Event.author == user, 
+        Event.title.ilike(f"%{original_title}%")
+    ).order_by(Event.id.desc()).first()
+
+    if event_to_update:
+        # Update data yang ada di payload
+        if 'title' in new_data:
+            event_to_update.title = new_data['title']
+        if 'start_time' in new_data:
+            event_to_update.start_time = _parse_human_readable_time(new_data['start_time'])
+
         db.session.commit()
-        return task_to_update
+        return event_to_update
     return None
-
     
     
     
-    
-    
-    
-    # Di dalam file app/routes.py
-
-# Di dalam app/routes.py
+# Di dalam file app/routes.py
 
 @bp.route('/chat-ai/<int:session_id>', methods=['POST'])
 @login_required
@@ -911,33 +1093,56 @@ def chat_ai(session_id):
     user_message = ChatMessage(session_id=session_data.id, user_id=current_user.id, role='user', content=user_message_content)
     db.session.add(user_message)
 
-    # [1. Dapatkan Konteks Pengguna Secara Real-time]
-    todays_events = Event.query.filter(db.func.date(Event.start_time) == datetime.utcnow().date(), Event.user_id == current_user.id).all()
+    # [1. Dapatkan Konteks Pengguna Secara Real-time dengan Timezone DINAMIS]
+    
+    # Ambil timezone dari profil pengguna, fallback ke Jakarta jika tidak ada
+    user_timezone_str = current_user.timezone or 'Asia/Jakarta'
+    local_tz = pytz.timezone(user_timezone_str)
+    
+    # Dapatkan waktu saat ini dalam UTC, lalu konversikan ke waktu lokal pengguna
+    now_utc = datetime.utcnow().replace(tzinfo=pytz.utc)
+    now_local = now_utc.astimezone(local_tz)
+    today_local = now_local.date()
+
+    # Gunakan tanggal lokal untuk semua query database
+    todays_events = Event.query.filter(db.func.date(Event.start_time) == today_local, Event.user_id == current_user.id).all()
     relevant_tasks = Task.query.filter(
         Task.user_id == current_user.id, Task.status != 'done',
-        or_(db.func.date(Task.due_date) <= datetime.utcnow().date(), Task.due_date == None)
+        or_(db.func.date(Task.due_date) <= today_local, Task.due_date == None)
     ).all()
-    event_list_str = "\n- ".join([f"{e.title} (pukul {e.start_time.strftime('%H:%M')})" for e in todays_events]) or "Tidak ada"
-    task_list_str = "\n- ".join([f"{t.title} (deadline: {t.due_date.strftime('%d %b, %H:%M') if t.due_date else 'N/A'})" for t in relevant_tasks]) or "Tidak ada"
+    
+    # Pastikan waktu yang ditampilkan juga dikonversi ke timezone lokal
+    event_list_str = "\n- ".join([f"{e.title} (pukul {e.start_time.astimezone(local_tz).strftime('%H:%M')})" for e in todays_events]) or "Tidak ada"
+    task_list_str = "\n- ".join([f"{t.title} (deadline: {t.due_date.astimezone(local_tz).strftime('%d %b, %H:%M') if t.due_date else 'N/A'})" for t in relevant_tasks]) or "Tidak ada"
+    
+    # Buat string tanggal yang diformat dengan benar untuk AI
+    nama_hari = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+    formatted_date_str = f"{nama_hari[now_local.weekday()]}, {now_local.strftime('%d %B')}"
+    
     user_context_string = (
         f"Nama pengguna: {current_user.name}.\n"
+        f"Hari dan Tanggal Saat Ini (Zona Waktu Pengguna): {formatted_date_str}.\n"
         f"Jadwal Acara Hari Ini:\n- {event_list_str}\n"
         f"Daftar Tugas Aktif:\n- {task_list_str}"
     )
-
     # [2. Definisikan Persona & Aturan Aksi untuk AI]
     system_prompt = (
         "[PERAN & IDENTITAS]\n"
         "Anda adalah 'Farmile', seorang mentor AI personal yang sangat ahli untuk mahasiswa IT. Misi utama Anda adalah membimbing pengguna secara proaktif, bukan hanya menjawab pertanyaan.\n\n"
         
         "[ATURAN PERILAKU]\n"
-        "1. PRIORITAS UTAMA - MODE MENTOR & BANTUAN KODING:\n"
-        "   Tugas utamamu adalah menjadi mentor. Jika pengguna mendeskripsikan masalah, kebingungan, atau meminta contoh kode ('tunjukan kodenya', 'gimana cara buatnya?'), JANGAN melakukan aksi. Berikan penjelasan yang jelas, pecah masalahnya, dan berikan contoh kode sederhana dalam blok Markdown. Ini BUKAN perintah untuk menambah tugas.\n\n"
-        "2. PROAKTIF & KONTEKSTUAL: Selalu gunakan informasi pengguna yang diberikan untuk memberikan jawaban yang sangat personal.\n"
-        "3. JAWABAN DETAIL: Saat menjawab pertanyaan tentang jadwal atau tugas, format jawabanmu sebagai daftar ringkas, sertakan waktu atau deadline untuk setiap item.\n"
-        "4. PANDUAN PENGGUNA: Jika pengguna bertanya 'bantuan', 'help', 'perintah', atau 'format', berikan jawaban HANYA dalam format PANDUAN BANTUAN di bawah.\n"
+        "1. PRIORITAS UTAMA - MODE MENTOR & BANTUAN KODING: Tugas utamamu adalah menjadi mentor. Jika pengguna mendeskripsikan masalah coding, kebingungan konsep, atau meminta contoh kode, JANGAN melakukan aksi. Berikan penjelasan yang jelas dan contoh kode sederhana.\n\n"
+        "2. PROAKTIF & KONTEKSTUAL: Selalu gunakan informasi pengguna (nama, jadwal, tugas) yang diberikan untuk memberikan jawaban yang sangat personal dan relevan.\n\n"
+        "3. JAWABAN DETAIL: Saat menjawab pertanyaan tentang jadwal atau tugas, format jawabanmu sebagai daftar ringkas, sertakan waktu atau deadline untuk setiap item.\n\n"
+        "4. PANDUAN PENGGUNA: Jika pengguna bertanya 'bantuan', 'help', atau 'perintah', berikan jawaban HANYA dalam format PANDUAN BANTUAN di bawah.\n\n"
         "5. DETEKSI AKSI EKSPLISIT:\n"
-        "   Hanya aktifkan mode aksi jika pengguna menggunakan kata kerja perintah yang JELAS dan EKSPLISIT (seperti: tambah, buat, jadwalkan, hapus, ganti, update). Jika ragu, selalu pilih mode mentor dan bertanya untuk konfirmasi. Jika aksi akan dilakukan, berikan respons HANYA dan EKSKLUSIF dalam format JSON yang dibungkus tag [DO_ACTION].\n\n"
+        "   a. Hanya aktifkan mode aksi jika pengguna menggunakan kata kerja perintah yang JELAS (tambah, buat, jadwalkan, hapus, ganti, ubah, update).\n"
+        "   b. Saat mengekstrak `title` atau `original_title`, ambil HANYA kata benda intinya. Buang kata-kata umum seperti 'tugas', 'acara', 'kerjakan'. Contoh: dari 'hapus tugasku Beli kopi', `title`-nya adalah 'Kopi'.\n"
+        "   c. Jika aksi akan dilakukan, berikan respons HANYA dan EKSKLUSIF dalam format JSON yang dibungkus tag [DO_ACTION].\n\n"
+        
+        "6. **ATURAN KRITIS - JANGAN PERNAH MENJAWAB DENGAN JSON MENTAH**: Anda dilarang keras menampilkan teks yang terlihat seperti kode JSON (dimulai dengan '{' dan diakhiri dengan '}') langsung kepada pengguna. JSON hanya boleh ada di dalam tag [DO_ACTION]. Jika Anda berpikir untuk melakukan aksi yang tidak ada dalam contoh (seperti 'get_events'), batalkan pikiran itu dan jawablah secara percakapan biasa.\n\n"
+        
+        "7. **ATURAN KRITIS - PERTANYAAN LIHAT JADWAL**: Jika pengguna bertanya untuk melihat jadwal atau tugas ('ada acara apa?', 'cek jadwalku'), JANGAN BUAT JSON AKSI. Sistem sudah memberikan konteks jadwal terkini kepada Anda. Langsung jawab pertanyaan pengguna secara naratif berdasarkan konteks yang sudah Anda terima.\n\n"
 
         "[FORMAT PANDUAN BANTUAN]\n"
         "Tentu saja! Saya bisa membantu Anda mengelola jadwal dan tugas langsung dari percakapan ini. Anggap saja saya asisten pribadi Anda. 🤖\n\n"
@@ -950,23 +1155,79 @@ def chat_ai(session_id):
         "*\"Coba lihat jadwalku untuk minggu depan.\"`\n\n"
         "**✏️ Untuk Mengubah & Menghapus:**\n"
         "*\"Hapus tugasku yang judulnya 'Beli kopi'.\"*\n"
-        "*\"Update prioritas tugas 'Revisi desain' menjadi high.\"`\n\n"
+        "*\"Update prioritas tugas 'Revisi desain' menjadi high.\"`\n"
+        "*\"Ubah waktu acara 'Pernikahan Zizka' jadi jam 3 sore.\"`\n\n"
         "Cukup katakan apa yang Anda butuhkan, dan saya akan coba mengaturnya untuk Anda!\n\n"
 
         "[FORMAT AKSI JSON & CONTOH]\n"
-        "Contoh Permintaan: 'Farmile, tambah tugas: Tugas Algoritma if-else bercabang, deadline besok jam 6 pagi dan berikan deskripsi singkat'\n"
-        "Contoh Respons Anda:\n"
+        "---### AKSI: MENAMBAH DATA ###---\n"
+        "Permintaan: 'Jadwalkan 'Rapat Proyek Akhir' besok jam 2 siang dengan deskripsi 'bahas finalisasi fitur'.'\n"
+        "Respons Anda:\n"
+        "[DO_ACTION]{\n"
+        "  \"action\": \"add_event\",\n"
+        "  \"payload\": {\n"
+        "    \"title\": \"Rapat Proyek Akhir\",\n"
+        "    \"start_time\": \"besok jam 14:00\",\n"
+        "    \"description\": \"bahas finalisasi fitur\"\n"
+        "  }\n"
+        "}[/DO_ACTION]\n\n"
+        "Permintaan: 'tambahin tugas 'laporan mingguan' deadline hari ini jam 11 malam, prioritasnya medium'\n"
+        "Respons Anda:\n"
         "[DO_ACTION]{\n"
         "  \"action\": \"add_task\",\n"
         "  \"payload\": {\n"
-        "    \"title\": \"Tugas Algoritma if-else bercabang\",\n"
-        "    \"due_date\": \"besok jam 06:00\",\n"
-        "    \"priority\": \"high\",\n"
-        "    \"description\": \"Mempelajari dan mengimplementasikan algoritma if-else dengan beberapa tingkat percabangan.\"\n"
+        "    \"title\": \"laporan mingguan\",\n"
+        "    \"due_date\": \"hari ini jam 23:00\",\n"
+        "    \"priority\": \"medium\"\n"
+        "  }\n"
+        "}[/DO_ACTION]\n\n"
+        
+        "---### AKSI: MENGUBAH DATA ###---\n"
+        "Permintaan: 'ubah acara 'pernikahan zizka' jadi jam 4 sore'\n"
+        "Respons Anda:\n"
+        "[DO_ACTION]{\n"
+        "  \"action\": \"update_event\",\n"
+        "  \"payload\": {\n"
+        "    \"original_title\": \"pernikahan zizka\",\n"
+        "    \"new_data\": {\n"
+        "      \"start_time\": \"hari ini jam 16:00\"\n"
+        "    }\n"
+        "  }\n"
+        "}[/DO_ACTION]\n\n"
+        "Permintaan: 'Update tugas 'Revisi Desain' jadi 'Revisi Desain Halaman Login' dan set prioritasnya jadi urgent.'\n"
+        "Respons Anda:\n"
+        "[DO_ACTION]{\n"
+        "  \"action\": \"update_task\",\n"
+        "  \"payload\": {\n"
+        "    \"original_title\": \"Revisi Desain\",\n"
+        "    \"new_data\": {\n"
+        "      \"title\": \"Revisi Desain Halaman Login\",\n"
+        "      \"priority\": \"urgent\"\n"
+        "    }\n"
+        "  }\n"
+        "}[/DO_ACTION]\n\n"
+
+        "---### AKSI: MENGHAPUS DATA ###---\n"
+        "Permintaan: 'hapus acara Pernikahan Teman hari ini'\n"
+        "Respons Anda:\n"
+        "[DO_ACTION]{\n"
+        "  \"action\": \"delete_event\",\n"
+        "  \"payload\": {\n"
+        "    \"title\": \"Pernikahan Teman\",\n"
+        "    \"time_context\": \"hari ini\"\n"
+        "  }\n"
+        "}[/DO_ACTION]\n\n"
+        "Permintaan: 'Tolong hapus tugas 'Laporan Mingguan'.'\n"
+        "Respons Anda:\n"
+        "[DO_ACTION]{\n"
+        "  \"action\": \"delete_task\",\n"
+        "  \"payload\": {\n"
+        "    \"title\": \"Laporan Mingguan\"\n"
         "  }\n"
         "}[/DO_ACTION]"
     )
     
+    # [3. Bangun Riwayat Pesan dengan Konteks yang Disuntikkan]
     # [3. Bangun Riwayat Pesan dengan Konteks yang Disuntikkan]
     messages = [
         {"role": "system", "content": system_prompt},
@@ -977,6 +1238,15 @@ def chat_ai(session_id):
     recent_history.reverse()
     for msg in recent_history:
         messages.append({"role": msg.role, "content": msg.content})
+        
+        
+     # ===================================================
+    print("="*20 + " DEBUGGING INFO " + "="*20)
+    api_key_status = "ADA dan disembunyikan" if ark_client.api_key else "TIDAK ADA (None)"
+    print(f"--> Status Kunci API: {api_key_status}")
+    print(f"--> Model Endpoint ID: {current_app.config.get('MODEL_ENDPOINT_ID')}")
+    print("Mencoba menghubungi server AI...")
+    # ===================================================
 
     # [4. Panggil API AI dan Proses Respons]
     try:
@@ -1039,9 +1309,8 @@ def task_to_dict(task):
         'due_date': task.due_date.isoformat() if task.due_date else None,
         'priority': task.priority, 'status': task.status
     }
-# Di dalam app/routes.py
+# GANTI FUNGSI get_events DI app/routes.py DENGAN VERSI LENGKAP INI
 
-# GANTI FUNGSI get_events() LAMA DENGAN VERSI BARU INI
 @bp.route('/api/hub/events', methods=['GET'])
 @login_required
 def get_events():
@@ -1067,10 +1336,10 @@ def get_events():
                     'title': event.title,
                     'start': event.start_time.isoformat(),
                     'end': event.end_time.isoformat() if event.end_time else None,
-                    'backgroundColor': event.color or '#3B82F6',
+                    'backgroundColor': event.color or '#3B82F6', # Biru untuk acara
                     'borderColor': event.color or '#3B82F6',
                     'extendedProps': {
-                        'item_type': 'event',
+                        'item_type': 'event', # <-- Label jelas
                         'description': event.description,
                         'link': event.link
                     }
@@ -1083,16 +1352,15 @@ def get_events():
             ).all()
 
             for task in tasks:
-                # Format tugas menjadi objek yang dimengerti oleh FullCalendar
                 combined_items.append({
                     'id': f"task-{task.id}",
-                    'title': f"✔️ {task.title}", # Tambahkan ikon centang pada judul
+                    'title': f"Deadline: {task.title}", # Beri prefiks agar jelas
                     'start': task.due_date.isoformat(),
-                    'allDay': True, # Anggap tugas sebagai acara seharian pada tanggal jatuh temponya
-                    'className': 'fc-event-task', # Class CSS khusus untuk tugas
+                    'allDay': True, # Tugas biasanya dianggap seharian pada tanggal deadline
+                    'backgroundColor': '#10B981', # Hijau untuk tugas
+                    'borderColor': '#10B981',
                     'extendedProps': {
-                        'item_type': 'task',
-                        # Sertakan semua data yang dibutuhkan oleh modal
+                        'item_type': 'task', # <-- Label jelas
                         'original_task': task_to_dict(task) 
                     }
                 })

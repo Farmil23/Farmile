@@ -20,6 +20,9 @@ class User(UserMixin, db.Model):
     modules = db.relationship("Module", backref="user", lazy='dynamic', cascade="all, delete-orphan")
     user_progress = db.relationship('UserProgress', backref='user', lazy='dynamic', cascade="all, delete-orphan")
     
+    timezone = db.Column(db.String(50), nullable=False, server_default='Asia/Jakarta')
+    
+    
     # Relasi ke fitur baru Personal Hub
     tasks = db.relationship('Task', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
     events = db.relationship('Event', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")

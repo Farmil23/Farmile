@@ -131,404 +131,442 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // --- 3.1. API ENDPOINTS & REFERENSI ELEMEN DOM ---
-    const EVENTS_API_URL = "{{ url_for('routes.get_events') }}";
-    const TASKS_API_URL = "{{ url_for('routes.get_tasks') }}";
-    let selectedDateForNewEvent = new Date();
-
-    const calendarEl = document.getElementById('calendar');
-    const sidebarDateEl = document.getElementById('sidebar-date-today');
-    const sidebarEventsList = document.querySelector('#sidebar-events .item-list');
-    const sidebarTasksContainer = document.getElementById('task-categories-container');
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 3.1. API ENDPOINTS & REFERENSI ELEMEN DOM ---
+        const EVENTS_API_URL = "{{ url_for('routes.get_events') }}";
+        const TASKS_API_URL = "{{ url_for('routes.get_tasks') }}";
+        let selectedDateForNewEvent = new Date();
     
-    const eventModal = document.getElementById('eventModal');
-    const eventForm = document.getElementById('eventForm');
-    const eventModalTitle = document.getElementById('eventModalTitle');
-    const eventIdInput = document.getElementById('eventId');
-    const eventDeleteBtn = document.getElementById('eventDeleteBtn');
-    const eventColorInput = document.getElementById('eventColor');
-
-    const taskModal = document.getElementById('taskModal');
-    const taskForm = document.getElementById('taskForm');
-    const taskModalTitle = document.getElementById('taskModalTitle');
-    const taskIdInput = document.getElementById('taskId');
-    const taskDeleteBtn = document.getElementById('taskDeleteBtn');
-
-    const dailyAgendaModal = document.getElementById('dailyAgendaModal');
-    const confirmDeleteModal = document.getElementById('confirmDeleteModal');
-    const aiOrganizerBtn = document.getElementById('ai-organizer-btn');
-
-    // --- 3.2. INISIALISASI LIBRARY ---
-    const flatpickrConfig = { locale: "id", onOpen: () => document.body.classList.add('no-scroll'), onClose: () => document.body.classList.remove('no-scroll') };
-    const startDatePicker = flatpickr("#eventStartDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
-    const endDatePicker = flatpickr("#eventEndDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
-    const startTimePicker = flatpickr("#eventStartTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
-    const endTimePicker = flatpickr("#eventEndTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
-    const taskDueDatePicker = flatpickr("#taskDueDate", { ...flatpickrConfig, enableTime: true, dateFormat: "Y-m-d H:i" });
-
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,list7Days,list30Days' },
-        views: {
-            list7Days: { type: 'list', duration: { days: 7 }, buttonText: '7 Hari' },
-            list30Days: { type: 'list', duration: { days: 30 }, buttonText: '30 Hari' }
-        },
-        events: EVENTS_API_URL,
-        editable: true,
-        selectable: true,
-        dateClick: (info) => handleDateClick(info),
-        eventClick: (info) => {
-            const props = info.event.extendedProps;
-            if (props.item_type === 'task') {
-                openTaskModal(props.original_task);
-            } else {
-                openEventModal(info.event);
-            }
-        },
-        eventDrop: (info) => handleEventDrop(info.event),
-        eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
-    });
-    calendar.render();
-
-    // --- 3.3. EVENT LISTENERS ---
-    document.querySelector('.fc-today-button').addEventListener('click', () => { calendar.today(); loadTodaysAgenda(); });
-    document.getElementById('add-task-btn').addEventListener('click', () => openTaskModal(null));
-    document.getElementById('addNewEventFromDailyBtn').addEventListener('click', () => { dailyAgendaModal.classList.remove('visible'); openEventModal(null, selectedDateForNewEvent); });
-    document.getElementById('addNewTaskFromDailyBtn').addEventListener('click', () => {
-        dailyAgendaModal.classList.remove('visible');
-        openTaskModal(null);
-        taskDueDatePicker.setDate(selectedDateForNewEvent, true);
-    });
-    
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal || e.target.closest('.modal-close-btn')) {
-                modal.classList.remove('visible');
-            }
-        });
-    });
-
-    eventForm.addEventListener('submit', handleEventFormSubmit);
-    taskForm.addEventListener('submit', handleTaskFormSubmit);
-    eventDeleteBtn.addEventListener('click', () => { const eventId = eventIdInput.value.replace('event-',''); const event = { id: eventId, title: document.getElementById('eventTitle').value }; handleDeleteEvent(event); });
-    taskDeleteBtn.addEventListener('click', () => { const taskId = taskIdInput.value.replace('task-',''); const task = { id: taskId, title: document.getElementById('taskTitle').value }; handleDeleteTask(task); });
-    
-    document.querySelectorAll('.color-option').forEach(option => {
-        option.addEventListener('click', function() {
-            document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-            this.classList.add('selected');
-            eventColorInput.value = this.dataset.color;
-        });
-    });
-
-    aiOrganizerBtn.addEventListener('click', handleAIOrganizerClick);
-
-    // --- 3.4. FUNGSI LOGIKA UTAMA ---
-    async function handleDateClick(clickInfo) {
-        selectedDateForNewEvent = clickInfo.date;
-        const dateStr = clickInfo.dateStr;
-        const dailyAgendaTitle = document.getElementById('dailyAgendaTitle');
-        const dailyAgendaContent = document.getElementById('dailyAgendaContent');
+        const calendarEl = document.getElementById('calendar');
+        const sidebarDateEl = document.getElementById('sidebar-date-today');
+        const sidebarEventsList = document.querySelector('#sidebar-events .item-list');
+        const sidebarTasksContainer = document.getElementById('task-categories-container');
         
-        dailyAgendaTitle.textContent = `Agenda untuk ${clickInfo.date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}`;
-        dailyAgendaContent.innerHTML = "<p class='empty-item'>Memuat agenda...</p>";
-        dailyAgendaModal.classList.add('visible');
-
-        try {
-            const [eventsResponse, tasksResponse] = await Promise.all([
-                fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}T23:59:59`),
-                fetch(`${TASKS_API_URL}?date=${dateStr}`)
-            ]);
-            const events = await eventsResponse.json();
-            const tasks = await tasksResponse.json();
-            
-            dailyAgendaContent.innerHTML = '';
-            let eventsHtml = '<h4>Acara</h4>';
-            if (events.length === 0) {
-                eventsHtml += "<p class='empty-item'>Tidak ada acara terjadwal.</p>";
-            } else {
-                eventsHtml += '<ul class="daily-agenda-list">';
-                events.forEach(event => { eventsHtml += `<li><span class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></span> ${new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${event.title}</li>`; });
-                eventsHtml += '</ul>';
-            }
-            dailyAgendaContent.innerHTML += eventsHtml;
-
-            let tasksHtml = '<h4 style="margin-top: 1rem;">Tugas</h4>';
-            if (tasks.length === 0) {
-                tasksHtml += "<p class='empty-item'>Tidak ada tugas untuk hari ini.</p>";
-            } else {
-                tasksHtml += '<ul class="daily-agenda-list">';
-                tasks.forEach(task => { tasksHtml += `<li>✔️ ${task.title} (Prioritas: ${task.priority})</li>`; });
-                tasksHtml += '</ul>';
-            }
-            dailyAgendaContent.innerHTML += tasksHtml;
-
-        } catch (error) {
-            console.error("Gagal memuat agenda harian:", error);
-            dailyAgendaContent.innerHTML = "<p class='empty-item error'>Gagal memuat agenda.</p>";
-        }
-    }
-
-    async function loadTodaysAgenda() {
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
+        const eventModal = document.getElementById('eventModal');
+        const eventForm = document.getElementById('eventForm');
+        const eventModalTitle = document.getElementById('eventModalTitle');
+        const eventIdInput = document.getElementById('eventId');
+        const eventDeleteBtn = document.getElementById('eventDeleteBtn');
+        const eventColorInput = document.getElementById('eventColor');
+    
+        const taskModal = document.getElementById('taskModal');
+        const taskForm = document.getElementById('taskForm');
+        const taskModalTitle = document.getElementById('taskModalTitle');
+        const taskIdInput = document.getElementById('taskId');
+        const taskDeleteBtn = document.getElementById('taskDeleteBtn');
+    
+        const dailyAgendaModal = document.getElementById('dailyAgendaModal');
+        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+        const aiOrganizerBtn = document.getElementById('ai-organizer-btn');
+    
+        // --- 3.2. INISIALISASI LIBRARY ---
+        const flatpickrConfig = { locale: "id", onOpen: () => document.body.classList.add('no-scroll'), onClose: () => document.body.classList.remove('no-scroll') };
+        const startDatePicker = flatpickr("#eventStartDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
+        const endDatePicker = flatpickr("#eventEndDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
+        const startTimePicker = flatpickr("#eventStartTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
+        const endTimePicker = flatpickr("#eventEndTime", { ...flatpickrConfig, enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true });
+        const taskDueDatePicker = flatpickr("#taskDueDate", { ...flatpickrConfig, enableTime: true, dateFormat: "Y-m-d H:i" });
+    
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,list7Days,list30Days' },
+            views: {
+                list7Days: { type: 'list', duration: { days: 7 }, buttonText: '7 Hari' },
+                list30Days: { type: 'list', duration: { days: 30 }, buttonText: '30 Hari' }
+            },
+            events: EVENTS_API_URL, 
+            editable: true,
+            selectable: true,
+            dateClick: (info) => handleDateClick(info),
+            eventClick: (info) => {
+                const props = info.event.extendedProps;
+                if (props.item_type === 'task') {
+                    openTaskModal(props.original_task);
+                } else {
+                    openEventModal(info.event);
+                }
+            },
+            eventDrop: (info) => handleEventDrop(info.event),
+            eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+        });
+        calendar.render();
+    
+        // --- 3.3. EVENT LISTENERS ---
+        document.querySelector('.fc-today-button').addEventListener('click', () => { calendar.today(); loadTodaysAgenda(); });
+        document.getElementById('add-task-btn').addEventListener('click', () => openTaskModal(null));
+        document.getElementById('addNewEventFromDailyBtn').addEventListener('click', () => { dailyAgendaModal.classList.remove('visible'); openEventModal(null, selectedDateForNewEvent); });
+        document.getElementById('addNewTaskFromDailyBtn').addEventListener('click', () => {
+            dailyAgendaModal.classList.remove('visible');
+            openTaskModal(null);
+            taskDueDatePicker.setDate(selectedDateForNewEvent, true);
+        });
         
-        sidebarDateEl.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
-        sidebarEventsList.innerHTML = '<li class="empty-item">Memuat...</li>';
-        sidebarTasksContainer.innerHTML = '<p class="empty-item">Memuat...</p>';
-
-        try {
-            const [eventsResponse, tasksResponse] = await Promise.all([
-                fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}T23:59:59`),
-                fetch(`${TASKS_API_URL}?filter=today_and_overdue`)
-            ]);
-            const events = await eventsResponse.json();
-            const tasks = await tasksResponse.json();
-            
-            renderEvents(sidebarEventsList, events.filter(item => item.extendedProps.item_type === 'event'));
-            renderCategorizedTasks(sidebarTasksContainer, tasks);
-        } catch (error) {
-            console.error("Gagal memuat data agenda:", error);
-            sidebarEventsList.innerHTML = '<li class="empty-item error">Gagal memuat acara.</li>';
-            sidebarTasksContainer.innerHTML = '<p class="empty-item error">Gagal memuat tugas.</p>';
-        }
-    }
-
-    function renderEvents(listElement, events) {
-        listElement.innerHTML = '';
-        if (events.length === 0) {
-            listElement.innerHTML = `<li class="empty-item">Tidak ada acara untuk hari ini.</li>`;
-            return;
-        }
-        events.forEach(event => {
-            const li = document.createElement('li');
-            li.className = 'sidebar-item';
-            const timeString = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const colorDot = `<div class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></div>`;
-            li.innerHTML = `${colorDot}<div class="item-main-content"><div class="item-header"><span class="item-title">${event.title}</span></div><p class="item-description">${timeString}</p></div>`;
-            li.addEventListener('click', () => {
-                const calEvent = calendar.getEventById(event.id);
-                if (calEvent) openEventModal(calEvent);
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal || e.target.closest('.modal-close-btn')) {
+                    modal.classList.remove('visible');
+                }
             });
-            listElement.appendChild(li);
         });
-    }
-
-    function renderCategorizedTasks(container, tasks) {
-        container.innerHTML = '';
-        const categories = {
-            urgent: { title: 'Mendesak', icon: '🔥', tasks: [] },
-            high: { title: 'Penting', icon: '📌', tasks: [] },
-            medium: { title: 'Biasa', icon: '🗓️', tasks: [] },
-            low: { title: 'Santai', icon: '☕', tasks: [] },
-        };
-        tasks.forEach(task => { (categories[task.priority] || categories.medium).tasks.push(task); });
-        let hasTasks = false;
-        for (const key in categories) {
-            const category = categories[key];
-            if (category.tasks.length > 0) {
-                hasTasks = true;
-                const categoryDiv = document.createElement('div');
-                categoryDiv.className = 'task-category';
-                let tasksHtml = `<div class="task-category-header"><span class="icon">${category.icon}</span> ${category.title}</div><ul class="item-list">`;
-                category.tasks.forEach(task => {
-                    const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID')}` : 'Tanpa batas waktu';
-                    tasksHtml += `<li class="sidebar-item" data-task-id="${task.id}"><div class="item-main-content"><div class="item-header"><span class="item-title">${task.title}</span></div><p class="item-description">${dueDateString}</p></div></li>`;
-                });
-                tasksHtml += `</ul>`;
-                categoryDiv.innerHTML = tasksHtml;
-                container.appendChild(categoryDiv);
-                categoryDiv.querySelectorAll('.sidebar-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const taskId = item.dataset.taskId;
-                        const taskData = tasks.find(t => t.id == taskId);
-                        if(taskData) openTaskModal(taskData);
+    
+        eventForm.addEventListener('submit', handleEventFormSubmit);
+        taskForm.addEventListener('submit', handleTaskFormSubmit);
+        eventDeleteBtn.addEventListener('click', () => { const eventId = eventIdInput.value.replace('event-',''); const event = { id: eventId, title: document.getElementById('eventTitle').value }; handleDeleteEvent(event); });
+        taskDeleteBtn.addEventListener('click', () => { const taskId = taskIdInput.value.replace('task-',''); const task = { id: taskId, title: document.getElementById('taskTitle').value }; handleDeleteTask(task); });
+        
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                eventColorInput.value = this.dataset.color;
+            });
+        });
+    
+        aiOrganizerBtn.addEventListener('click', handleAIOrganizerClick);
+    
+        // --- 3.4. FUNGSI LOGIKA UTAMA ---
+        async function handleDateClick(clickInfo) {
+            selectedDateForNewEvent = clickInfo.date;
+            const dateStr = clickInfo.dateStr;
+            const dailyAgendaTitle = document.getElementById('dailyAgendaTitle');
+            const dailyAgendaContent = document.getElementById('dailyAgendaContent');
+            
+            dailyAgendaTitle.textContent = `Agenda untuk ${clickInfo.date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+            dailyAgendaContent.innerHTML = "<p class='empty-item'>Memuat agenda...</p>";
+            dailyAgendaModal.classList.add('visible');
+    
+            try {
+                const response = await fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}T23:59:59`);
+                const items = await response.json();
+    
+                const events = items.filter(item => item.extendedProps.item_type === 'event');
+                const tasks = items.filter(item => item.extendedProps.item_type === 'task');
+                
+                dailyAgendaContent.innerHTML = '';
+                
+                let eventsHtml = '<h4>Acara</h4>';
+                if (events.length === 0) {
+                    eventsHtml += "<p class='empty-item'>Tidak ada acara terjadwal.</p>";
+                } else {
+                    eventsHtml += '<ul class="daily-agenda-list">';
+                    events.forEach(event => {
+                        const startTime = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                        
+                        let descriptionHtml = '';
+                        if (event.extendedProps.description) {
+                            descriptionHtml = `<p class="agenda-item-detail">${event.extendedProps.description}</p>`;
+                        }
+    
+                        eventsHtml += `
+                            <li class="agenda-item">
+                                <div class="agenda-item-title">
+                                    <span class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></span>
+                                    ${startTime} - ${event.title}
+                                </div>
+                                ${descriptionHtml}
+                            </li>`;
                     });
-                });
+                    eventsHtml += '</ul>';
+                }
+                dailyAgendaContent.innerHTML += eventsHtml;
+    
+                let tasksHtml = '<h4 style="margin-top: 1rem;">Tugas</h4>';
+                if (tasks.length === 0) {
+                    tasksHtml += "<p class='empty-item'>Tidak ada tugas untuk hari ini.</p>";
+                } else {
+                    tasksHtml += '<ul class="daily-agenda-list">';
+                    tasks.forEach(taskItem => {
+                        const task = taskItem.extendedProps.original_task;
+                        
+                        let deadlineHtml = '';
+                        if (task.due_date) {
+                            const deadline = new Date(task.due_date);
+                            const timeString = deadline.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            deadlineHtml = `<p class="agenda-item-detail"><strong>Deadline:</strong> ${timeString}</p>`;
+                        }
+    
+                        let descriptionHtml = '';
+                        if (task.description) {
+                            descriptionHtml = `<p class="agenda-item-detail">${task.description}</p>`;
+                        }
+    
+                        tasksHtml += `
+                            <li class="agenda-item">
+                                <div class="agenda-item-title">✔️ ${task.title} (Prioritas: ${task.priority})</div>
+                                ${descriptionHtml}
+                                ${deadlineHtml}
+                            </li>`;
+                    });
+                    tasksHtml += '</ul>';
+                }
+                dailyAgendaContent.innerHTML += tasksHtml;
+    
+            } catch (error) {
+                console.error("Gagal memuat agenda harian:", error);
+                dailyAgendaContent.innerHTML = "<p class='empty-item error'>Gagal memuat agenda.</p>";
             }
         }
-        if (!hasTasks) { container.innerHTML = `<p class="empty-item">Tidak ada tugas yang relevan hari ini.</p>`; }
-    }
-
-    function openEventModal(event) {
-        eventForm.reset();
-        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-        if (event && event.extendedProps.item_type === 'event') {
-            eventModalTitle.textContent = "Edit Acara";
-            eventIdInput.value = event.id;
-            document.getElementById('eventTitle').value = event.title;
-            document.getElementById('eventDescription').value = event.extendedProps.description || '';
-            document.getElementById('eventLink').value = event.extendedProps.link || '';
-            const start = new Date(event.start);
-            const end = event.end ? new Date(event.end) : null;
-            startDatePicker.setDate(start, true);
-            startTimePicker.setDate(start, true);
-            if (end) { endDatePicker.setDate(end, true); endTimePicker.setDate(end, true); } else { endDatePicker.clear(); endTimePicker.clear(); }
-            const eventColor = event.backgroundColor || event.color || '#3B82F6';
-            eventColorInput.value = eventColor;
-            const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
-            if (selectedColorEl) selectedColorEl.classList.add('selected');
-            eventDeleteBtn.style.display = 'inline-block';
-        } else {
-            eventModalTitle.textContent = "Acara Baru";
-            eventIdInput.value = '';
-            const initialDate = event || new Date(); // event is a date object on dateClick
-            startDatePicker.setDate(initialDate, true);
-            startTimePicker.clear();
-            endDatePicker.clear();
-            endTimePicker.clear();
-            eventColorInput.value = '#3B82F6';
-            document.querySelector(".color-option[data-color='#3B82F6']").classList.add('selected');
-            eventDeleteBtn.style.display = 'none';
-        }
-        eventModal.classList.add('visible');
-    }
-
-    async function handleEventFormSubmit(e) {
-        e.preventDefault();
-        const eventIdRaw = eventIdInput.value;
-        const eventId = eventIdRaw.startsWith('event-') ? eventIdRaw.replace('event-', '') : eventIdRaw;
-        const eventData = { title: document.getElementById('eventTitle').value, description: document.getElementById('eventDescription').value, start: combineDateTime(startDatePicker.input.value, startTimePicker.input.value), end: combineDateTime(endDatePicker.input.value, endTimePicker.input.value), link: document.getElementById('eventLink').value, color: eventColorInput.value };
-        const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
-        const method = eventId ? 'PUT' : 'POST';
-        try {
-            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
-            if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan acara');
-            eventModal.classList.remove('visible');
-            calendar.refetchEvents();
-            loadTodaysAgenda();
-        } catch (error) { alert(error.message); }
-    }
     
-    async function handleDeleteEvent(event) {
-        const confirmed = await showConfirmModal("Hapus Acara", `Anda yakin ingin menghapus "${event.title}"?`);
-        if (event.id && confirmed) {
+        async function loadTodaysAgenda() {
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            
+            sidebarDateEl.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
+            sidebarEventsList.innerHTML = '<li class="empty-item">Memuat...</li>';
+            sidebarTasksContainer.innerHTML = '<p class="empty-item">Memuat...</p>';
+    
             try {
-                const response = await fetch(`${EVENTS_API_URL}/${event.id}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error('Gagal menghapus acara');
+                const [eventsResponse, tasksResponse] = await Promise.all([
+                    fetch(`${EVENTS_API_URL}?start=${dateStr}&end=${dateStr}T23:59:59`),
+                    fetch(`${TASKS_API_URL}?filter=today_and_overdue`)
+                ]);
+                const allCalendarItems = await eventsResponse.json();
+                const tasks = await tasksResponse.json();
+                
+                const events = allCalendarItems.filter(item => item.extendedProps.item_type === 'event');
+                
+                renderEvents(sidebarEventsList, events);
+                renderCategorizedTasks(sidebarTasksContainer, tasks);
+            } catch (error) {
+                console.error("Gagal memuat data agenda:", error);
+                sidebarEventsList.innerHTML = '<li class="empty-item error">Gagal memuat acara.</li>';
+                sidebarTasksContainer.innerHTML = '<p class="empty-item error">Gagal memuat tugas.</p>';
+            }
+        }
+    
+        function renderEvents(listElement, events) {
+            listElement.innerHTML = '';
+            if (events.length === 0) {
+                listElement.innerHTML = `<li class="empty-item">Tidak ada acara untuk hari ini.</li>`;
+                return;
+            }
+            events.forEach(event => {
+                const li = document.createElement('li');
+                li.className = 'sidebar-item';
+                const timeString = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const colorDot = `<div class="item-color-dot" style="background-color: ${event.backgroundColor || '#3B82F6'}"></div>`;
+                li.innerHTML = `${colorDot}<div class="item-main-content"><div class="item-header"><span class="item-title">${event.title}</span></div><p class="item-description">${timeString}</p></div>`;
+                li.addEventListener('click', () => {
+                    const calEvent = calendar.getEventById(event.id);
+                    if (calEvent) openEventModal(calEvent);
+                });
+                listElement.appendChild(li);
+            });
+        }
+    
+        function renderCategorizedTasks(container, tasks) {
+            container.innerHTML = '';
+            const categories = {
+                urgent: { title: 'Mendesak', icon: '🔥', tasks: [] },
+                high: { title: 'Penting', icon: '📌', tasks: [] },
+                medium: { title: 'Biasa', icon: '🗓️', tasks: [] },
+                low: { title: 'Santai', icon: '☕', tasks: [] },
+            };
+            tasks.forEach(task => { (categories[task.priority] || categories.medium).tasks.push(task); });
+            let hasTasks = false;
+            for (const key in categories) {
+                const category = categories[key];
+                if (category.tasks.length > 0) {
+                    hasTasks = true;
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'task-category';
+                    let tasksHtml = `<div class="task-category-header"><span class="icon">${category.icon}</span> ${category.title}</div><ul class="item-list">`;
+                    category.tasks.forEach(task => {
+                        const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID')}` : 'Tanpa batas waktu';
+                        tasksHtml += `<li class="sidebar-item" data-task-id="${task.id}"><div class="item-main-content"><div class="item-header"><span class="item-title">${task.title}</span></div><p class="item-description">${dueDateString}</p></div></li>`;
+                    });
+                    tasksHtml += `</ul>`;
+                    categoryDiv.innerHTML = tasksHtml;
+                    container.appendChild(categoryDiv);
+                    categoryDiv.querySelectorAll('.sidebar-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const taskId = item.dataset.taskId;
+                            const taskData = tasks.find(t => t.id == taskId);
+                            if(taskData) openTaskModal(taskData);
+                        });
+                    });
+                }
+            }
+            if (!hasTasks) { container.innerHTML = `<p class="empty-item">Tidak ada tugas yang relevan hari ini.</p>`; }
+        }
+    
+        function openEventModal(event) {
+            eventForm.reset();
+            document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+            if (event && event.extendedProps.item_type === 'event') {
+                eventModalTitle.textContent = "Edit Acara";
+                eventIdInput.value = event.id;
+                document.getElementById('eventTitle').value = event.title;
+                document.getElementById('eventDescription').value = event.extendedProps.description || '';
+                document.getElementById('eventLink').value = event.extendedProps.link || '';
+                const start = new Date(event.start);
+                const end = event.end ? new Date(event.end) : null;
+                startDatePicker.setDate(start, true);
+                startTimePicker.setDate(start, true);
+                if (end) { endDatePicker.setDate(end, true); endTimePicker.setDate(end, true); } else { endDatePicker.clear(); endTimePicker.clear(); }
+                const eventColor = event.backgroundColor || event.color || '#3B82F6';
+                eventColorInput.value = eventColor;
+                const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
+                if (selectedColorEl) selectedColorEl.classList.add('selected');
+                eventDeleteBtn.style.display = 'inline-block';
+            } else {
+                eventModalTitle.textContent = "Acara Baru";
+                eventIdInput.value = '';
+                const initialDate = event || new Date(); // event is a date object on dateClick
+                startDatePicker.setDate(initialDate, true);
+                startTimePicker.clear();
+                endDatePicker.clear();
+                endTimePicker.clear();
+                eventColorInput.value = '#3B82F6';
+                document.querySelector(".color-option[data-color='#3B82F6']").classList.add('selected');
+                eventDeleteBtn.style.display = 'none';
+            }
+            eventModal.classList.add('visible');
+        }
+    
+        async function handleEventFormSubmit(e) {
+            e.preventDefault();
+            const eventIdRaw = eventIdInput.value;
+            const eventId = eventIdRaw.startsWith('event-') ? eventIdRaw.replace('event-', '') : eventIdRaw;
+            const eventData = { title: document.getElementById('eventTitle').value, description: document.getElementById('eventDescription').value, start: combineDateTime(startDatePicker.input.value, startTimePicker.input.value), end: combineDateTime(endDatePicker.input.value, endTimePicker.input.value), link: document.getElementById('eventLink').value, color: eventColorInput.value };
+            const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
+            const method = eventId ? 'PUT' : 'POST';
+            try {
+                const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
+                if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan acara');
                 eventModal.classList.remove('visible');
                 calendar.refetchEvents();
                 loadTodaysAgenda();
             } catch (error) { alert(error.message); }
         }
-    }
-    
-    async function handleEventDrop(info) {
-        if (info.event.extendedProps.item_type === 'task') {
-            info.revert();
-            alert('Tugas tidak dapat dipindahkan. Harap ubah tanggalnya melalui menu edit.');
-            return;
+        
+        async function handleDeleteEvent(event) {
+            const confirmed = await showConfirmModal("Hapus Acara", `Anda yakin ingin menghapus "${event.title}"?`);
+            if (event.id && confirmed) {
+                try {
+                    const response = await fetch(`${EVENTS_API_URL}/${event.id}`, { method: 'DELETE' });
+                    if (!response.ok) throw new Error('Gagal menghapus acara');
+                    eventModal.classList.remove('visible');
+                    calendar.refetchEvents();
+                    loadTodaysAgenda();
+                } catch (error) { alert(error.message); }
+            }
         }
-        const eventData = { start: info.event.start.toISOString(), end: info.event.end ? info.event.end.toISOString() : null };
-        try {
-            const response = await fetch(`${EVENTS_API_URL}/${info.event.id.replace('event-', '')}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
-            if (!response.ok) throw new Error('Gagal update waktu acara');
-            loadTodaysAgenda();
-        } catch (error) { alert(error.message); info.revert(); }
-    }
-
-    function openTaskModal(task) {
-        taskForm.reset();
-        if(task) {
-            taskModalTitle.textContent = "Detail Tugas";
-            taskIdInput.value = task.id;
-            document.getElementById('taskTitle').value = task.title;
-            document.getElementById('taskDescription').value = task.description || '';
-            taskDueDatePicker.setDate(task.due_date || '', true);
-            document.getElementById('taskPriority').value = task.priority || 'medium';
-            taskDeleteBtn.style.display = 'inline-block';
-        } else {
-            taskModalTitle.textContent = "Tugas Baru";
-            taskIdInput.value = '';
-            taskDueDatePicker.clear();
-            document.getElementById('taskPriority').value = 'medium';
-            taskDeleteBtn.style.display = 'none';
-        }
-        taskModal.classList.add('visible');
-    }
-
-    async function handleTaskFormSubmit(e) {
-        e.preventDefault();
-        const taskId = taskIdInput.value;
-        const taskData = { title: document.getElementById('taskTitle').value, description: document.getElementById('taskDescription').value, due_date: document.getElementById('taskDueDate').value || null, priority: document.getElementById('taskPriority').value };
-        const url = taskId ? `${TASKS_API_URL}/${taskId}` : TASKS_API_URL;
-        const method = taskId ? 'PUT' : 'POST';
-        try {
-            const response = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(taskData)});
-            if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan tugas');
-            taskModal.classList.remove('visible');
-            calendar.refetchEvents();
-            loadTodaysAgenda();
-        } catch (error) { alert(error.message); }
-    }
-
-    async function handleDeleteTask(task) {
-        const confirmed = await showConfirmModal("Hapus Tugas", `Anda yakin ingin menghapus "${task.title}"?`);
-        if(task.id && confirmed) {
+        
+        async function handleEventDrop(info) {
+            if (info.event.extendedProps.item_type === 'task') {
+                info.revert();
+                alert('Tugas tidak dapat dipindahkan. Harap ubah tanggalnya melalui menu edit.');
+                return;
+            }
+            const eventData = { start: info.event.start.toISOString(), end: info.event.end ? info.event.end.toISOString() : null };
             try {
-                const response = await fetch(`${TASKS_API_URL}/${task.id}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error('Gagal menghapus tugas');
+                const response = await fetch(`${EVENTS_API_URL}/${info.event.id.replace('event-', '')}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventData) });
+                if (!response.ok) throw new Error('Gagal update waktu acara');
+                loadTodaysAgenda();
+            } catch (error) { alert(error.message); info.revert(); }
+        }
+    
+        function openTaskModal(task) {
+            taskForm.reset();
+            if(task) {
+                taskModalTitle.textContent = "Detail Tugas";
+                taskIdInput.value = task.id;
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskDescription').value = task.description || '';
+                taskDueDatePicker.setDate(task.due_date || '', true);
+                document.getElementById('taskPriority').value = task.priority || 'medium';
+                taskDeleteBtn.style.display = 'inline-block';
+            } else {
+                taskModalTitle.textContent = "Tugas Baru";
+                taskIdInput.value = '';
+                taskDueDatePicker.clear();
+                document.getElementById('taskPriority').value = 'medium';
+                taskDeleteBtn.style.display = 'none';
+            }
+            taskModal.classList.add('visible');
+        }
+    
+        async function handleTaskFormSubmit(e) {
+            e.preventDefault();
+            const taskId = taskIdInput.value;
+            const taskData = { title: document.getElementById('taskTitle').value, description: document.getElementById('taskDescription').value, due_date: document.getElementById('taskDueDate').value || null, priority: document.getElementById('taskPriority').value };
+            const url = taskId ? `${TASKS_API_URL}/${taskId}` : TASKS_API_URL;
+            const method = taskId ? 'PUT' : 'POST';
+            try {
+                const response = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(taskData)});
+                if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan tugas');
                 taskModal.classList.remove('visible');
                 calendar.refetchEvents();
                 loadTodaysAgenda();
             } catch (error) { alert(error.message); }
         }
-    }
     
-    function handleAIOrganizerClick() {
-        aiOrganizerBtn.disabled = true;
-        aiOrganizerBtn.textContent = 'Mengarahkan...';
-        const events = Array.from(sidebarEventsList.querySelectorAll('.sidebar-item .item-title')).map(el => el.textContent);
-        const tasks = Array.from(document.querySelectorAll('#task-categories-container .sidebar-item .item-title')).map(el => el.textContent);
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = "{{ url_for('routes.ask_ai_from_hub') }}";
-        const eventsInput = document.createElement('input');
-        eventsInput.type = 'hidden';
-        eventsInput.name = 'events';
-        eventsInput.value = JSON.stringify(events);
-        form.appendChild(eventsInput);
-        const tasksInput = document.createElement('input');
-        tasksInput.type = 'hidden';
-        tasksInput.name = 'tasks';
-        tasksInput.value = JSON.stringify(tasks);
-        form.appendChild(tasksInput);
-        document.body.appendChild(form);
-        form.submit();
-    }
-
-    function showConfirmModal(title, message) {
-        return new Promise((resolve) => {
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            const cancelBtns = confirmDeleteModal.querySelectorAll('.modal-close-btn, #cancelDeleteBtn');
-            confirmDeleteModal.querySelector('#confirmTitle').textContent = title;
-            confirmDeleteModal.querySelector('#confirmMessage').textContent = message;
-            const confirmHandler = () => cleanup(true);
-            const cancelHandler = () => cleanup(false);
-            const cleanup = (value) => {
-                confirmDeleteModal.classList.remove('visible');
-                confirmBtn.removeEventListener('click', confirmHandler);
-                cancelBtns.forEach(btn => btn.removeEventListener('click', cancelHandler));
-                resolve(value);
-            };
-            confirmBtn.addEventListener('click', confirmHandler, { once: true });
-            cancelBtns.forEach(btn => btn.addEventListener('click', cancelHandler, { once: true }));
-            confirmDeleteModal.classList.add('visible');
-        });
-    }
-
-    function combineDateTime(dateStr, timeStr) {
-        if (!dateStr) return null;
-        return `${dateStr} ${timeStr || '00:00:00'}`;
-    }
+        async function handleDeleteTask(task) {
+            const confirmed = await showConfirmModal("Hapus Tugas", `Anda yakin ingin menghapus "${task.title}"?`);
+            if(task.id && confirmed) {
+                try {
+                    const response = await fetch(`${TASKS_API_URL}/${task.id}`, { method: 'DELETE' });
+                    if (!response.ok) throw new Error('Gagal menghapus tugas');
+                    taskModal.classList.remove('visible');
+                    calendar.refetchEvents();
+                    loadTodaysAgenda();
+                } catch (error) { alert(error.message); }
+            }
+        }
+        
+        function handleAIOrganizerClick() {
+            aiOrganizerBtn.disabled = true;
+            aiOrganizerBtn.textContent = 'Mengarahkan...';
+            const events = Array.from(sidebarEventsList.querySelectorAll('.sidebar-item .item-title')).map(el => el.textContent);
+            const tasks = Array.from(document.querySelectorAll('#task-categories-container .sidebar-item .item-title')).map(el => el.textContent);
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url_for('routes.ask_ai_from_hub') }}";
+            const eventsInput = document.createElement('input');
+            eventsInput.type = 'hidden';
+            eventsInput.name = 'events';
+            eventsInput.value = JSON.stringify(events);
+            form.appendChild(eventsInput);
+            const tasksInput = document.createElement('input');
+            tasksInput.type = 'hidden';
+            tasksInput.name = 'tasks';
+            tasksInput.value = JSON.stringify(tasks);
+            form.appendChild(tasksInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
     
-    // --- 3.5. INISIALISASI AWAL ---
-    loadTodaysAgenda();
-});
-</script>
+        function showConfirmModal(title, message) {
+            return new Promise((resolve) => {
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                const cancelBtns = confirmDeleteModal.querySelectorAll('.modal-close-btn, #cancelDeleteBtn');
+                confirmDeleteModal.querySelector('#confirmTitle').textContent = title;
+                confirmDeleteModal.querySelector('#confirmMessage').textContent = message;
+                const confirmHandler = () => cleanup(true);
+                const cancelHandler = () => cleanup(false);
+                const cleanup = (value) => {
+                    confirmDeleteModal.classList.remove('visible');
+                    confirmBtn.removeEventListener('click', confirmHandler);
+                    cancelBtns.forEach(btn => btn.removeEventListener('click', cancelHandler));
+                    resolve(value);
+                };
+                confirmBtn.addEventListener('click', confirmHandler, { once: true });
+                cancelBtns.forEach(btn => btn.addEventListener('click', cancelHandler, { once: true }));
+                confirmDeleteModal.classList.add('visible');
+            });
+        }
+    
+        function combineDateTime(dateStr, timeStr) {
+            if (!dateStr) return null;
+            return `${dateStr} ${timeStr || '00:00:00'}`;
+        }
+        
+        // --- 3.5. INISIALISASI AWAL ---
+        loadTodaysAgenda();
+    });
+    </script>
 
 
 <style>
@@ -730,6 +768,43 @@ body.no-scroll { overflow: hidden; }
         color: var(--text-primary) !important;
     }
 
+    /* Tambahkan kode ini ke file CSS Anda atau di dalam tag <style> */
+
+        .daily-agenda-list {
+            list-style-type: none; /* Menghilangkan bulatan/angka default */
+            padding: 0;
+            margin: 0;
+        }
+        
+        .agenda-item {
+            background-color: #2c3e50; /* Warna latar belakang sedikit lebih terang */
+            border: 1px solid #34495e;  /* Ini adalah "kotak tipis" yang Anda inginkan */
+            border-radius: 8px;         /* Membuat sudut kotak lebih tumpul */
+            padding: 12px 16px;         /* Jarak di dalam kotak */
+            margin-bottom: 10px;        /* Jarak antar kotak */
+        }
+        
+        .agenda-item-title {
+            font-weight: 600;      /* Menebalkan judul */
+            font-size: 1rem;
+            color: #ecf0f1;
+            margin-bottom: 6px;    /* Jarak antara judul dan detail */
+        }
+        
+        .agenda-item-detail {
+            font-size: 0.85rem;      /* Mengecilkan teks detail */
+            color: #bdc3c7;         /* Warna abu-abu untuk detail agar tidak terlalu menonjol */
+            margin: 4px 0 0 0;       /* Sedikit jarak di atas teks detail */
+            line-height: 1.4;
+        }
+        
+        .agenda-item-detail strong {
+            color: #95a5a6; /* Warna khusus untuk kata "Deadline" */
+        }
+
+
+        
+        
 </style>
 
 {% endblock %}
