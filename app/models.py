@@ -59,18 +59,22 @@ class Module(db.Model):
     def __repr__(self):
         return f"<Module {self.title}>"
 
+# Di dalam file models.py
+
 class Lesson(db.Model):
     __tablename__ = "lesson"
     id = db.Column(db.Integer, primary_key=True)
     module_id = db.Column(db.Integer, db.ForeignKey("module.id"), nullable=False)
     title = db.Column(db.String(200), nullable=False)
+    # --- TAMBAHKAN KOLOM INI ---
+    description = db.Column(db.Text, nullable=True)
     order = db.Column(db.Integer, nullable=False)
     lesson_type = db.Column(db.String(50), default="article")
     url = db.Column(db.String(500))
     estimated_time = db.Column(db.Integer)
     
     user_progress = db.relationship('UserProgress', backref='lesson', lazy='dynamic', cascade="all, delete-orphan")
-    notes = db.relationship('Note', backref='lesson', lazy='dynamic') # Relasi ke catatan
+    notes = db.relationship('Note', backref='lesson', lazy='dynamic')
 
     def __repr__(self):
         return f"<Lesson {self.title}>"
