@@ -28,6 +28,8 @@ class User(UserMixin, db.Model):
     events = db.relationship('Event', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='author', lazy='dynamic', cascade="all, delete-orphan")
 
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+
     def __repr__(self):
         return f"<User {self.name}>"
 
