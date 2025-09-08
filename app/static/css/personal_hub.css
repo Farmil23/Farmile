@@ -1,0 +1,282 @@
+/* =================================================================
+   STYLESHEET LENGKAP UNTUK PERSONAL HUB
+   ================================================================= */
+
+/* --- 1. Global & Theme Variables --- */
+:root {
+    /* Mode Gelap (Default) */
+    --hub-bg: #111827; /* Latar belakang paling dasar */
+    --sidebar-bg: #1f2937; /* Latar belakang sidebar */
+    --content-bg: #111827; /* Latar belakang area kalender */
+    --item-bg: #374151; /* Latar belakang item, modal, input */
+    --item-bg-hover: #4b5563;
+    --border-color: #4b5563;
+    --text-primary: #f9fafb; /* Teks utama (putih) */
+    --text-secondary: #9ca3af; /* Teks sekunder (abu-abu) */
+    --accent-blue: #3b82f6;
+    --accent-blue-hover: #2563eb;
+    --accent-red: #ef4444;
+    --accent-red-hover: #dc2626;
+    --accent-green: #10b981;
+}
+
+body {
+    background-color: var(--hub-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif; /* Ganti dengan font pilihan Anda */
+}
+
+
+/* --- 2. Main Layout --- */
+.hub-container {
+    display: flex;
+    height: calc(100vh - 70px); /* Sesuaikan dengan tinggi header Anda */
+    background-color: var(--hub-bg);
+}
+
+.hub-sidebar {
+    width: 320px;
+    background-color: var(--sidebar-bg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-color);
+}
+
+.hub-main-content {
+    flex-grow: 1;
+    padding: 24px;
+    background-color: var(--content-bg);
+}
+
+
+/* --- 3. Sidebar Styling --- */
+.sidebar-header {
+    margin-bottom: 24px;
+}
+.sidebar-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+.sidebar-header p {
+    color: var(--text-secondary);
+    margin: 4px 0 0;
+}
+
+.ai-organizer-box {
+    background-color: var(--item-bg);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+.ai-organizer-box p {
+    margin: 0 0 12px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.sidebar-section {
+    margin-bottom: 24px;
+}
+.sidebar-section h3 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.empty-item {
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 10px 4px;
+    font-size: 0.9rem;
+}
+
+.task-category {
+    margin-bottom: 20px;
+}
+.task-category-header {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.task-category-header .icon {
+    font-size: 1.2rem;
+}
+
+
+/* --- 4. Main Content & FullCalendar --- */
+#calendar {
+    height: 100%;
+    --fc-border-color: var(--border-color);
+    --fc-daygrid-event-dot-width: 8px;
+    --fc-list-event-dot-width: 10px;
+    --fc-today-bg-color: rgba(59, 130, 246, 0.1);
+    --fc-event-text-color: var(--text-primary);
+}
+.fc .fc-button-primary {
+    background-color: var(--item-bg);
+    border-color: var(--border-color);
+}
+.fc .fc-button-primary:hover {
+    background-color: var(--item-bg-hover);
+}
+.fc .fc-button-primary:disabled {
+    background-color: var(--item-bg);
+    opacity: 0.5;
+}
+.fc .fc-daygrid-day.fc-day-today {
+    background-color: var(--fc-today-bg-color) !important;
+}
+
+
+/* --- 5. Modal Styling & Agenda Item --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.modal-overlay.visible {
+    display: flex;
+    opacity: 1;
+}
+.modal-content {
+    background-color: var(--sidebar-bg);
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+#eventModal, #taskModal, #confirmDeleteModal { z-index: 1010; }
+#dailyAgendaModal { z-index: 1000; }
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+}
+.modal-header h3 { margin: 0; font-size: 1.25rem; }
+.modal-close-btn { background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer; transition: color 0.2s ease; }
+.modal-close-btn:hover { color: var(--text-primary); }
+
+.modal-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+.daily-agenda-list { list-style: none; padding: 0; margin: 0; }
+.agenda-item {
+    background-color: var(--item-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.agenda-item:hover {
+    border-color: var(--accent-blue);
+    background-color: var(--item-bg-hover);
+}
+.agenda-item-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.item-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.agenda-item-detail {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 4px 0 0 0;
+    line-height: 1.5;
+}
+.agenda-item-detail strong {
+    color: var(--text-primary);
+}
+
+
+/* --- 6. Form Elements --- */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; margin-bottom: 8px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); }
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+.form-group-checkbox { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+.form-group-checkbox label { margin-bottom: 0; }
+.color-options { display: flex; gap: 10px; }
+.color-option { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: border-color 0.2s ease; }
+.color-option.selected { border-color: white; }
+
+
+/* --- 7. Buttons --- */
+.btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background-color 0.2s ease; }
+.btn-primary { background-color: var(--accent-blue); color: white; }
+.btn-primary:hover { background-color: var(--accent-blue-hover); }
+.btn-danger { background-color: var(--accent-red); color: white; }
+.btn-danger:hover { background-color: var(--accent-red-hover); }
+.btn-secondary { background-color: var(--item-bg); color: var(--text-primary); }
+.btn-secondary:hover { background-color: var(--item-bg-hover); }
+
+
+/* --- 8. Custom Scrollbar --- */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--sidebar-bg); }
+::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #666; }

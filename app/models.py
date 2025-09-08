@@ -127,6 +127,10 @@ class Task(db.Model):
     status = db.Column(db.String(20), default='todo') # 'todo', 'inprogress', 'done'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    enable_notifications = db.Column(db.Boolean, nullable=False, server_default='1') # Defaultnya notif aktif
+    notification_minutes_before = db.Column(db.Integer, nullable=True) # Waktu custom dari pengguna
+
+    
     # Opsional: Tautkan tugas ke Lesson atau Project
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=True)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
@@ -148,6 +152,12 @@ class Event(db.Model):
     color = db.Column(db.String(7), nullable=True, default='#3788d8') # Warna default biru FullCalendar
     
     author = db.relationship('User', back_populates='events')
+    
+    
+    
+    enable_notifications = db.Column(db.Boolean, nullable=False, server_default='1')
+    notification_minutes_before = db.Column(db.Integer, nullable=True)
+    
     
 
     def __repr__(self):
