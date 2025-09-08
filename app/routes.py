@@ -1070,8 +1070,9 @@ def get_events():
     
     if start_str and end_str:
         try:
-            start_date = datetime.fromisoformat(start_str)
-            end_date = datetime.fromisoformat(end_str)
+            # Menggunakan fromisoformat lebih baik karena timezone-aware
+            start_date = datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+            end_date = datetime.fromisoformat(end_str.replace('Z', '+00:00'))
 
             # 1. Ambil semua ACARA dalam rentang tanggal
             events = Event.query.filter(
@@ -1085,12 +1086,14 @@ def get_events():
                     'title': event.title,
                     'start': event.start_time.isoformat(),
                     'end': event.end_time.isoformat() if event.end_time else None,
-                    'backgroundColor': event.color or '#3B82F6', # Biru untuk acara
+                    'backgroundColor': event.color or '#3B82F6',
                     'borderColor': event.color or '#3B82F6',
                     'extendedProps': {
-                        'item_type': 'event', # <-- Label jelas
+                        'item_type': 'event',
                         'description': event.description,
-                        'link': event.link
+                        'link': event.link,
+                        # PERUBAHAN: Menambahkan reminder_minutes untuk acara
+                        'reminder_minutes': event.reminder_minutes
                     }
                 })
 
@@ -1103,21 +1106,30 @@ def get_events():
             for task in tasks:
                 combined_items.append({
                     'id': f"task-{task.id}",
-                    'title': f"Deadline: {task.title}", # Beri prefiks agar jelas
+                    'title': f"Deadline: {task.title}",
                     'start': task.due_date.isoformat(),
-                    'allDay': True, # Tugas biasanya dianggap seharian pada tanggal deadline
-                    'backgroundColor': '#10B981', # Hijau untuk tugas
+                    'allDay': True,
+                    'backgroundColor': '#10B981',
                     'borderColor': '#10B981',
                     'extendedProps': {
-                        'item_type': 'task', # <-- Label jelas
-                        'original_task': task_to_dict(task) 
+                        'item_type': 'task',
+                        # PERUBAHAN: Mengganti task_to_dict dengan dictionary eksplisit
+                        # untuk memastikan semua data, termasuk reminder_minutes, disertakan.
+                        'original_task': {
+                            'id': task.id,
+                            'title': task.title,
+                            'description': task.description,
+                            'due_date': task.due_date.isoformat() if task.due_date else None,
+                            'priority': task.priority,
+                            'status': task.status,
+                            'reminder_minutes': task.reminder_minutes
+                        }
                     }
                 })
         except Exception as e:
             current_app.logger.error(f"Error getting calendar items: {e}")
             
     return jsonify(combined_items)
-
 
 
 @bp.route('/api/hub/events', methods=['POST'])

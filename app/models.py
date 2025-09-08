@@ -136,6 +136,8 @@ class Task(db.Model):
     enable_notifications = db.Column(db.Boolean, nullable=False, server_default='1') # Defaultnya notif aktif
     notification_minutes_before = db.Column(db.Integer, nullable=True) # Waktu custom dari pengguna
 
+    reminder_minutes = db.Column(db.Integer, default=30) # Default 30 menit
+    
     
     # Opsional: Tautkan tugas ke Lesson atau Project
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=True)
@@ -159,6 +161,8 @@ class Event(db.Model):
     
     author = db.relationship('User', back_populates='events')
     
+    
+    reminder_minutes = db.Column(db.Integer, default=10) # Default 10 menit
     
     
     enable_notifications = db.Column(db.Boolean, nullable=False, server_default='1')
