@@ -232,6 +232,38 @@
     .btn-danger { background-color: var(--accent-red); color: white; }
     .btn-secondary { background-color: var(--border-color); color: var(--text-primary); }
 
+    
+.notification-indicator {
+    position: absolute;
+    top: -5px;       /* Posisikan sedikit ke atas */
+    right: -8px;     /* Posisikan sedikit ke kanan */
+    
+    /* Ukuran & Bentuk */
+    min-width: 20px; /* Lebar minimum agar tidak terlalu kecil */
+    height: 20px;
+    padding: 3px;
+    border-radius: 50%; /* Ini yang membuatnya menjadi lingkaran */
+    
+    /* Warna */
+    background-color: var(--accent-red, #ef4444) !important; /* Ini yang membuatnya merah */
+    color: white;
+    border: 2px solid #1a202c; /* Ganti dengan warna background header Anda */
+
+    /* Teks di Dalam Lingkaran */
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1; /* Penting untuk perataan vertikal */
+
+    /* Perataan & Tampilan */
+    display: none; /* Sembunyikan secara default */
+    place-content: center; /* Cara modern untuk menengahkan teks (horizontal & vertikal) */
+}
+
+.notification-indicator.visible {
+    display: grid; /* Gunakan 'grid' agar 'place-content' berfungsi */
+}
+
+
 </style>
 {% endblock %}
 
@@ -337,7 +369,7 @@
                     <option value="-1">Jangan ingatkan</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label>Warna</label>
                 <div class="color-options">
@@ -385,6 +417,18 @@
                     <option value="urgent">Mendesak</option>
                 </select>
             </div>
+
+            <div class="form-group">
+                <label for="taskReminder">Ingatkan saya</label>
+                <select id="taskReminder" name="reminder_minutes" class="form-control">
+                    <option value="15">15 menit sebelumnya</option>
+                    <option value="30" selected>30 menit sebelumnya</option>
+                    <option value="60">1 jam sebelumnya</option>
+                    <option value="1440">1 hari sebelumnya</option>
+                    <option value="-1">Jangan ingatkan</option>
+                </select>
+            </div>
+
             <div class="modal-footer">
                 <button type="button" id="taskDeleteBtn" class="btn btn-danger" style="margin-right: auto;">Hapus</button>
                 <button type="submit" class="btn btn-primary">Simpan</button>

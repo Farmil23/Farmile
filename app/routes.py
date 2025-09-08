@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta
@@ -1307,3 +1307,29 @@ def ai_organizer():
         return jsonify({'error': 'Gagal menghubungi mentor AI saat ini.'}), 500
     
     
+# ===============================================
+# API NOTIFICATION
+# ===============================================
+
+
+@bp.route('/api/notifications', methods=['GET'])
+@login_required
+def get_notifications():
+    # Ambil 5 notifikasi terbaru, tidak peduli sudah dibaca atau belum
+    recent_notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(5).all()
+    
+    # Hitung jumlah yang belum dibaca secara terpisah
+    unread_count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+
+    return jsonify({
+        'notifications': [n.to_dict() for n in recent_notifications],
+        'unread_count': unread_count
+    })
+@bp.route('/api/notifications/mark-as-read', methods=['POST'])
+@login_required
+def mark_notifications_as_read():
+    notifications_to_mark = Notification.query.filter_by(user_id=current_user.id, is_read=False).all()
+    for notif in notifications_to_mark:
+        notif.is_read = True
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'All notifications marked as read.'})

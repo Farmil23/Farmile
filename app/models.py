@@ -231,3 +231,27 @@ class InterviewMessage(db.Model):
     "ProjectSubmission", 
     back_populates="interview_messages" # <-- Pastikan ini menunjuk ke nama relasi di atas
 )
+    
+    
+    
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message = db.Column(db.String(300), nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    link = db.Column(db.String(255))  # URL tujuan saat notifikasi diklik
+    created_at = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'message': self.message,
+            'is_read': self.is_read,
+            'link': self.link,
+            'timestamp': self.created_at.isoformat() + 'Z'
+        }
+
+    def __repr__(self):
+        return f'<Notification {self.message[:50]}>'

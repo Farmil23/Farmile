@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title|default('FARSIGHT') }} - FARSIGHT</title>
@@ -9,81 +9,66 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css' rel='stylesheet' />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/personal_hub.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
+    {% block styles %}{% endblock %}
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
 </head>
-  <body data-theme="dark">
+<body data-theme="dark">
     <header>
-      <a href="{{ url_for('routes.dashboard') }}" class="header-link"
-        >FARSIGHT</a
-      >
+        <a href="{{ url_for('routes.dashboard') }}" class="header-link">FARSIGHT</a>
 
-      <nav class="main-app-nav">
-        <a
-          href="{{ url_for('routes.dashboard') }}"
-          class="{{ 'active' if request.endpoint == 'routes.dashboard' else '' }}"
-          >DASHBOARD</a
-        >
-        <a
-          href="{{ url_for('routes.roadmap') }}"
-          class="{{ 'active' if request.endpoint == 'routes.roadmap' else '' }}"
-          >ROADMAP</a
-        >
-        <a
-          href="{{ url_for('routes.personal_hub') }}"
-          class="{{ 'active' if request.endpoint == 'routes.personal_hub' else '' }}"
-          >PERSONAL HUB</a
-        >
+        <nav class="main-app-nav">
+            <a href="{{ url_for('routes.dashboard') }}" class="{{ 'active' if request.endpoint == 'routes.dashboard' else '' }}">DASHBOARD</a>
+            <a href="{{ url_for('routes.roadmap') }}" class="{{ 'active' if request.endpoint == 'routes.roadmap' else '' }}">ROADMAP</a>
+            <a href="{{ url_for('routes.personal_hub') }}" class="{{ 'active' if request.endpoint == 'routes.personal_hub' else '' }}">PERSONAL HUB</a>
 
-        {% if current_user.is_authenticated %}
-        <a
-          href="{{ url_for('routes.profile') }}"
-          class="profile-link"
-          title="Pengaturan & Profil"
-        >
-          <img src="{{ current_user.profile_pic }}" alt="Profil" />
-        </a>
-        {% endif %}
-      </nav>
+            {% if current_user.is_authenticated %}
+            <div class="notification-wrapper">
+                <a id="notification-bell" class="notification-bell-link" title="Notifikasi">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-indicator"></span>
+                </a>
+                <div id="notification-panel" class="notification-panel">
+                  <div class="notification-panel-header">Notifikasi</div>
+                  <ul id="notification-list">
+                      <li class="notification-item-empty">Memuat...</li>
+                  </ul>
+                  <div class="notification-panel-footer">
+                      <a href="#">Lihat Semua Notifikasi</a>
+                  </div>
+              </div>
+            </div>
+
+            <a href="{{ url_for('routes.profile') }}" class="profile-link" title="Pengaturan & Profil">
+                <img src="{{ current_user.profile_pic }}" alt="Profil" />
+            </a>
+            {% endif %}
+        </nav>
     </header>
 
     <main>{% block content %}{% endblock %}</main>
 
     <div id="confirmModal" class="modal-overlay">
-      <div class="modal-box card">
-        <h3 id="modalTitle">Konfirmasi Tindakan</h3>
-        <p id="modalMessage" class="text-secondary">Apakah Anda yakin?</p>
-        <div class="modal-actions">
-          <button id="modalCancelBtn" class="button-secondary">Batal</button>
-          <button id="modalConfirmBtn" class="button-danger">
-            Ya, Lanjutkan
-          </button>
+        <div class="modal-box card">
+            <h3 id="modalTitle">Konfirmasi Tindakan</h3>
+            <p id="modalMessage" class="text-secondary">Apakah Anda yakin?</p>
+            <div class="modal-actions">
+                <button id="modalCancelBtn" class="button-secondary">Batal</button>
+                <button id="modalConfirmBtn" class="button-danger">Ya, Lanjutkan</button>
+            </div>
         </div>
-      </div>
     </div>
-    <script>
-      // JAVASCRIPT LENGKAP UNTUK SEMUA FITUR GLOBAL
-      document.addEventListener("DOMContentLoaded", () => {
-        const confirmModal = document.getElementById("confirmModal");
-        if (confirmModal) {
-          const modalCancelBtn = document.getElementById("modalCancelBtn");
-          modalCancelBtn.addEventListener("click", () =>
-            confirmModal.classList.remove("visible")
-          );
-          confirmModal.addEventListener("click", (e) => {
-            if (e.target === confirmModal)
-              confirmModal.classList.remove("visible");
-          });
-        }
-      });
-    </script>
-  </body>
+    
+    {% block scripts %}{% endblock %}
+
+    {% if current_user.is_authenticated %}
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    {% endif %}
+
+</body>
 </html>

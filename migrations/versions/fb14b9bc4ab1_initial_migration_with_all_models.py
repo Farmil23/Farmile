@@ -1,8 +1,8 @@
-"""empty message
+"""Initial migration with all models
 
-Revision ID: 418e1433ae72
+Revision ID: fb14b9bc4ab1
 Revises: 
-Create Date: 2025-09-04 13:48:29.576170
+Create Date: 2025-09-08 21:11:54.870388
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '418e1433ae72'
+revision = 'fb14b9bc4ab1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,8 +26,8 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('user',
-    sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('google_id', sa.String(length=100), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('email', sa.String(length=100), nullable=False),
@@ -35,47 +35,65 @@ def upgrade():
     sa.Column('semester', sa.Integer(), nullable=True),
     sa.Column('has_completed_onboarding', sa.Boolean(), nullable=False),
     sa.Column('career_path', sa.String(length=100), nullable=True),
+    sa.Column('timezone', sa.String(length=50), server_default='Asia/Jakarta', nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('google_id')
     )
-    op.create_table('module',
+    op.create_table('event',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.Column('roadmap_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=200), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('start_time', sa.DateTime(), nullable=False),
+    sa.Column('end_time', sa.DateTime(), nullable=True),
+    sa.Column('link', sa.String(length=500), nullable=True),
+    sa.Column('color', sa.String(length=7), nullable=True),
+    sa.Column('reminder_minutes', sa.Integer(), nullable=True),
+    sa.Column('enable_notifications', sa.Boolean(), server_default='1', nullable=False),
+    sa.Column('notification_minutes_before', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('module',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('roadmap_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('title', sa.String(length=200), nullable=False),
     sa.Column('order', sa.Integer(), nullable=False),
     sa.Column('career_path', sa.String(length=100), nullable=True),
     sa.ForeignKeyConstraint(['roadmap_id'], ['roadmap.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('learning_resource',
+    op.create_table('notification',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('module_id', sa.Integer(), nullable=False),
-    sa.Column('title', sa.String(length=200), nullable=False),
-    sa.Column('url', sa.String(length=500), nullable=False),
-    sa.Column('resource_type', sa.String(length=50), nullable=False),
-    sa.ForeignKeyConstraint(['module_id'], ['module.id'], ),
+    sa.Column('message', sa.String(length=300), nullable=False),
+    sa.Column('is_read', sa.Boolean(), nullable=False),
+    sa.Column('link', sa.String(length=255), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    with op.batch_alter_table('notification', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_notification_created_at'), ['created_at'], unique=False)
+
     op.create_table('lesson',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('module_id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=200), nullable=False),
-    sa.Column('order', sa.Integer(), nullable=False),
-    sa.Column('url', sa.String(length=500), nullable=True),
-    sa.Column('lesson_type', sa.String(length=50), nullable=True),
-    sa.Column('estimated_time', sa.Integer(), nullable=True),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('video_url', sa.String(length=500), nullable=True),
+    sa.Column('order', sa.Integer(), nullable=False),
+    sa.Column('lesson_type', sa.String(length=50), nullable=True),
+    sa.Column('url', sa.String(length=500), nullable=True),
+    sa.Column('estimated_time', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['module_id'], ['module.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('project',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('module_id', sa.Integer(), nullable=False),
+    sa.Column('module_id', sa.Integer(), nullable=True),
     sa.Column('title', sa.String(length=200), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('difficulty', sa.String(length=50), nullable=True),
@@ -100,19 +118,18 @@ def upgrade():
     with op.batch_alter_table('chat_session', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_chat_session_timestamp'), ['timestamp'], unique=False)
 
-    op.create_table('coding_session',
+    op.create_table('note',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('project_id', sa.Integer(), nullable=False),
-    sa.Column('title', sa.String(length=200), nullable=False),
-    sa.Column('timestamp', sa.DateTime(), nullable=True),
+    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('lesson_id', sa.Integer(), nullable=True),
+    sa.Column('project_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['lesson_id'], ['lesson.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    with op.batch_alter_table('coding_session', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_coding_session_timestamp'), ['timestamp'], unique=False)
-
     op.create_table('project_submission',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('project_id', sa.Integer(), nullable=False),
@@ -120,6 +137,25 @@ def upgrade():
     sa.Column('project_link', sa.String(length=200), nullable=False),
     sa.Column('interview_score', sa.Integer(), nullable=True),
     sa.Column('interview_feedback', sa.Text(), nullable=True),
+    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('task',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('title', sa.String(length=200), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('due_date', sa.DateTime(), nullable=True),
+    sa.Column('priority', sa.String(length=20), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('enable_notifications', sa.Boolean(), server_default='1', nullable=False),
+    sa.Column('notification_minutes_before', sa.Integer(), nullable=True),
+    sa.Column('reminder_minutes', sa.Integer(), nullable=True),
+    sa.Column('lesson_id', sa.Integer(), nullable=True),
+    sa.Column('project_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['lesson_id'], ['lesson.id'], ),
     sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -152,19 +188,6 @@ def upgrade():
     with op.batch_alter_table('chat_message', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_chat_message_timestamp'), ['timestamp'], unique=False)
 
-    op.create_table('code_file',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('session_id', sa.Integer(), nullable=False),
-    sa.Column('filename', sa.String(length=100), nullable=False),
-    sa.Column('content', sa.Text(), nullable=False),
-    sa.Column('language', sa.String(length=50), nullable=True),
-    sa.Column('timestamp', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['session_id'], ['coding_session.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    with op.batch_alter_table('code_file', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_code_file_timestamp'), ['timestamp'], unique=False)
-
     op.create_table('interview_message',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('submission_id', sa.Integer(), nullable=False),
@@ -186,10 +209,6 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_interview_message_timestamp'))
 
     op.drop_table('interview_message')
-    with op.batch_alter_table('code_file', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_code_file_timestamp'))
-
-    op.drop_table('code_file')
     with op.batch_alter_table('chat_message', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_chat_message_timestamp'))
 
@@ -198,19 +217,21 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_user_progress_completed_at'))
 
     op.drop_table('user_progress')
+    op.drop_table('task')
     op.drop_table('project_submission')
-    with op.batch_alter_table('coding_session', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_coding_session_timestamp'))
-
-    op.drop_table('coding_session')
+    op.drop_table('note')
     with op.batch_alter_table('chat_session', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_chat_session_timestamp'))
 
     op.drop_table('chat_session')
     op.drop_table('project')
     op.drop_table('lesson')
-    op.drop_table('learning_resource')
+    with op.batch_alter_table('notification', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_notification_created_at'))
+
+    op.drop_table('notification')
     op.drop_table('module')
+    op.drop_table('event')
     op.drop_table('user')
     op.drop_table('roadmap')
     # ### end Alembic commands ###
