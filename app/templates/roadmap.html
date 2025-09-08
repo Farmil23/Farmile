@@ -21,6 +21,12 @@
                     <option value="data-analyst" {% if current_user.career_path == 'data-analyst' %}selected{% endif %}>
                         Data Analyst
                     </option>
+                    <option value="ai-ml-engineer" {% if current_user.career_path == 'ai-ml-engineer' %}selected{% endif %}>
+                        AI/ML Engineer
+                    </option>
+                    <option value="devops-engineer" {% if current_user.career_path == 'devops-engineer' %}selected{% endif %}>
+                        DevOps Engineer
+                    </option>
                 </select>
                 <button type="submit" class="button-primary">Ganti</button>
             </form>
@@ -80,7 +86,7 @@
                     <li class="lesson-item project-item">
                         <div class="lesson-top">
                            <div class="lesson-status">
-                               <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                                <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
                            </div>
                            <div class="lesson-info">
                                 <strong>🚀 Proyek: {{ project.title }}</strong>

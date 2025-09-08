@@ -434,18 +434,30 @@ def edit_submission(submission_id):
 
 # Tambahkan fungsi baru ini di mana saja (misalnya, setelah 'complete_onboarding')
 
+# GANTI FUNGSI INI DI app/routes.py
+
 @bp.route('/change-career-path', methods=['POST'])
 @login_required
 def change_career_path():
     new_path = request.form.get('new_path')
     
-    # Validasi sederhana
-    if new_path in ['frontend', 'backend', 'data-analyst']:
+    # Daftar valid semua jalur karier yang ada
+    valid_paths = [
+        'frontend', 
+        'backend', 
+        'data-analyst', 
+        'ai-ml-engineer', 
+        'devops-engineer'
+    ]
+    
+    # Cek apakah new_path ada di dalam daftar yang valid
+    if new_path and new_path in valid_paths:
         current_user.career_path = new_path
         db.session.commit()
         flash(f"Jalur karier berhasil diubah ke {new_path.replace('-', ' ').title()}!", 'success')
     else:
-        flash("Jalur karier tidak valid.", 'danger')
+        # Beri pesan error jika jalur tidak valid
+        flash("Jalur karier yang dipilih tidak valid.", 'danger')
         
     return redirect(url_for('routes.roadmap'))
 
