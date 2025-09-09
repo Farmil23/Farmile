@@ -8,11 +8,12 @@ from app.models import (User, Project, ProjectSubmission, ChatMessage,
                         InterviewMessage, Task, Event, Note, Notification) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import re
 import pytz
     # Tambahkan ini di app/routes.py
 from flask import session # Pastikan session diimpor dari flask
+from collections import defaultdict
     
 from sqlalchemy import or_
 bp = Blueprint('routes', __name__)
@@ -1310,6 +1311,36 @@ def ai_organizer():
 # ===============================================
 # API NOTIFICATION
 # ===============================================
+
+@bp.route('/notifications')
+@login_required
+def notifications_page():
+    # Ambil semua notifikasi milik pengguna, diurutkan dari yang terbaru
+    all_notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
+    
+    # Kelompokkan notifikasi berdasarkan tanggal
+    grouped_notifications = defaultdict(list)
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+
+    for notif in all_notifications:
+        notif_date = notif.created_at.date()
+        date_key = ""
+        if notif_date == today:
+            date_key = "Hari Ini"
+        elif notif_date == yesterday:
+            date_key = "Kemarin"
+        else:
+            # Format tanggal lain, contoh: "Senin, 8 September 2025"
+            date_key = notif_date.strftime("%A, %d %B %Y")
+            
+        grouped_notifications[date_key].append(notif.to_dict())
+
+    return render_template(
+        'notifications.html', 
+        title="Semua Notifikasi", 
+        notifications=grouped_notifications
+    )
 
 
 @bp.route('/api/notifications', methods=['GET'])

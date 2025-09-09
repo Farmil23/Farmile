@@ -13,6 +13,10 @@ from flask_admin.contrib.sqla import ModelView
 from markupsafe import Markup
 from apscheduler.schedulers.background import BackgroundScheduler
 
+# --- Import tambahan untuk filter Jinja2 ---
+from datetime import datetime
+import pytz
+
 # Inisialisasi Ekstensi di luar factory
 db = SQLAlchemy()
 migrate = Migrate()
@@ -52,14 +56,13 @@ class EventView(SecureModelView):
     column_filters = ('start_time',)
 
 class LessonView(SecureModelView):
-    """Kustomisasi tampilan untuk model Lesson."""
     column_list = ('order', 'title', 'module', 'lesson_type', 'estimated_time')
     column_searchable_list = ('title', 'description')
     column_filters = ('lesson_type', 'module.title')
     form_columns = ('module', 'title', 'description', 'order', 'lesson_type', 'url', 'estimated_time')
     form_ajax_refs = {
         'module': {
-            'fields': ['title'], # Menggunakan 'title' sesuai model Module Anda
+            'fields': ['title'],
             'page_size': 10
         }
     }
@@ -68,20 +71,36 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # 1. Inisialisasi Ekstensi
+    # Inisialisasi Ekstensi
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
     oauth.init_app(app)
 
-    # 2. Konfigurasi Klien Eksternal (OAuth & AI)
-    oauth.register(
-        name='google',
-        client_id=app.config['GOOGLE_CLIENT_ID'],
-        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
+    # --- PENAMBAHAN: Filter Jinja2 Kustom untuk Tanggal & Waktu ---
+    def fromisoformat_filter(s):
+        """Mengonversi string ISO 8601 (dengan 'Z') ke objek datetime."""
+        if s:
+            return datetime.fromisoformat(s.replace('Z', '+00:00'))
+        return s
+
+    def localdatetime_filter(dt, fmt="%d %B %Y, %H:%M"):
+        """Mengonversi datetime UTC ke zona waktu lokal (WIB) dan memformatnya."""
+        if dt is None:
+            return ""
+        utc_zone = pytz.utc
+        local_zone = pytz.timezone('Asia/Jakarta')
+        
+        utc_dt = dt.replace(tzinfo=utc_zone)
+        local_dt = utc_dt.astimezone(local_zone)
+        return local_dt.strftime(fmt)
+
+    app.jinja_env.filters['fromisoformat'] = fromisoformat_filter
+    app.jinja_env.filters['localdatetime'] = localdatetime_filter
+    # --- AKHIR PENAMBAHAN ---
+
+    # Konfigurasi Klien Eksternal (OAuth & AI)
+    oauth.register(...) # Isi dengan konfigurasi OAuth Anda
     
     global ark_client
     try:
@@ -94,22 +113,21 @@ def create_app(config_class=Config):
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")
         ark_client = None
 
-    # 3. Konfigurasi Flask-Admin
+    # Konfigurasi Flask-Admin
     from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 
-    # Tambahkan view untuk setiap model dengan kustomisasi
     admin.add_view(UserView(User, db.session))
     admin.add_view(TaskView(Task, db.session))
     admin.add_view(EventView(Event, db.session))
-    admin.add_view(LessonView(Lesson, db.session)) # <-- Menggunakan view yang sudah benar
+    admin.add_view(LessonView(Lesson, db.session))
     admin.add_view(SecureModelView(Roadmap, db.session))
     admin.add_view(SecureModelView(Module, db.session))
     admin.add_view(SecureModelView(Project, db.session))
     admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions"))
     admin.add_view(SecureModelView(Notification, db.session))
 
-    # 4. Inisialisasi Scheduler Notifikasi
+    # Inisialisasi Scheduler Notifikasi
     try:
         from app.scheduler_jobs import check_reminders
         scheduler = BackgroundScheduler(daemon=True)
@@ -121,14 +139,14 @@ def create_app(config_class=Config):
     except Exception as e:
         app.logger.error(f"Failed to start scheduler: {e}")
 
-    # 5. Daftarkan Blueprints & Perintah CLI
+    # Daftarkan Blueprints & Perintah CLI
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)
     
     from app import commands
     app.cli.add_command(commands.ensure_admin)
 
-    # 6. Konfigurasi Logging
+    # Konfigurasi Logging
     if not app.debug and not app.testing:
         if not os.path.exists('logs'):
             os.mkdir('logs')

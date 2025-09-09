@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+    .notifications-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: var(--content-bg, #111827);
+        border-radius: 8px;
+        border: 1px solid var(--border-color, #374151);
+    }
+    .notifications-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color, #374151);
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+    .notifications-header h1 {
+        margin: 0;
+        font-size: 1.8rem;
+    }
+    .btn-back {
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        background-color: var(--sidebar-bg, #1f2937);
+        color: var(--text-primary, #e5e7eb);
+        border-radius: 6px;
+        font-weight: 500;
+        transition: background-color 0.2s ease;
+    }
+    .btn-back:hover {
+        background-color: var(--border-color, #374151);
+    }
+    .date-group {
+        margin-bottom: 2.5rem;
+    }
+    .date-heading {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-secondary, #9ca3af);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color, #374151);
+        padding-bottom: 0.5rem;
+    }
+    .notification-list-page {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .notification-list-page .notification-item {
+        padding: 1rem;
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+    }
+    .notification-list-page .notification-item.unread {
+         background-color: rgba(59, 130, 246, 0.1);
+    }
+    .notification-list-page .notification-item:not(:last-child) {
+        margin-bottom: 0.5rem;
+    }
+    .notification-list-page .notification-item a {
+        text-decoration: none;
+        color: var(--text-primary, #e5e7eb);
+    }
+    .notification-list-page .notification-item:hover {
+        background-color: var(--sidebar-bg, #1f2937);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-container">
+    <div class="notifications-header">
+        <h1>Semua Notifikasi</h1>
+        <a href="{{ url_for('routes.dashboard') }}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
+        </a>
+    </div>
+
+    {% if notifications %}
+        {% for date, notif_list in notifications.items() %}
+        <div class="date-group">
+            <h2 class="date-heading">{{ date }}</h2>
+            <ul class="notification-list-page">
+                {% for notif in notif_list %}
+                <li class="notification-item {{ 'unread' if not notif.is_read else '' }}">
+                    <a href="{{ notif.link or '#' }}">
+                        <div class="message">{{ notif.message }}</div>
+                        <div class="timestamp">{{ notif.timestamp|fromisoformat|localdatetime }}</div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-center text-secondary">Anda belum memiliki notifikasi.</p>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // --- 3.1. API ENDPOINTS & REFERENSI ELEMEN DOM ---
+    // --- API ENDPOINTS & REFERENSI ELEMEN DOM ---
     const EVENTS_API_URL = window.APP_CONFIG.api.events;
     const TASKS_API_URL = window.APP_CONFIG.api.tasks;
     let selectedDateForNewEvent = new Date();
@@ -26,108 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmDeleteModal = document.getElementById('confirmDeleteModal');
     const aiOrganizerBtn = document.getElementById('ai-organizer-btn');
     
-    // --- 3.1a. LOGIKA UNTUK NOTIFIKASI DESKTOP ---
-    const notificationManager = {
-        notifiedItemIds: new Set(), 
-        permissionGranted: false,
-    };
-
-    function requestNotificationPermission() {
-        if (!('Notification' in window)) {
-            console.warn("Browser ini tidak mendukung notifikasi desktop.");
-            return;
-        }
-        if (Notification.permission === 'granted') {
-            notificationManager.permissionGranted = true;
-            return;
-        }
-        if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    notificationManager.permissionGranted = true;
-                    new Notification("Notifikasi Diaktifkan!", {
-                        body: "Anda akan menerima pengingat untuk jadwal Anda.",
-                        icon: window.APP_CONFIG.static.logo
-                    });
-                }
-            });
-        }
-    }
-
-    // Fungsi notifikasi yang sudah ditingkatkan
-    // GANTI FUNGSI LAMA DENGAN VERSI BARU INI UNTUK DEBUGGING
-function checkAndNotify() {
-    if (!notificationManager.permissionGranted) return;
-    const now = new Date();
-
-    console.log(`--- Pengecekan Notifikasi Dijalankan pada: ${now.toLocaleTimeString()} ---`);
-
-    calendar.getEvents().forEach(event => {
-        const itemType = event.extendedProps.item_type;
-
-        // Mengambil waktu pengingat dari data
-        let reminderMinutes;
-        if (itemType === 'task') {
-            reminderMinutes = event.extendedProps.original_task.reminder_minutes;
-        } else {
-            reminderMinutes = event.extendedProps.reminder_minutes;
-        }
-
-        // --- BLOK DEBUGGING BARU ---
-        const eventStart = new Date(event.start);
-        const timeUntilEventMs = eventStart.getTime() - now.getTime();
-
-        console.log(`[DEBUG NOTIFIKASI UNTUK: "${event.title}"]
-- Tipe Item: ${itemType}
-- Waktu Mentah dari Kalender: ${event.start}
-- Waktu Acara (setelah di-parse browser): ${eventStart.toLocaleString()}
-- Waktu Sekarang: ${now.toLocaleString()}
-- Pengingat diatur untuk: ${reminderMinutes} menit sebelumnya
-- Sisa Waktu: ${Math.round(timeUntilEventMs / 60000)} menit lagi
-- Apakah notifikasi akan terpicu? ${timeUntilEventMs > 0 && timeUntilEventMs <= (reminderMinutes * 60000)}`);
-        // --- AKHIR BLOK DEBUGGING ---
-
-        if (!reminderMinutes || reminderMinutes < 0) {
-            return;
-        }
-
-        const eventId = event.id;
-        if (notificationManager.notifiedItemIds.has(eventId)) return;
-
-        const reminderThreshold = reminderMinutes * 60 * 1000;
-
-        if (timeUntilEventMs > 0 && timeUntilEventMs <= reminderThreshold) {
-            console.log("KONDISI IF TERPENUHI! Notifikasi seharusnya muncul."); // Log jika berhasil
-
-            const minutesUntil = Math.round(timeUntilEventMs / 60000);
-            let title = event.title.replace('Deadline: ', '');
-            let bodyText = itemType === 'task' 
-                ? `Deadline tugas akan tiba dalam ${minutesUntil} menit.`
-                : `Acara akan dimulai dalam ${minutesUntil} menit.`;
-
-            const notification = new Notification(title, {
-                body: bodyText,
-                icon: window.APP_CONFIG.static.logo,
-                tag: event.id
-            });
-
-            notification.onclick = () => {
-                window.focus();
-                if (itemType === 'task') {
-                    openTaskModal(event.extendedProps.original_task);
-                } else {
-                    openEventModal(event);
-                }
-                notification.close();
-            };
-
-            notificationManager.notifiedItemIds.add(eventId);
-        }
-    });
-    console.log(`--- Pengecekan Selesai ---`);
-}
-
-    // --- 3.2. INISIALISASI LIBRARY ---
+    // --- INISIALISASI LIBRARY ---
     const flatpickrConfig = { locale: "id", onOpen: () => document.body.classList.add('no-scroll'), onClose: () => document.body.classList.remove('no-scroll') };
     const startDatePicker = flatpickr("#eventStartDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
     const endDatePicker = flatpickr("#eventEndDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
@@ -338,15 +237,7 @@ function checkAndNotify() {
             `;
             
             li.addEventListener('click', () => {
-                const eventDataForModal = {
-                    id: event.id,
-                    title: event.title,
-                    start: event.start,
-                    end: event.end,
-                    backgroundColor: event.backgroundColor,
-                    extendedProps: event.extendedProps
-                };
-                openEventModal(eventDataForModal);
+                openEventModal(event);
             });
             listElement.appendChild(li);
         });
@@ -373,11 +264,7 @@ function checkAndNotify() {
                 
                 category.tasks.forEach(task => {
                     const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'numeric', year: 'numeric'})}` : 'Tanpa batas waktu';
-                    
-                    let descriptionHtml = '';
-                    if (task.description) {
-                        descriptionHtml = `<p class="agenda-item-detail">${task.description}</p>`;
-                    }
+                    let descriptionHtml = task.description ? `<p class="agenda-item-detail">${task.description}</p>` : '';
 
                     tasksHtml += `
                         <li class="agenda-item" data-task-id="${task.id}">
@@ -402,12 +289,12 @@ function checkAndNotify() {
     }
 
 
-    function openEventModal(event, initialDate = null) {
+    function openEventModal(event) {
         eventForm.reset();
         document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
         if (event) { // Mode Edit
             eventModalTitle.textContent = "Edit Acara";
-            eventIdInput.value = event.id;
+            eventIdInput.value = event.id.replace('event-', '');
             document.getElementById('eventTitle').value = event.title;
             document.getElementById('eventDescription').value = event.extendedProps.description || '';
             document.getElementById('eventLink').value = event.extendedProps.link || '';
@@ -427,8 +314,8 @@ function checkAndNotify() {
             eventModalTitle.textContent = "Acara Baru";
             eventIdInput.value = '';
             document.getElementById('eventReminder').value = '10';
-            const initialDateToSet = initialDate || new Date(); 
-            startDatePicker.setDate(initialDateToSet, true);
+            const initialDate = event || new Date(); 
+            startDatePicker.setDate(initialDate, true);
             startTimePicker.clear();
             endDatePicker.clear();
             endTimePicker.clear();
@@ -443,7 +330,6 @@ function checkAndNotify() {
         e.preventDefault();
         const eventIdRaw = eventIdInput.value;
         const eventId = eventIdRaw.startsWith('event-') ? eventIdRaw.replace('event-', '') : eventIdRaw;
-        
         const eventData = { 
             title: document.getElementById('eventTitle').value, 
             description: document.getElementById('eventDescription').value, 
@@ -453,7 +339,6 @@ function checkAndNotify() {
             color: eventColorInput.value,
             reminder_minutes: document.getElementById('eventReminder').value
         };
-
         const url = eventId ? `${EVENTS_API_URL}/${eventId}` : EVENTS_API_URL;
         const method = eventId ? 'PUT' : 'POST';
         try {
@@ -469,7 +354,7 @@ function checkAndNotify() {
         const confirmed = await showConfirmModal("Hapus Acara", `Anda yakin ingin menghapus "${event.title}"?`);
         if (event.id && confirmed) {
             try {
-                const response = await fetch(`${EVENTS_API_URL}/${event.id}`, { method: 'DELETE' });
+                const response = await fetch(`${EVENTS_API_URL}/${event.id.replace('event-', '')}`, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Gagal menghapus acara');
                 eventModal.classList.remove('visible');
                 calendar.refetchEvents();
@@ -492,9 +377,9 @@ function checkAndNotify() {
         } catch (error) { alert(error.message); info.revert(); }
     }
 
-    function openTaskModal(task, initialDate = null) {
+    function openTaskModal(task) {
         taskForm.reset();
-        if(task) { // Mode Edit
+        if(task) {
             taskModalTitle.textContent = "Detail Tugas";
             taskIdInput.value = task.id;
             document.getElementById('taskTitle').value = task.title;
@@ -503,10 +388,10 @@ function checkAndNotify() {
             document.getElementById('taskPriority').value = task.priority || 'medium';
             document.getElementById('taskReminder').value = task.reminder_minutes || '30';
             taskDeleteBtn.style.display = 'inline-block';
-        } else { // Mode Baru
+        } else {
             taskModalTitle.textContent = "Tugas Baru";
             taskIdInput.value = '';
-            taskDueDatePicker.setDate(initialDate || '', true);
+            taskDueDatePicker.clear();
             document.getElementById('taskPriority').value = 'medium';
             document.getElementById('taskReminder').value = '30';
             taskDeleteBtn.style.display = 'none';
@@ -517,7 +402,6 @@ function checkAndNotify() {
     async function handleTaskFormSubmit(e) {
         e.preventDefault();
         const taskId = taskIdInput.value;
-        
         const taskData = { 
             title: document.getElementById('taskTitle').value, 
             description: document.getElementById('taskDescription').value, 
@@ -525,7 +409,6 @@ function checkAndNotify() {
             priority: document.getElementById('taskPriority').value,
             reminder_minutes: document.getElementById('taskReminder').value
         };
-        
         const url = taskId ? `${TASKS_API_URL}/${taskId}` : TASKS_API_URL;
         const method = taskId ? 'PUT' : 'POST';
         try {
@@ -557,10 +440,7 @@ function checkAndNotify() {
         const tasks = Array.from(document.querySelectorAll('#task-categories-container .agenda-item .agenda-item-title')).map(el => el.textContent.trim());
         const form = document.createElement('form');
         form.method = 'POST';
-        
-        // KODE YANG SUDAH DIPERBAIKI: Menggunakan variabel dari window.APP_CONFIG
         form.action = window.APP_CONFIG.routes.ask_ai;
-
         const eventsInput = document.createElement('input');
         eventsInput.type = 'hidden';
         eventsInput.name = 'events';
@@ -600,10 +480,39 @@ function checkAndNotify() {
         return `${dateStr} ${timeStr || '00:00:00'}`;
     }
     
-    // --- 3.5. INISIALISASI AWAL ---
-    loadTodaysAgenda();
+    /**
+     * Memeriksa URL fragment (#) saat halaman dimuat untuk membuka modal secara otomatis.
+     */
+    function handleUrlFragment() {
+        // Beri sedikit jeda agar kalender selesai memuat data acara
+        setTimeout(() => {
+            const hash = window.location.hash;
 
-    // --- INISIALISASI FITUR NOTIFIKASI ---
-    requestNotificationPermission(); 
-    setInterval(checkAndNotify, 60000); // Cek setiap 60 detik
+            if (hash.startsWith('#event-')) {
+                const eventId = hash.substring('#event-'.length);
+                const event = calendar.getEventById(`event-${eventId}`);
+                if (event) {
+                    openEventModal(event);
+                }
+            } else if (hash.startsWith('#task-')) {
+                const taskId = hash.substring('#task-'.length);
+                const allCalendarItems = calendar.getEvents();
+                const taskEvent = allCalendarItems.find(item => 
+                    item.extendedProps.item_type === 'task' && item.extendedProps.original_task.id == taskId
+                );
+                if (taskEvent) {
+                    openTaskModal(taskEvent.extendedProps.original_task);
+                }
+            }
+
+            // Hapus hash dari URL agar tidak memicu lagi saat refresh biasa
+            if (hash) {
+                history.pushState("", document.title, window.location.pathname + window.location.search);
+            }
+        }, 500); // Jeda 500ms
+    }
+
+    // --- Inisialisasi ---
+    loadTodaysAgenda();
+    handleUrlFragment();
 });
