@@ -10,10 +10,12 @@ from byteplussdkarkruntime import Ark
 from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from markupsafe import Markup
 from apscheduler.schedulers.background import BackgroundScheduler
 
-# Import tambahan untuk filter Jinja2
+# --- PERUBAHAN: Pastikan 'escape' juga diimpor ---
+from markupsafe import Markup, escape
+
+# --- Import tambahan untuk filter Jinja2 ---
 from datetime import datetime
 import pytz
 
@@ -92,10 +94,17 @@ def create_app(config_class=Config):
         local_dt = utc_dt.astimezone(local_zone)
         return local_dt.strftime(fmt)
 
+    def nl2br_filter(s):
+        """Mengonversi baris baru menjadi tag <br> dengan aman."""
+        if s:
+            return Markup(escape(s).replace('\n', '<br>\n'))
+        return s
+    
     app.jinja_env.filters['fromisoformat'] = fromisoformat_filter
     app.jinja_env.filters['localdatetime'] = localdatetime_filter
+    # --- PERUBAHAN: Mendaftarkan filter nl2br yang hilang ---
+    app.jinja_env.filters['nl2br'] = nl2br_filter
 
-    # --- PERBAIKAN KRITIS DI SINI ---
     # Konfigurasi Klien Eksternal (OAuth & AI)
     oauth.register(
         name='google',
@@ -104,7 +113,6 @@ def create_app(config_class=Config):
         server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
         client_kwargs={'scope': 'openid email profile'}
     )
-    # --- AKHIR PERBAIKAN ---
     
     global ark_client
     try:

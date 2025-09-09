@@ -565,6 +565,7 @@ def challenge_projects():
 
 
 # app/routes.py
+# Di dalam file: app/routes.py
 
 @bp.route('/submit-project/<int:project_id>', methods=['POST'])
 @login_required
@@ -572,7 +573,17 @@ def submit_project(project_id):
     project = Project.query.get_or_404(project_id)
     project_link = request.form.get('project_link')
     
-    # Cek apakah pengguna sudah submit proyek ini
+    # --- PERUBAHAN UTAMA: SINKRONISASI DENGAN UserProject ---
+    # Cek apakah pengguna sudah "mengambil" proyek ini.
+    user_project = UserProject.query.filter_by(user_id=current_user.id, project_id=project_id).first()
+    
+    # Jika belum, buatkan catatannya sekarang. Ini memastikan proyeknya muncul di "My Projects".
+    if not user_project:
+        user_project = UserProject(user_id=current_user.id, project_id=project_id)
+        db.session.add(user_project)
+    # --- AKHIR PERUBAHAN ---
+
+    # Cek submission yang sudah ada (logika lama Anda, ini sudah benar)
     existing_submission = ProjectSubmission.query.filter_by(
         user_id=current_user.id,
         project_id=project.id
@@ -584,6 +595,10 @@ def submit_project(project_id):
         
     submission = ProjectSubmission(project_id=project.id, user_id=current_user.id, project_link=project_link)
     db.session.add(submission)
+    
+    # PERUBAHAN TAMBAHAN: Perbarui status proyek menjadi 'submitted'
+    user_project.status = 'submitted'
+    
     db.session.commit()
     flash(f"Proyek '{project.title}' berhasil disubmit!", 'success')
     return redirect(url_for('routes.my_projects'))
@@ -654,7 +669,7 @@ def interview(submission_id):
                            submission=submission,
                            messages=messages) # Kirim messages ke template
 # app/routes.py -> Tambahkan ini di bagian RUTE API UNTUK AI
-
+# GANTI SELURUH FUNGSI interview_ai DENGAN INI
 @bp.route('/interview-ai/<int:submission_id>', methods=['POST'])
 @login_required
 def interview_ai(submission_id):
@@ -666,39 +681,29 @@ def interview_ai(submission_id):
     if not user_message_content:
         return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
 
-    # 1. Simpan pesan pengguna ke database
+    # 1. Simpan pesan pengguna
     user_message = InterviewMessage(submission_id=submission_id, role='user', content=user_message_content)
     db.session.add(user_message)
-    
-    submitted_code_content = ""
-    if 'code_submission' in submission.project_link:
-        session_id = int(submission.project_link.split('/')[4])
-        coding_session = CodingSession.query.get(session_id)
-        if coding_session:
-            files = coding_session.files.all()
-            for file in files:
-                submitted_code_content += f"\n--- {file.filename} ---\n{file.content}\n"
-    
     
     # 2. Siapkan prompt untuk AI dengan konteks proyek
     project_context = f"""
     Judul Proyek: {submission.project.title}
     Deskripsi Proyek: {submission.project.description}
-    Link Proyek Pengguna: {submission.project_link}
+    Teknologi yang Digunakan: {submission.project.tech_stack}
     """
 
     system_prompt = (
-        "Anda adalah seorang rekruter teknis senior yang sedang mewawancarai seorang kandidat junior "
-        "mengenai proyek portofolio mereka. Jadilah kritis, tajam, tapi tetap suportif. "
-        "Tujuan Anda adalah untuk menguji pemahaman teknis dan proses berpikir kandidat. "
-        "Selalu ajukan pertanyaan terbuka yang relevan dengan detail proyek di bawah ini. "
-        "Jangan menjawab pertanyaan umum, fokuslah pada wawancara.\n\n"
-        f"--- KONTEKS PROYEK ---\n{project_context}"
+        "Anda adalah seorang rekruter teknis senior dari sebuah perusahaan teknologi ternama. Anda kritis, tajam, namun tetap suportif. "
+        "Anda sedang mewawancarai seorang kandidat bernama {current_user.name} mengenai proyek portofolio mereka. "
+        "Tugas Anda adalah mengajukan pertanyaan-pertanyaan mendalam berdasarkan brief proyek di bawah untuk menguji pemahaman teknis dan proses berpikir kandidat. "
+        "JANGAN minta untuk melihat kode. Fokus pada 'mengapa' dan 'bagaimana' di balik keputusan teknis mereka. "
+        "Selalu ajukan pertanyaan lanjutan yang relevan dengan jawaban kandidat.\n\n"
+        f"--- BRIEF PROYEK KANDIDAT ---\n{project_context}\n\n"
+        "Jika ini adalah pesan pertama, mulailah dengan menyapa kandidat dan ajukan pertanyaan pembuka Anda."
     )
     
-    # Ambil 5 pesan terakhir untuk histori
-    history = submission.interview_messages.order_by(InterviewMessage.timestamp.desc()).limit(5).all()
-    history.reverse()
+    # Ambil seluruh riwayat pesan untuk menjaga konteks
+    history = submission.interview_messages.order_by(InterviewMessage.timestamp.asc()).all()
     
     messages_for_ai = [{"role": "system", "content": system_prompt}]
     for msg in history:
@@ -712,7 +717,7 @@ def interview_ai(submission_id):
         )
         ai_response_content = completion.choices[0].message.content
         
-        # 4. Simpan balasan AI ke database
+        # 4. Simpan balasan AI
         ai_message = InterviewMessage(submission_id=submission_id, role='assistant', content=ai_response_content)
         db.session.add(ai_message)
         db.session.commit()
@@ -722,7 +727,8 @@ def interview_ai(submission_id):
         db.session.rollback()
         current_app.logger.error(f"Interview AI Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI.'}), 500
-
+    
+    
 @bp.route('/cancel-submission/<int:submission_id>', methods=['POST'])
 @login_required
 def cancel_submission(submission_id):
@@ -735,6 +741,56 @@ def cancel_submission(submission_id):
     return redirect(url_for('routes.my_projects'))
 
 
+# GANTI SELURUH FUNGSI LAMA DENGAN VERSI FINAL INI
+@bp.route('/api/interview/<int:submission_id>/get-score', methods=['POST'])
+@login_required
+def get_interview_score(submission_id):
+    submission = ProjectSubmission.query.get_or_404(submission_id)
+    if submission.author != current_user:
+        abort(403)
+
+    messages = submission.interview_messages.order_by(InterviewMessage.timestamp.asc()).all()
+    transcript = "\n".join([f"{msg.role}: {msg.content}" for msg in messages])
+
+    scoring_prompt = f"""
+    Anda adalah seorang penilai wawancara teknis senior.
+    Tugas Anda adalah menganalisis transkrip wawancara berikut dan memberikan penilaian.
+    Berikan skor numerik antara 1 hingga 100 berdasarkan kedalaman teknis, kejelasan komunikasi, dan proses pemecahan masalah yang ditunjukkan oleh kandidat (role: user).
+    Berikan juga feedback konstruktif yang singkat dalam 2-3 kalimat.
+    Berikan jawaban HANYA dalam format JSON yang valid, tanpa teks tambahan.
+    Contoh format: {{"score": 85, "feedback": "Penjelasan Anda tentang [topik] sudah baik, namun bisa ditingkatkan dengan menjelaskan [saran]."}}
+
+    --- TRANSKRIP WAWANCARA ---
+    {transcript}
+    --- AKHIR TRANSKRIP ---
+    """
+
+    try:
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=[{"role": "user", "content": scoring_prompt}],
+            # --- PERBAIKAN UTAMA: HAPUS PARAMETER response_format ---
+        )
+        
+        response_str = completion.choices[0].message.content
+        print(f"DEBUG: Respons mentah dari AI untuk penilaian => {response_str}")
+
+        json_match = re.search(r'\{.*\}', response_str, re.DOTALL)
+        if not json_match:
+            raise ValueError("AI tidak mengembalikan format JSON yang valid.")
+
+        result = json.loads(json_match.group(0))
+
+        submission.interview_score = result.get('score')
+        submission.interview_feedback = result.get('feedback')
+        db.session.commit()
+
+        return jsonify(result)
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"AI Scoring Error: {e}")
+        return jsonify({'error': 'Gagal mendapatkan atau memproses penilaian dari AI.'}), 500
 # ===============================================
 # RUTE CHATBOT
 # ===============================================

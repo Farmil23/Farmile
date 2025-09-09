@@ -5,32 +5,46 @@
         <h3>Proyek yang Diwawancara</h3>
         <hr>
         <h4>{{ submission.project.title }}</h4>
-        <p class="text-secondary">{{ submission.project.description }}</p>
+        <p class="text-secondary">{{ submission.project.description | truncate(150) }}</p>
         
         <h5>Link Submission Anda:</h5>
         <a href="{{ submission.project_link }}" target="_blank" rel="noopener noreferrer">{{ submission.project_link }}</a>
         <hr>
-        <a href="{{ url_for('routes.my_projects') }}" class="button-secondary">Selesai Wawancara</a>
+        
+        <div id="interview-actions">
+            {% if not submission.interview_score %}
+            <button id="get-score-btn" class="button-primary full-width" style="display: none;">
+                Selesai & Minta Penilaian
+            </button>
+            <p id="get-score-info" class="text-secondary" style="font-size: 0.8rem; text-align: center; margin-top: 10px;">
+                Tombol penilaian akan muncul setelah Anda menjawab beberapa pertanyaan.
+            </p>
+            {% endif %}
+        </div>
+        
+        <div id="interview-result" style="display: none;">
+            <h4>Hasil Wawancara</h4>
+            <div class="skor-final">Skor: <span id="final-score"></span></div>
+            <p><strong>Feedback:</strong></p>
+            <p id="final-feedback"></p>
+        </div>
+        
+        <a href="{{ url_for('routes.my_projects') }}" class="button-secondary full-width" style="margin-top: 20px;">Kembali ke Proyek Saya</a>
     </aside>
 
     <main class="interview-chat">
         <div id="chat-history" class="chat-history">
-            <div class="chat-message assistant">
-                <div class="message-bubble">
-                    <p>Halo, saya siap untuk memulai wawancara teknis mengenai proyek Anda. Silakan ceritakan secara singkat tentang proyek yang Anda buat dan teknologi apa yang Anda gunakan.</p>
-                </div>
-            </div>
             {% for message in messages %}
             <div class="chat-message {{ message.role }}">
                 <div class="message-bubble">
-                    <p>{{ message.content | safe }}</p>
+                    <p>{{ message.content | nl2br }}</p>
                 </div>
             </div>
             {% endfor %}
         </div>
         <div class="chat-input-area">
             <form id="interview-form">
-                <textarea id="message-input" name="message" placeholder="Ketik pesanmu di sini..." required></textarea>
+                <textarea id="message-input" name="message" placeholder="Ketik jawabanmu di sini..." required></textarea>
                 <button type="submit" id="send-button" title="Kirim Pesan">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -43,97 +57,109 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('interview-form');
-        const input = document.getElementById('message-input');
-        const history = document.getElementById('chat-history');
-        const sendButton = document.getElementById('send-button');
-        const submissionId = {{ submission.id }};
-    
-        // Fungsi untuk auto-resize textarea
-        const adjustTextareaHeight = () => {
-            input.style.height = 'auto'; // Reset tinggi
-            input.style.height = (input.scrollHeight) + 'px'; // Atur tinggi sesuai konten
-        };
-    
-        input.addEventListener('input', adjustTextareaHeight); // Panggil saat mengetik
-    
-        // Fungsi untuk mengirim pesan
-        const sendMessage = async () => {
-            const message = input.value.trim();
-            if (!message) return;
-    
-            addMessageToHistory('user', message);
-            input.value = '';
-            adjustTextareaHeight(); // Reset tinggi setelah kirim
-            input.disabled = true;
-            sendButton.disabled = true;
-            sendButton.textContent = 'Menunggu...';
-    
-            try {
-                const response = await fetch(`/interview-ai/${submissionId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
-                });
-                if (!response.ok) throw new Error('Gagal mendapatkan balasan.');
-    
-                const data = await response.json();
-                addMessageToHistory('assistant', data.response);
-    
-            } catch (error) {
-                addMessageToHistory('assistant', 'Maaf, terjadi kesalahan. Silakan coba lagi.');
-            } finally {
-                input.disabled = false;
-                sendButton.disabled = false;
-                sendButton.textContent = 'Kirim';
-                input.focus();
-            }
-        };
-    
-        // Event listener untuk form
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            sendMessage();
-        });
-    
-        // Event listener untuk keyboard (Enter to Send)
-        input.addEventListener('keydown', (e) => {
-            // Jika Enter ditekan TANPA Shift, kirim pesan
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault(); // Mencegah baris baru
-                sendMessage();
-            }
-            // Jika Shift + Enter, pengguna bisa membuat baris baru (default behavior)
-        });
-    
-        // templates/interview.html -> <script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (variabel form, input, history, sendButton tetap sama) ...
+    const form = document.getElementById('interview-form');
+    const input = document.getElementById('message-input');
+    const history = document.getElementById('chat-history');
+    const sendButton = document.getElementById('send-button');
+    const submissionId = {{ submission.id }};
+
+    // PERUBAHAN: Variabel baru untuk fitur penilaian
+    const getScoreBtn = document.getElementById('get-score-btn');
+    const getScoreInfo = document.getElementById('get-score-info');
+    const interviewResultDiv = document.getElementById('interview-result');
+    let userMessageCount = 0;
 
     const addMessageToHistory = (role, content) => {
+        // ... (fungsi addMessageToHistory tetap sama, pastikan Anda menggunakan marked.parse) ...
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${role}`;
-        
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'message-bubble';
         
-        const p = document.createElement('p');
+        // Menggunakan marked.js agar format markdown dari AI tampil rapi
+        bubbleDiv.innerHTML = marked.parse(content); 
         
-        if (role === 'assistant') {
-            // Untuk pesan dari AI, terjemahkan Markdown ke HTML
-            p.innerHTML = marked.parse(content); 
-        } else {
-            // Untuk pesan dari user, tetap gunakan textContent demi keamanan
-            p.textContent = content;
-        }
-        
-        bubbleDiv.appendChild(p);
         messageDiv.appendChild(bubbleDiv);
         history.appendChild(messageDiv);
         history.scrollTop = history.scrollHeight;
     };
+    
+    const sendMessage = async () => {
+        const message = input.value.trim();
+        if (!message) return;
+
+        addMessageToHistory('user', message);
+        userMessageCount++; // Tambah hitungan pesan pengguna
         
-        // Panggil sekali saat load untuk set tinggi awal
-        adjustTextareaHeight();
+        input.value = '';
+        input.disabled = true;
+        sendButton.disabled = true;
+
+        // Tampilkan tombol penilaian jika sudah cukup banyak percakapan
+        if (getScoreBtn && userMessageCount >= 2) { // Contoh: muncul setelah 2 jawaban
+            getScoreBtn.style.display = 'block';
+            getScoreInfo.style.display = 'none';
+        }
+        
+        try {
+            const response = await fetch(`/interview-ai/${submissionId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            });
+            if (!response.ok) throw new Error('Gagal mendapatkan balasan.');
+
+            const data = await response.json();
+            addMessageToHistory('assistant', data.response);
+
+        } catch (error) {
+            addMessageToHistory('assistant', 'Maaf, terjadi kesalahan. Silakan coba lagi.');
+        } finally {
+            input.disabled = false;
+            sendButton.disabled = false;
+            input.focus();
+        }
+    };
+
+    form.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
-    </script>
+
+    // PERUBAHAN: Event listener baru untuk tombol penilaian
+    if (getScoreBtn) {
+        getScoreBtn.addEventListener('click', async () => {
+            getScoreBtn.disabled = true;
+            getScoreBtn.textContent = 'Meminta Penilaian...';
+
+            try {
+                const response = await fetch(`/api/interview/${submissionId}/get-score`, {
+                    method: 'POST'
+                });
+                if (!response.ok) throw new Error('Gagal mendapatkan penilaian.');
+
+                const result = await response.json();
+
+                // Tampilkan hasil
+                document.getElementById('final-score').textContent = result.score;
+                document.getElementById('final-feedback').textContent = result.feedback;
+                interviewResultDiv.style.display = 'block';
+
+                // Sembunyikan area aksi
+                document.getElementById('interview-actions').style.display = 'none';
+                document.querySelector('.chat-input-area').style.display = 'none'; // Sembunyikan input chat
+
+            } catch (error) {
+                alert(error.message);
+                getScoreBtn.disabled = false;
+                getScoreBtn.textContent = 'Selesai & Minta Penilaian';
+            }
+        });
+    }
+
+    history.scrollTop = history.scrollHeight; // Auto-scroll ke bawah saat halaman dimuat
+});
+</script>
 {% endblock %}
