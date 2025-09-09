@@ -8,6 +8,11 @@
                 <h2>Pilih Proyek Baru</h2>
                 <p class="subtitle">Pilih proyek dari katalog untuk jalur {{ current_user.career_path|replace('-', ' ')|title }}.</p>
             </div>
+            <div class="header-actions">
+                <a href="{{ url_for('routes.my_projects') }}" class="button-secondary">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </a>
+            </div>
         </div>
 
         {% if projects %}
@@ -16,10 +21,17 @@
             <div class="card project-card">
                 <div class="project-card-header">
                     <h4>{{ project.title }}</h4>
-                    <span class="status-badge pending">{{ project.difficulty }}</span>
+                    {% if project.difficulty %}
+                        <span class="difficulty-badge difficulty-{{ project.difficulty.lower() }}">{{ project.difficulty }}</span>
+                    {% endif %}
                 </div>
-                <p>{{ project.description }}</p>
-                <a href="#" class="button-primary" style="margin-top: 20px;">Lihat Detail & Kerjakan</a>
+                <p>{{ project.description | truncate(150) }}</p>
+                <div class="card-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                    <a href="{{ url_for('routes.project_detail', project_id=project.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Detail</a>
+                    <form action="{{ url_for('routes.take_project', project_id=project.id) }}" method="POST" style="flex-grow: 1;">
+                        <button type="submit" class="button-primary full-width">Kerjakan Proyek Ini</button>
+                    </form>
+                </div>
             </div>
             {% endfor %}
         </div>

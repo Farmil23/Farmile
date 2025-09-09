@@ -28,8 +28,6 @@ class User(UserMixin, db.Model):
     events = db.relationship('Event', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='author', lazy='dynamic', cascade="all, delete-orphan")
 
-    is_admin = db.Column(db.Boolean, nullable=False, default=False)
-
     def __repr__(self):
         return f"<User {self.name}>"
 
@@ -101,6 +99,23 @@ class Project(db.Model):
 
     def __repr__(self):
         return f"<Project {self.title}>"
+    
+class UserProject(db.Model):
+    __tablename__ = 'user_project'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    
+    status = db.Column(db.String(50), default='in_progress', nullable=False) # Contoh: 'in_progress', 'submitted'
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Membuat relasi agar kita bisa memanggil user_project.user dan user_project.project
+    user = db.relationship('User', backref=db.backref('active_projects', cascade="all, delete-orphan"))
+    project = db.relationship('Project', backref=db.backref('takers', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return f'<UserProject User {self.user_id} - Project {self.project_id}>'
+    
     
     
 class ProjectSubmission(db.Model):

@@ -4469,3 +4469,57 @@ span.flatpickr-weekday {
     color: var(--text-secondary, #9ca3af);
     margin-top: 4px;
 }
+
+
+
+/* Di dalam file: static/css/style.css */
+
+/* === DIFFICULTY BADGE STYLES === */
+.difficulty-badge {
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid transparent;
+}
+
+/* Warna untuk setiap level kesulitan */
+/* Di dalam file: static/css/style.css */
+
+/* === DIFFICULTY BADGE STYLES === */
+.difficulty-badge {
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid transparent;
+}
+
+/* Warna untuk setiap level kesulitan (versi Bahasa Inggris) */
+.difficulty-beginner {
+    background-color: rgba(22, 163, 74, 0.1);
+    color: #16a34a; /* Hijau */
+    border-color: rgba(22, 163, 74, 0.2);
+}
+
+.difficulty-intermediate {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6; /* Biru */
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.difficulty-advanced {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444; /* Merah */
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.difficulty-expert {
+    background-color: rgba(230, 16, 16, 0.294);
+    color: #ff0000; /* Merah */
+    border-color: rgba(239, 68, 68, 0.2);
+}

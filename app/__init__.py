@@ -13,7 +13,7 @@ from flask_admin.contrib.sqla import ModelView
 from markupsafe import Markup
 from apscheduler.schedulers.background import BackgroundScheduler
 
-# --- Import tambahan untuk filter Jinja2 ---
+# Import tambahan untuk filter Jinja2
 from datetime import datetime
 import pytz
 
@@ -77,30 +77,34 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     oauth.init_app(app)
 
-    # --- PENAMBAHAN: Filter Jinja2 Kustom untuk Tanggal & Waktu ---
+    # Filter Jinja2 Kustom untuk Tanggal & Waktu
     def fromisoformat_filter(s):
-        """Mengonversi string ISO 8601 (dengan 'Z') ke objek datetime."""
         if s:
             return datetime.fromisoformat(s.replace('Z', '+00:00'))
         return s
 
     def localdatetime_filter(dt, fmt="%d %B %Y, %H:%M"):
-        """Mengonversi datetime UTC ke zona waktu lokal (WIB) dan memformatnya."""
         if dt is None:
             return ""
         utc_zone = pytz.utc
         local_zone = pytz.timezone('Asia/Jakarta')
-        
         utc_dt = dt.replace(tzinfo=utc_zone)
         local_dt = utc_dt.astimezone(local_zone)
         return local_dt.strftime(fmt)
 
     app.jinja_env.filters['fromisoformat'] = fromisoformat_filter
     app.jinja_env.filters['localdatetime'] = localdatetime_filter
-    # --- AKHIR PENAMBAHAN ---
 
+    # --- PERBAIKAN KRITIS DI SINI ---
     # Konfigurasi Klien Eksternal (OAuth & AI)
-    oauth.register(...) # Isi dengan konfigurasi OAuth Anda
+    oauth.register(
+        name='google',
+        client_id=app.config.get('GOOGLE_CLIENT_ID'),
+        client_secret=app.config.get('GOOGLE_CLIENT_SECRET'),
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'}
+    )
+    # --- AKHIR PERBAIKAN ---
     
     global ark_client
     try:

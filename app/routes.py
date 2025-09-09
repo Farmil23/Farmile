@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -477,13 +477,54 @@ def generate_roadmap():
 # ===============================================
 # RUTE PROYEK & WAWANCARA
 # ===============================================
+# GANTI FUNGSI LAMA INI DI app/routes.py
+# Di dalam file: app/routes.py
+
 @bp.route('/my-projects')
 @login_required
 def my_projects():
-    submissions = ProjectSubmission.query.filter_by(user_id=current_user.id).order_by(ProjectSubmission.id.desc()).all()
-    return render_template('my_projects.html', title="Proyek Saya", submissions=submissions)
+    # Ambil semua proyek yang sedang aktif dikerjakan oleh pengguna
+    user_projects = UserProject.query.filter_by(user_id=current_user.id).order_by(UserProject.started_at.desc()).all()
+    
+    # Siapkan data lengkap untuk dikirim ke template
+    projects_data = []
+    for user_project in user_projects:
+        # Untuk setiap proyek aktif, cari submission yang sesuai
+        submission = ProjectSubmission.query.filter_by(
+            user_id=current_user.id,
+            project_id=user_project.project_id
+        ).first()
+        
+        projects_data.append({
+            'user_project': user_project,
+            'submission': submission  # Bisa bernilai None jika belum submit
+        })
+        
+    return render_template('my_projects.html', 
+                           title="Proyek Saya", 
+                           projects_data=projects_data)
 
-# app/routes.py
+# TAMBAHKAN FUNGSI BARU INI DI app/routes.py
+@bp.route('/take-project/<int:project_id>', methods=['POST'])
+@login_required
+def take_project(project_id):
+    # Cek apakah proyek ada
+    project = Project.query.get_or_404(project_id)
+
+    # Cek apakah pengguna sudah pernah mengambil proyek ini
+    existing_user_project = UserProject.query.filter_by(user_id=current_user.id, project_id=project.id).first()
+    if existing_user_project:
+        flash('Anda sudah mengerjakan proyek ini.', 'warning')
+        return redirect(url_for('routes.my_projects'))
+
+    # Jika belum, buat entri baru
+    new_user_project = UserProject(user_id=current_user.id, project_id=project.id, status='in_progress')
+    db.session.add(new_user_project)
+    db.session.commit()
+
+    flash(f"Proyek '{project.title}' berhasil ditambahkan ke daftar Anda!", 'success')
+    return redirect(url_for('routes.my_projects'))
+
 
 @bp.route('/select-project')
 @login_required

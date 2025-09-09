@@ -8,6 +8,11 @@
                 <h2>Tantangan Proyek 🏆</h2>
                 <p class="subtitle">Buktikan skill-mu dengan proyek berstandar industri.</p>
             </div>
+            <div class="header-actions">
+                <a href="{{ url_for('routes.my_projects') }}" class="button-secondary">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Proyek Saya
+                </a>
+            </div>
         </div>
 
         {% if projects %}
@@ -17,25 +22,22 @@
                     <div class="project-card-header">
                         <h4>{{ project.title }}</h4>
                         {% if project.difficulty %}
-                           <span class="difficulty-badge">{{ project.difficulty }}</span>
+                           <span class="difficulty-badge difficulty-{{ project.difficulty.lower() }}">{{ project.difficulty }}</span>
                         {% endif %}
                     </div>
-                    <p>{{ project.description }}</p>
+                    <p>{{ project.description | truncate(150) }}</p>
                     
-                    <div class="sertifikat-actions">
-                        <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST">
-                            <div class="form-group">
-                               <label for="project_link_{{ project.id }}">Link Proyek (GitHub/Live):</label>
-                               <input type="url" id="project_link_{{ project.id }}" name="project_link" class="form-control" placeholder="https://github.com/user/repo" required>
-                            </div>
-                            <button type="submit" class="button-primary">Submit Proyek Ini</button>
+                    <div class="card-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                        <a href="{{ url_for('routes.project_detail', project_id=project.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Detail</a>
+                        <form action="{{ url_for('routes.take_project', project_id=project.id) }}" method="POST" style="flex-grow: 1;">
+                            <button type="submit" class="button-primary full-width">Kerjakan Tantangan Ini</button>
                         </form>
                     </div>
                 </div>
                 {% endfor %}
             </div>
         {% else %}
-            <div class="card empty-state">
+            <div class="card empty-state" style="text-align: center; padding: 40px;">
                 <h3>Hebat!</h3>
                 <p>Kamu sudah menyelesaikan semua tantangan yang tersedia saat ini. Nantikan tantangan berikutnya!</p>
             </div>
