@@ -1,76 +1,167 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ title|default('FARSIGHT') }} - FARSIGHT</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+
     {% block styles %}{% endblock %}
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
-</head>
-<body data-theme="dark">
+  </head>
+  <body data-theme="dark">
     <header>
-        <a href="{{ url_for('routes.dashboard') }}" class="header-link">FARSIGHT</a>
+      <a href="{{ url_for('routes.dashboard') }}" class="header-link"
+        >FARSIGHT</a
+      >
 
-        <nav class="main-app-nav">
-            <a href="{{ url_for('routes.dashboard') }}" class="{{ 'active' if request.endpoint == 'routes.dashboard' else '' }}">DASHBOARD</a>
-            <a href="{{ url_for('routes.roadmap') }}" class="{{ 'active' if request.endpoint == 'routes.roadmap' else '' }}">ROADMAP</a>
-            <a href="{{ url_for('routes.personal_hub') }}" class="{{ 'active' if request.endpoint == 'routes.personal_hub' else '' }}">PERSONAL HUB</a>
+      <nav class="main-app-nav">
+        <a
+          href="{{ url_for('routes.dashboard') }}"
+          class="{{ 'active' if request.endpoint == 'routes.dashboard' else '' }}"
+          >DASHBOARD</a
+        >
+        <a
+          href="{{ url_for('routes.roadmap') }}"
+          class="{{ 'active' if request.endpoint == 'routes.roadmap' else '' }}"
+          >ROADMAP</a
+        >
+        <a
+          href="{{ url_for('routes.personal_hub') }}"
+          class="{{ 'active' if request.endpoint == 'routes.personal_hub' else '' }}"
+          >PERSONAL HUB</a
+        >
 
-            {% if current_user.is_authenticated %}
-            <div class="notification-wrapper">
-                <a id="notification-bell" class="notification-bell-link" title="Notifikasi">
-                    <i class="fas fa-bell"></i>
-                    <span id="notification-indicator"></span>
-                </a>
-                <div id="notification-panel" class="notification-panel">
-                  <div class="notification-panel-header">Notifikasi</div>
-                  <ul id="notification-list">
-                      <li class="notification-item-empty">Memuat...</li>
-                  </ul>
-                  <div class="notification-panel-footer">
-                    <div class="notification-panel-footer">
-                        <a href="{{ url_for('routes.notifications_page') }}">Lihat Semua Notifikasi</a>
-                    </div>
-                  </div>
+        {% if current_user.is_authenticated %}
+        <div class="notification-wrapper">
+          <a
+            id="notification-bell"
+            class="notification-bell-link"
+            title="Notifikasi"
+          >
+            <i class="fas fa-bell"></i>
+            <span id="notification-indicator"></span>
+          </a>
+          <div id="notification-panel" class="notification-panel">
+            <div class="notification-panel-header">Notifikasi</div>
+            <ul id="notification-list">
+              <li class="notification-item-empty">Memuat...</li>
+            </ul>
+            <div class="notification-panel-footer">
+              <div class="notification-panel-footer">
+                <a href="{{ url_for('routes.notifications_page') }}"
+                  >Lihat Semua Notifikasi</a
+                >
               </div>
             </div>
+          </div>
+        </div>
 
-            <a href="{{ url_for('routes.profile') }}" class="profile-link" title="Pengaturan & Profil">
-                <img src="{{ current_user.profile_pic }}" alt="Profil" />
-            </a>
-            {% endif %}
-        </nav>
+        <a
+          href="{{ url_for('routes.profile') }}"
+          class="profile-link"
+          title="Pengaturan & Profil"
+        >
+          <img src="{{ current_user.profile_pic }}" alt="Profil" />
+        </a>
+        {% endif %}
+      </nav>
     </header>
 
     <main>{% block content %}{% endblock %}</main>
 
     <div id="confirmModal" class="modal-overlay">
-        <div class="modal-box card">
-            <h3 id="modalTitle">Konfirmasi Tindakan</h3>
-            <p id="modalMessage" class="text-secondary">Apakah Anda yakin?</p>
-            <div class="modal-actions">
-                <button id="modalCancelBtn" class="button-secondary">Batal</button>
-                <button id="modalConfirmBtn" class="button-danger">Ya, Lanjutkan</button>
-            </div>
+      <div class="modal-box card">
+        <h3 id="modalTitle">Konfirmasi Tindakan</h3>
+        <p id="modalMessage" class="text-secondary">Apakah Anda yakin?</p>
+        <div class="modal-actions">
+          <button id="modalCancelBtn" class="button-secondary">Batal</button>
+          <button id="modalConfirmBtn" class="button-danger">
+            Ya, Lanjutkan
+          </button>
         </div>
+      </div>
     </div>
-    
-    {% block scripts %}{% endblock %}
 
-    {% if current_user.is_authenticated %}
-    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
-    {% endif %}
 
-</body>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // --- Logika Konfirmasi Hapus Global ---
+            const confirmModal = document.getElementById("confirmModal");
+            
+            if (confirmModal) {
+                const modalTitle = document.getElementById("modalTitle");
+                const modalMessage = document.getElementById("modalMessage");
+                const modalConfirmBtn = document.getElementById("modalConfirmBtn");
+                const modalCancelBtn = document.getElementById("modalCancelBtn");
+        
+                // Fungsi canggih untuk menampilkan modal dan menunggu jawaban
+                const showConfirmModal = (title, message) => {
+                    return new Promise((resolve) => {
+                        modalTitle.textContent = title;
+                        modalMessage.textContent = message;
+                        confirmModal.classList.add("visible");
+        
+                        const confirmHandler = () => {
+                            confirmModal.classList.remove("visible");
+                            resolve(true);
+                        };
+                        
+                        const cancelHandler = () => {
+                            confirmModal.classList.remove("visible");
+                            resolve(false);
+                        };
+        
+                        modalConfirmBtn.onclick = confirmHandler;
+                        modalCancelBtn.onclick = cancelHandler;
+                        
+                        confirmModal.onclick = (e) => {
+                            if (e.target === confirmModal) cancelHandler();
+                        };
+                    });
+                };
+        
+                // Event listener untuk SEMUA form dengan kelas 'js-confirm-delete'
+                document.body.addEventListener('submit', async (e) => {
+                    if (e.target.matches('.js-confirm-delete')) {
+                        e.preventDefault(); // Hentikan submit otomatis
+                        
+                        // Ambil pesan dari atribut data, atau gunakan pesan default
+                        const message = e.target.dataset.confirmMessage || "Tindakan ini tidak bisa dibatalkan. Anda yakin?";
+                        const title = e.target.dataset.confirmTitle || "Konfirmasi Hapus";
+        
+                        const isConfirmed = await showConfirmModal(title, message);
+        
+                        if (isConfirmed) {
+                            e.target.submit(); // Jika dikonfirmasi, lanjutkan submit form
+                        }
+                    }
+                });
+            }
+        });
+        </script>
+        
+        {% block scripts %}{% endblock %}
+        
+        {% if current_user.is_authenticated %}
+        <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+        {% endif %}
+  </body>
 </html>

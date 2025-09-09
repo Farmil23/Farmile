@@ -356,6 +356,14 @@ textarea#chat-input::placeholder {
     box-shadow: 0 0 0 2px rgba(74,144,226,0.2);
 }
 
+/* Tambahkan ini ke file CSS Anda */
+
+.session-list {
+    flex-grow: 1; /* Membuat list mengisi sisa ruang */
+    overflow-y: auto; /* INI KUNCINYA: Menambahkan scroll jika konten meluap */
+    padding-bottom: 20px; /* Memberi sedikit ruang di bawah */
+}
+
 /* ============================== */
 /* MAIN APP NAV (Farsight Style)  */
 /* ============================== */
@@ -4523,3 +4531,14 @@ span.flatpickr-weekday {
     color: #ff0000; /* Merah */
     border-color: rgba(239, 68, 68, 0.2);
 }
+
+
+
+
+
+
+
+
+
+
+

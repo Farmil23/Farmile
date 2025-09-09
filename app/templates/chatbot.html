@@ -1,240 +1,96 @@
 {% extends "base.html" %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+{% endblock %}
+
 {% block content %}
-<div id="sidebar-overlay" class="sidebar-overlay"></div>
+<div class="chat-page-layout">
 
-<aside id="history-sidebar" class="chat-history-sidebar">
-    <div class="sidebar-header">
-        <h3>Riwayat Percakapan</h3>
-        <button id="close-sidebar-btn" class="icon-btn">&times;</button>
-    </div>
-    
-    <nav class="session-list">
-        <form action="{{ url_for('routes.new_chat_session') }}" method="POST">
-            <button type="submit" class="button-primary new-chat-btn">＋ Percakapan Baru</button>
-        </form>
+    <aside id="history-sidebar" class="chat-history-sidebar">
+        <div class="sidebar-header">
+            <h3>Riwayat Percakapan</h3>
+            <button id="close-sidebar-btn" class="icon-btn">&times;</button>
+        </div>
         
-        {% for session in all_sessions %}
-        <a href="{{ url_for('routes.chatbot_session', session_id=session.id) }}" 
-           class="session-item {% if session.id == current_session.id %}active{% endif %}">
-            {{ session.title }}
-        </a>
-        {% endfor %}
-    </nav>
-</aside>
+        <div style="padding: 1rem 1rem 0 1rem;">
+            <form action="{{ url_for('routes.new_chat_session') }}" method="POST">
+                <button type="submit" class="button-primary new-chat-btn">＋ Percakapan Baru</button>
+            </form>
+        </div>
+        
+        <nav class="session-list">
+            {% for session in all_sessions %}
+            <div class="session-item {% if session.id == current_session.id %}active{% endif %}">
+                <a href="{{ url_for('routes.chatbot_session', session_id=session.id) }}" class="session-title-link" title="{{ session.title }}">
+                    {{ session.title }}
+                </a>
+                <button class="session-actions-btn" data-session-id="{{ session.id }}" title="Opsi">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="actions-dropdown" id="dropdown-{{ session.id }}">
+                    <button class="rename-btn">Ubah Nama</button>
+                    <form action="{{ url_for('routes.delete_chat_session', session_id=session.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin menghapus percakapan '{{ session.title }}'?">
+                        <button type="submit" class="delete-btn">Hapus</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </nav>
+    </aside>
 
-<main class="chat-page-container full-screen">
-    <div class="chat-header">
-        <div class="chat-header-left">
-            <button id="sidebar-toggle-btn" class="icon-btn" title="Tampilkan Riwayat">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <div id="session-title-container">
-                <h2 id="session-title">
-                    {% if current_session.project %}
-                        Diskusi Proyek: {{ current_session.project.title }}
-                    {% else %}
-                        {{ current_session.title }}
+    <main class="chat-page-container">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <button id="sidebar-toggle-btn" class="icon-btn" title="Tampilkan Riwayat">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <div id="session-title-container">
+                    <h2 id="session-title">
+                        {% if current_session.project %}
+                            Diskusi Proyek: {{ current_session.project.title }}
+                        {% else %}
+                            {{ current_session.title }}
+                        {% endif %}
+                    </h2>
+                    {% if not current_session.project %}
+                        <input type="text" id="session-title-input" class="hidden" value="{{ current_session.title }}">
                     {% endif %}
-                </h2>
+                </div>
                 {% if not current_session.project %}
-                    <input type="text" id="session-title-input" class="hidden" value="{{ current_session.title }}">
+                <button id="edit-title-btn" class="edit-btn" title="Ubah Nama">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
                 {% endif %}
             </div>
-            <button id="edit-title-btn" class="edit-btn" title="Ubah Nama">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <a href="{{ url_for('routes.dashboard') }}" class="button-secondary">Kembali ke Dasbor</a>
+        </div>
+        
+        <div id="chat-window" class="chat-window">
+            </div>
+
+        <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="Ketik pesan Anda di sini..." rows="1"></textarea>
+            <button id="send-chat-btn" class="button-primary" title="Kirim Pesan">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
         </div>
-        <a href="{{ url_for('routes.dashboard') }}" class="button-secondary">Kembali ke Dasbor</a>
-    </div>
-    
-    <div id="chat-window" class="chat-window">
-        </div>
+    </main>
+</div> <div id="sidebar-overlay" class="sidebar-overlay"></div>
+{% endblock %}
 
-    <div class="chat-input-area">
-        <textarea id="chat-input" placeholder="Ketik pesan Anda di sini..." rows="1"></textarea>
-        <button id="send-chat-btn" class="button-primary" title="Kirim Pesan">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-        </button>
-    </div>
-</main>
 
+{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- DEFINISI SEMUA ELEMEN ---
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-chat-btn');
-        const chatWindow = document.getElementById('chat-window');
-        const titleDisplay = document.getElementById('session-title');
-        const titleInput = document.getElementById('session-title-input');
-        const editBtn = document.getElementById('edit-title-btn');
-        const sidebar = document.getElementById('history-sidebar');
-        const toggleBtn = document.getElementById('sidebar-toggle-btn');
-        const closeBtn = document.getElementById('close-sidebar-btn');
-        const overlay = document.getElementById('sidebar-overlay');
-        const sendIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
-        const spinnerIconSVG = `<svg class="spinner" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="none" stroke-width="2" stroke="currentColor" opacity="0.3"/><path d="M12,2 A10,10 0 0,1 22,12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
-        // --- FUNGSI UTAMA ---
-    
-        /**
-         * Menambahkan pesan baru ke jendela chat, dengan dukungan Markdown.
-         */
-        const addMessage = (text, sender, isMarkdown = false) => {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
-            const avatarSrc = sender === 'user' ? '{{ current_user.profile_pic }}' : 'https://i.ibb.co/mC9kS26/ai-avatar.png';
-            const avatar = `<img src="${avatarSrc}" class="avatar">`;
-            const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = 'bubble';
-    
-            if (isMarkdown && window.marked) {
-                bubbleDiv.innerHTML = marked.parse(text);
-                bubbleDiv.querySelectorAll('pre code').forEach((block) => {
-                    if (window.hljs) hljs.highlightElement(block);
-                });
-            } else {
-                bubbleDiv.textContent = text;
-            }
-            
-            messageDiv.innerHTML = avatar;
-            messageDiv.appendChild(bubbleDiv);
-            chatWindow.appendChild(messageDiv);
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-        };
+    window.CHAT_CONFIG = {
+        currentSessionId: {{ current_session.id }},
+        userProfilePic: '{{ current_user.profile_pic }}',
+        aiAvatarPic: '{{ url_for('static', filename='images/ai-avatar.png') }}',
+        renameSessionUrl: "{{ url_for('routes.rename_session', session_id=current_session.id) }}",
+        chatApiUrl: "{{ url_for('routes.chat_ai', session_id=current_session.id) }}",
+        initialMessages: {{ history | tojson | safe }}
+    };
+</script>
 
-        // Di dalam <script>, di bawah fungsi addMessage
-        const showTypingIndicator = (show = true) => {
-            let indicator = document.getElementById('typing-indicator');
-            if (show && !indicator) {
-                const messageDiv = document.createElement('div');
-                messageDiv.id = 'typing-indicator';
-                messageDiv.className = 'message ai';
-                messageDiv.innerHTML = `
-                    <img src="[https://www.google.com/imgres?q=gambar%20ai&imgurl=https%3A%2F%2Fwww.jktgadget.com%2Fwp-content%2Fuploads%2F2023%2F08%2F8.-Copy-AI-vs-Chat-GPT-Mana-yang-Lebih-Baik.jpg&imgrefurl=https%3A%2F%2Fwww.jktgadget.com%2Fkecerdasan-buatan%2F%3Fsrsltid%3DAfmBOor3KlXQFoPzo_mt5qB2OkDMcIUJiGJONeObvNu34vK2AwzleHwY&docid=gEzbpcQPdQjr7M&tbnid=UxZ_WvRI2uQD4M&vet=12ahUKEwi49PKMz7mPAxUuwjgGHR8yEBYQM3oECHgQAA..i&w=500&h=371&hcb=2&ved=2ahUKEwi49PKMz7mPAxUuwjgGHR8yEBYQM3oECHgQAA)" class="avatar">
-                    <div class="bubble">
-                        <div class="typing-indicator"><span></span><span></span><span></span></div>
-                    </div>
-                `;
-                chatWindow.appendChild(messageDiv);
-                chatWindow.scrollTop = chatWindow.scrollHeight;
-            } else if (!show && indicator) {
-                indicator.remove();
-            }
-        };
-    
-        /**
-         * Mengirim pesan ke backend dan menampilkan respons AI.
-         */
-         const sendChatMessage = async () => {
-            const message = chatInput.value.trim();
-            if (!message) return;
-    
-            addMessage(message, 'user', false);
-            chatInput.value = '';
-    
-            // --- PERBAIKAN UTAMA DI SINI ---
-            sendBtn.disabled = true; // Nonaktifkan tombol
-            sendBtn.innerHTML = spinnerIconSVG; // Ganti ikon menjadi spinner
-    
-            try {
-                const response = await fetch("{{ url_for('routes.chat_ai', session_id=current_session.id) }}", {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
-                });
-                const data = await response.json();
-                addMessage(data.response || data.error, 'ai', !data.error);
-            } catch (error) {
-                addMessage('Tidak dapat terhubung ke server.', 'ai', false);
-            } finally {
-                // Selalu kembalikan tombol ke kondisi semula setelah selesai
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = sendIconSVG;
-            }
-        };
-        
-        /**
-         * Menyimpan judul sesi yang baru diedit ke backend.
-         */
-        const saveNewTitle = async () => {
-            const newTitle = titleInput.value.trim();
-            if (newTitle && newTitle !== titleDisplay.textContent) {
-                try {
-                    const response = await fetch("{{ url_for('routes.rename_session', session_id=current_session.id) }}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title: newTitle })
-                    });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        titleDisplay.textContent = data.new_title;
-                        const activeSessionLink = document.querySelector(`.session-item.active`);
-                        if (activeSessionLink) activeSessionLink.textContent = data.new_title;
-                    }
-                } catch (error) { console.error('Gagal menyimpan judul'); }
-            }
-            titleInput.classList.add('hidden');
-            titleDisplay.classList.remove('hidden');
-        };
-        
-        /**
-         * Menampilkan atau menyembunyikan sidebar riwayat.
-         */
-        const toggleSidebar = () => {
-            if (sidebar && overlay) {
-                sidebar.classList.toggle('visible');
-                overlay.classList.toggle('visible');
-            }
-        };
-        
-        // --- RENDER PESAN AWAL DARI RIWAYAT ---
-        const initialMessages = [
-            {% for message in history %}
-            { text: `{{ message.content|tojson|safe }}`, sender: '{{ message.role }}' },
-            {% endfor %}
-        ];
-        chatWindow.innerHTML = '';
-        initialMessages.forEach(msg => {
-            addMessage(msg.text, msg.sender === 'user' ? 'user' : 'ai', msg.sender !== 'user');
-        });
-    
-        // --- EVENT LISTENERS ---
-        if (sendBtn) sendBtn.addEventListener('click', sendChatMessage);
-        
-        if (chatInput) {
-            chatInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
-                }
-            });
-        }
-    
-        if (editBtn) {
-            editBtn.addEventListener('click', () => {
-                titleDisplay.classList.add('hidden');
-                titleInput.classList.remove('hidden');
-                titleInput.focus();
-                titleInput.select();
-            });
-        }
-    
-        if (titleInput) {
-            titleInput.addEventListener('blur', saveNewTitle);
-            titleInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { 
-                    e.preventDefault(); 
-                    saveNewTitle(); 
-                } else if (e.key === 'Escape') {
-                    titleInput.value = titleDisplay.textContent;
-                    titleInput.classList.add('hidden');
-                    titleDisplay.classList.remove('hidden');
-                }
-            });
-        }
-    
-        if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
-        if (closeBtn) closeBtn.addEventListener('click', toggleSidebar);
-        if (overlay) overlay.addEventListener('click', toggleSidebar);
-    });
-    </script>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
 {% endblock %}

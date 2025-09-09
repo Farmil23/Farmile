@@ -1,4 +1,10 @@
 {% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/personal_hub.css') }}">
+{% endblock %}
+
+
 {% block content %}
 <div class="dashboard-layout">
     {% include 'dashboard_sidebar.html' %}
@@ -43,6 +49,12 @@
                         
                         {% if data.submission and data.submission.interview_score %}
                             <a href="{{ url_for('routes.view_portfolio', submission_id=data.submission.id) }}" class="button-primary" style="flex-grow: 1;" target="_blank">Lihat Portofolio</a>
+                            <button type="button" class="button-secondary open-reflection-modal" 
+                                    data-reflection="{{ data.user_project.reflection or '' }}" 
+                                    data-userprojectid="{{ data.user_project.id }}"
+                                    style="flex-grow: 1;">
+                                Tambah/Edit Refleksi
+                            </button>
                             <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Riwayat</a>
                             <form action="{{ url_for('routes.retry_interview', submission_id=data.submission.id) }}" method="POST" style="width: 100%; margin-top: 10px;">
                                 <button type="submit" class="button-secondary full-width">Ulangi Wawancara</button>
@@ -56,7 +68,7 @@
                         {% endif %}
 
                     </div>
-                    </div>
+                </div>
                 {% endfor %}
             </div>
         {% else %}
@@ -69,4 +81,87 @@
         {% endif %}
     </main>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<div id="reflectionModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>Refleksi Proyek</h3>
+            <button class="modal-close-btn">&times;</button>
+        </div>
+        <form id="reflectionForm">
+            <input type="hidden" id="reflectionUserProjectId">
+            <p class="text-secondary" style="margin-top: 0; margin-bottom: 1rem;">
+                Ceritakan tentang kontribusi dan hal-hal penting yang Anda pelajari selama mengerjakan proyek ini. Teks ini akan ditampilkan di halaman portofolio publik Anda.
+            </p>
+            <div class="form-group">
+                <textarea id="reflectionText" class="form-control" rows="8" required></textarea>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="button-primary">Simpan Refleksi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const reflectionModal = document.getElementById('reflectionModal');
+    if (reflectionModal) {
+        const reflectionForm = document.getElementById('reflectionForm');
+        const reflectionText = document.getElementById('reflectionText');
+        const reflectionUserProjectId = document.getElementById('reflectionUserProjectId');
+        
+        document.querySelectorAll('.open-reflection-modal').forEach(button => {
+            button.addEventListener('click', () => {
+                const userProjectId = button.dataset.userprojectid;
+                const currentReflection = button.dataset.reflection;
+                
+                reflectionUserProjectId.value = userProjectId;
+                reflectionText.value = currentReflection;
+                
+                reflectionModal.classList.add('visible');
+            });
+        });
+
+        reflectionModal.addEventListener('click', (e) => {
+            if (e.target === reflectionModal || e.target.closest('.modal-close-btn')) {
+                reflectionModal.classList.remove('visible');
+            }
+        });
+
+        reflectionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userProjectId = reflectionUserProjectId.value;
+            const text = reflectionText.value;
+            const submitButton = reflectionForm.querySelector('button[type="submit"]');
+            
+            submitButton.disabled = true;
+            submitButton.textContent = 'Menyimpan...';
+
+            try {
+                const response = await fetch(`/api/user-project/${userProjectId}/reflection`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reflection: text })
+                });
+                if (!response.ok) throw new Error('Gagal menyimpan refleksi.');
+
+                const buttonToUpdate = document.querySelector(`.open-reflection-modal[data-userprojectid='${userProjectId}']`);
+                if(buttonToUpdate) {
+                    buttonToUpdate.dataset.reflection = text;
+                }
+                
+                reflectionModal.classList.remove('visible');
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Simpan Refleksi';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

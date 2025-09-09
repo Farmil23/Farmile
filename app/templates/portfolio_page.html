@@ -139,6 +139,12 @@
             <p>{{ submission.project.tech_stack }}</p>
         </section>
         
+        {% if user_project and user_project.reflection %}
+        <section class="section">
+            <h3>Kontribusi & Pembelajaran Saya</h3>
+            <p>{{ user_project.reflection | nl2br }}</p>
+        </section>
+        {% endif %}
         <section class="section">
             <h3>Validasi Wawancara oleh AI</h3>
             <div class="ai-validation-box">

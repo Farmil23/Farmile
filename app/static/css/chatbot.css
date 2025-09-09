@@ -1,0 +1,341 @@
+/* =============================================== */
+/* ===         CSS UNTUK HALAMAN CHATBOT         === */
+/* =============================================== */
+
+/* --- Layout Utama --- */
+.chat-page-layout {
+    display: flex;
+    height: calc(100vh - 60px); /* Ganti 60px dengan tinggi header Anda */
+    background-color: var(--content-bg, #111827);
+    position: relative; /* Diperlukan agar sidebar tidak menggeser layout */
+    overflow: hidden;
+}
+
+/* PERUBAHAN: Sidebar sekarang disembunyikan secara default di SEMUA layar */
+.chat-history-sidebar {
+    width: 300px;
+    background-color: var(--sidebar-bg, #1f2937);
+    border-right: 1px solid var(--border-color, #374151);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out;
+    /* Aturan dari mobile yang dijadikan default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 1100;
+    transform: translateX(-100%);
+}
+.chat-history-sidebar.visible {
+    transform: translateX(0); /* Aturan untuk memunculkan sidebar */
+}
+
+/* PERUBAHAN: Overlay juga menjadi aturan default, bukan hanya di mobile */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1050;
+    display: none;
+}
+.sidebar-overlay.visible {
+    display: block;
+}
+
+.chat-page-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%; /* Pastikan konten utama mengisi semua ruang */
+}
+
+/* --- Header Chat --- */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border-color, #374151);
+    flex-shrink: 0;
+}
+.chat-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* PERUBAHAN: Tombol hamburger sekarang selalu terlihat */
+#sidebar-toggle-btn {
+    display: block; 
+}
+#close-sidebar-btn {
+    display: block;
+}
+
+/* ... Sisa CSS Anda dari sini ke bawah tetap sama persis ... */
+
+/* --- Sidebar Riwayat --- */
+.sidebar-header {display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color, #374151); flex-shrink: 0;}
+.session-list {flex-grow: 1; overflow-y: auto; padding: 1rem;}
+.new-chat-btn {width: 100%; margin-bottom: 1rem;}
+.session-item {
+    display: flex; /* <-- Pastikan ini ada */
+    align-items: center; /* <-- Untuk menyejajarkan secara vertikal */
+    justify-content: space-between; /* <-- Ini akan mendorong titik tiga ke kanan */
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    position: relative; 
+    border-left: 3px solid transparent; 
+    margin-bottom: 0.5rem; /* Tambahkan sedikit jarak antar item */
+}
+.session-item:hover, .session-item.active {background-color: var(--input-bg, #1f2937);}
+.session-item.active {border-left-color: var(--accent-blue, #3b82f6);}
+.session-item.active .session-title-link {color: var(--text-primary, #e5e7eb); font-weight: 600;}
+.session-title-link {flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; color: var(--text-secondary, #9ca3af); padding: 0.75rem 0 0.75rem 1rem; display: block;}
+.session-actions-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-left: 0; /* Pastikan ini 0 atau kecil */
+    flex-shrink: 0;
+    line-height: 1;
+}
+.session-actions-btn:hover {background-color: var(--border-color, #374151); color: var(--text-primary, #e5e7eb);}
+.actions-dropdown {display: none; position: absolute; right: 15px; top: 45px; background-color: var(--modal-bg, #2d3748); border: 1px solid var(--border-color, #374151); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 10; width: 160px; overflow: hidden;}
+.actions-dropdown.visible {display: block;}
+.actions-dropdown button, .actions-dropdown a {display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text-primary); padding: 0.75rem 1rem; cursor: pointer; font-size: 0.9rem;}
+.actions-dropdown button:hover, .actions-dropdown a:hover {background-color: var(--accent-blue, #3b82f6);}
+.actions-dropdown .delete-btn {color: var(--accent-red, #ef4444);}
+.actions-dropdown .delete-btn:hover {background-color: var(--accent-red, #ef4444); color: white;}
+
+/* --- Jendela Chat & Gelembung Pesan --- */
+.chat-window {flex-grow: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem;}
+.message {display: flex; gap: 1rem; max-width: 80%;}
+.message.user {align-self: flex-end; flex-direction: row-reverse;}
+.avatar {width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;}
+.bubble {padding: 0.75rem 1rem; border-radius: 12px; line-height: 1.6;}
+.message.user .bubble {background-color: var(--accent-blue, #3b82f6); color: white; border-top-right-radius: 4px;}
+.message.ai .bubble {background-color: var(--sidebar-bg, #1f2937); border: 1px solid var(--border-color, #374151); border-top-left-radius: 4px;}
+.bubble p { margin: 0 0 0.5rem 0; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble pre { white-space: pre-wrap; word-wrap: break-word; }
+
+/* --- Area Input Chat --- */
+.chat-input-area {padding: 1rem 1.5rem; border-top: 1px solid var(--border-color, #374151); background-color: var(--content-bg, #111827); display: flex; align-items: flex-end; gap: 1rem; flex-shrink: 0;}
+#chat-input {flex-grow: 1; resize: none; max-height: 150px; overflow-y: auto;}
+.spinner {transform-origin: center; animation: spinner_StKS 0.75s linear infinite;}
+@keyframes spinner_StKS { 100% { transform: rotate(360deg); } }
+
+/* Media query sekarang hanya untuk penyesuaian kecil, bukan layout utama */
+@media (max-width: 768px) {
+    .chat-header { padding: 0.75rem 1rem; }
+    .chat-window { padding: 1rem; }
+    .chat-input-area { padding: 0.75rem 1rem; }
+}
+
+
+
+/* GANTI SEMUA ATURAN LAMA UNTUK ITEM SESI DENGAN BLOK INI */
+
+.session-list {
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding: 1rem;
+}
+
+.session-item {
+    display: flex !important; /* Paksa untuk menjadi flex container */
+    flex-direction: row !important; /* Paksa arahnya menjadi baris/horizontal */
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    position: relative; 
+    border-left: 3px solid transparent; 
+    margin-bottom: 0.5rem;
+}
+
+.session-item:hover, .session-item.active {
+    background-color: var(--input-bg, #1f2f37);
+}
+
+.session-item.active {
+    border-left-color: var(--accent-blue, #3b82f6);
+}
+
+.session-item.active .session-title-link {
+    color: var(--text-primary, #e5e7eb);
+    font-weight: 600;
+}
+
+.session-title-link {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-decoration: none;
+    color: var(--text-secondary, #9ca3af);
+    padding: 0.75rem 0 0.75rem 1rem;
+    display: inline-block; /* Pastikan display bukan block */
+    width: auto !important;  /* Paksa lebarnya menjadi otomatis, bukan 100% */
+}
+
+/* ... sisa CSS untuk tombol titik tiga dan dropdown tetap sama ... */
+.session-actions-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-left: 8px; /* Beri sedikit jarak dari teks */
+    flex-shrink: 0;
+    line-height: 1;
+}
+.session-actions-btn:hover {
+    background-color: var(--border-color, #374151);
+    color: var(--text-primary, #e5e7eb);
+}
+
+
+/* --- Layout Utama --- */
+.chat-page-layout {
+    display: flex;
+    height: calc(100vh - 60px); 
+    background-color: var(--content-bg, #111827);
+    /* pastikan ini ada, ini penting untuk mencegah scrollbar ganda */
+    overflow: hidden; 
+}
+
+/* --- Jendela Chat & Gelembung Pesan --- */
+.chat-window {
+    flex-grow: 1; /* <-- Pastikan ini ada agar mengambil sisa ruang */
+    padding: 1.5rem;
+    overflow-y: auto; /* <-- Pastikan ini ada agar bisa di-scroll vertikal */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    /* Tambahan untuk memastikan konten tidak meluap dari area scroll */
+    min-height: 0; 
+}
+
+/* --- Area Input Chat --- */
+.chat-input-area {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color, #374151);
+    background-color: var(--content-bg, #111827);
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-shrink: 0; /* <-- Pastikan ini ada agar area input tidak menyusut */
+    min-height: 100px; /* Opsional: Tetapkan tinggi minimum untuk area input */
+}
+
+/* --- Area Input Chat --- */
+.chat-input-area {
+    padding: 0.75rem 1rem;                /* padding lebih kecil biar tidak terlalu tinggi */
+    border-top: 1px solid var(--border-color, #374151);
+    background-color: var(--content-bg, #111827);
+    display: flex;
+    align-items: center;                  /* sejajarkan di tengah secara vertikal */
+    gap: 0.75rem;                         /* jarak antar elemen */
+    flex-shrink: 0;
+}
+
+/* Input teks */
+#chat-input {
+    flex-grow: 1;
+    resize: none;
+    max-height: 120px;                    /* batasi tinggi */
+    min-height: 40px;                     /* tinggi minimum biar tidak gepeng */
+    padding: 0.6rem 0.9rem;               /* padding dalam input */
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #374151);
+    background-color: var(--sidebar-bg, #1f2937);
+    color: var(--text-primary, #e5e7eb);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    overflow-y: auto;
+}
+
+/* Icon tombol lampiran */
+.chat-input-area .attachment-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #9ca3af);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 6px;
+}
+.chat-input-area .attachment-btn:hover {
+    background-color: var(--border-color, #374151);
+    color: var(--text-primary, #e5e7eb);
+}
+
+/* Tombol kirim */
+.chat-input-area .send-btn {
+    background-color: var(--accent-blue, #3b82f6);
+    border: none;
+    color: white;
+    padding: 0.55rem 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chat-input-area .send-btn:hover {
+    background-color: #2563eb;
+}
+/* --- Layout Utama Chat Page --- */
+.chat-page-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;                /* isi penuh layar */
+    max-width: 1200px;          /* biar nyaman dibaca, tidak terlalu melebar */
+    margin: 0 auto;             /* center di tengah */
+    padding: 0 1rem;            /* beri jarak kiri-kanan */
+    box-sizing: border-box;
+}
+
+/* --- Jendela Chat --- */
+.chat-window {
+    flex-grow: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: 0;
+
+    max-width: 100%;            /* pastikan tidak overflow */
+    box-sizing: border-box;
+}
+
+/* --- Input Area --- */
+.chat-input-area {
+    padding: 0.8rem 1rem;
+    border-top: 1px solid var(--border-color, #374151);
+    background-color: var(--content-bg, #111827);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    max-width: 100%;            /* cegah terpotong */
+    box-sizing: border-box;
+}
+
+

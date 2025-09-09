@@ -928,6 +928,7 @@ def new_chat_session():
     db.session.commit()
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
 
+# Di dalam file app/routes.py
 
 # --- Rute untuk menampilkan sesi chat spesifik ---
 @bp.route('/chatbot/<int:session_id>')
@@ -936,10 +937,20 @@ def chatbot_session(session_id):
     session_data = ChatSession.query.get_or_404(session_id)
     if session_data.user_id != current_user.id:
         abort(403)
+    
     all_sessions = ChatSession.query.filter_by(user_id=current_user.id).order_by(ChatSession.timestamp.desc()).all()
-    messages = session_data.messages.order_by(ChatMessage.timestamp.asc()).all()
-    return render_template('chatbot.html', title=session_data.title, 
-                           current_session=session_data, all_sessions=all_sessions, history=messages)
+    
+    # Ambil semua objek pesan dari database
+    messages_query = session_data.messages.order_by(ChatMessage.timestamp.asc()).all()
+    
+    # PERUBAHAN UTAMA: Ubah setiap objek pesan menjadi dictionary menggunakan metode .to_dict()
+    messages_as_dicts = [msg.to_dict() for msg in messages_query]
+
+    return render_template('chatbot.html', 
+                           title=session_data.title, 
+                           current_session=session_data, 
+                           all_sessions=all_sessions, 
+                           history=messages_as_dicts) # Kirim data yang sudah siap JSON
 
 @bp.route('/rename-session/<int:session_id>', methods=['POST'])
 @login_required
@@ -980,6 +991,32 @@ def new_chat_for_lesson(lesson_id):
     db.session.commit()
 
     return redirect(url_for('routes.chatbot_session', session_id=new_session.id))
+
+
+
+
+# Di dalam file: app/routes.py
+
+# TAMBAHKAN FUNGSI BARU INI (misalnya, setelah 'rename_session')
+@bp.route('/chatbot/delete/<int:session_id>', methods=['POST'])
+@login_required
+def delete_chat_session(session_id):
+    session_to_delete = ChatSession.query.get_or_404(session_id)
+    if session_to_delete.user_id != current_user.id:
+        abort(403)
+
+    # Hapus semua pesan di dalam sesi terlebih dahulu
+    ChatMessage.query.filter_by(session_id=session_id).delete()
+    
+    # Hapus sesi itu sendiri
+    db.session.delete(session_to_delete)
+    db.session.commit()
+    
+    flash('Percakapan berhasil dihapus.', 'success')
+    # Arahkan pengguna ke halaman chatbot utama (yang akan me-redirect ke sesi terbaru)
+    return redirect(url_for('routes.chatbot'))
+
+
 # ===============================================
 # RUTE PENGATURAN & PROFIL
 # ===============================================
@@ -1465,30 +1502,68 @@ def mark_notifications_as_read():
 
 
 
+# ===============================================
+# PORTOFOLIO SECTION
+# ===============================================
 
 
 
 
+# Di dalam file: app/routes.py
 
-# TAMBAHKAN ROUTE BARU INI
 @bp.route('/submission/<int:submission_id>/portfolio')
 def view_portfolio(submission_id):
     submission = ProjectSubmission.query.get_or_404(submission_id)
     
-    # Halaman portofolio hanya bisa diakses jika sudah ada skor dari AI
     if not submission.interview_score:
         flash('Halaman portofolio hanya tersedia untuk proyek yang sudah dinilai oleh AI.', 'warning')
         return redirect(url_for('routes.my_projects'))
 
-    # Kita sengaja tidak menggunakan @login_required agar halaman ini bisa
-    # dibagikan secara publik kepada rekruter.
+    # --- BLOK DEBUG BARU ---
+    print("\n" + "="*50)
+    print(f"DEBUG: Mencari UserProject untuk Submission ID: {submission.id}")
+    print(f" - Mencari dengan User ID: {submission.user_id}")
+    print(f" - Mencari dengan Project ID: {submission.project_id}")
     
+    user_project = UserProject.query.filter_by(
+        user_id=submission.user_id, 
+        project_id=submission.project_id
+    ).first()
+    
+    print(f"HASIL PENCARIAN UserProject: {user_project}")
+    if user_project:
+        print(f"REFLEKSI DITEMUKAN: '{user_project.reflection}'")
+    else:
+        print("!!! KESIMPULAN: UserProject tidak ditemukan di database untuk user dan proyek ini.")
+    print("="*50 + "\n")
+    # --- AKHIR BLOK DEBUG ---
+
     return render_template(
         'portfolio_page.html', 
         title=f"Portofolio Proyek: {submission.project.title}",
-        submission=submission
+        submission=submission,
+        user_project=user_project
     )
     
+
+# Di dalam file: app/routes.py
+
+# TAMBAHKAN ROUTE BARU INI
+@bp.route('/api/user-project/<int:user_project_id>/reflection', methods=['POST'])
+@login_required
+def save_reflection(user_project_id):
+    user_project = UserProject.query.get_or_404(user_project_id)
+    if user_project.user_id != current_user.id:
+        abort(403)
+    
+    data = request.get_json()
+    reflection_text = data.get('reflection', '')
+    
+    user_project.reflection = reflection_text
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Refleksi berhasil disimpan.'})
+
 # Di dalam file: app/routes.py
 
 # TAMBAHKAN FUNGSI BARU INI

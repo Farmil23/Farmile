@@ -12,10 +12,8 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from apscheduler.schedulers.background import BackgroundScheduler
 
-# --- PERUBAHAN: Pastikan 'escape' juga diimpor ---
+# Import tambahan untuk filter Jinja2
 from markupsafe import Markup, escape
-
-# --- Import tambahan untuk filter Jinja2 ---
 from datetime import datetime
 import pytz
 
@@ -79,7 +77,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     oauth.init_app(app)
 
-    # Filter Jinja2 Kustom untuk Tanggal & Waktu
+    # Filter Jinja2 Kustom
     def fromisoformat_filter(s):
         if s:
             return datetime.fromisoformat(s.replace('Z', '+00:00'))
@@ -95,14 +93,12 @@ def create_app(config_class=Config):
         return local_dt.strftime(fmt)
 
     def nl2br_filter(s):
-        """Mengonversi baris baru menjadi tag <br> dengan aman."""
         if s:
             return Markup(escape(s).replace('\n', '<br>\n'))
         return s
     
     app.jinja_env.filters['fromisoformat'] = fromisoformat_filter
     app.jinja_env.filters['localdatetime'] = localdatetime_filter
-    # --- PERUBAHAN: Mendaftarkan filter nl2br yang hilang ---
     app.jinja_env.filters['nl2br'] = nl2br_filter
 
     # Konfigurasi Klien Eksternal (OAuth & AI)
@@ -126,7 +122,7 @@ def create_app(config_class=Config):
         ark_client = None
 
     # Konfigurasi Flask-Admin
-    from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification
+    from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 
     admin.add_view(UserView(User, db.session))
@@ -138,6 +134,7 @@ def create_app(config_class=Config):
     admin.add_view(SecureModelView(Project, db.session))
     admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions"))
     admin.add_view(SecureModelView(Notification, db.session))
+    admin.add_view(SecureModelView(UserProject, db.session)) # Memastikan UserProject ada di admin
 
     # Inisialisasi Scheduler Notifikasi
     try:

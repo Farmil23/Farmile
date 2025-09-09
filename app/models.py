@@ -109,7 +109,8 @@ class UserProject(db.Model):
     status = db.Column(db.String(50), default='in_progress', nullable=False) # Contoh: 'in_progress', 'submitted'
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    
+     # --- TAMBAHKAN KOLOM BARU INI ---
+    reflection = db.Column(db.Text, nullable=True) # Untuk menyimpan cerita pengguna
     
     # Membuat relasi agar kita bisa memanggil user_project.user dan user_project.project
     user = db.relationship('User', backref=db.backref('active_projects', cascade="all, delete-orphan"))
@@ -235,6 +236,14 @@ class ChatMessage(db.Model):
     role = db.Column(db.String(10), nullable=False)
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'role': self.role,
+            'content': self.content,
+            'timestamp': self.timestamp.isoformat() + 'Z'
+        }
 
 class InterviewMessage(db.Model):
     # ... (Model ini tidak perlu diubah)
