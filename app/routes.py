@@ -1461,3 +1461,53 @@ def mark_notifications_as_read():
         notif.is_read = True
     db.session.commit()
     return jsonify({'success': True, 'message': 'All notifications marked as read.'})
+
+
+
+
+
+
+
+
+
+# TAMBAHKAN ROUTE BARU INI
+@bp.route('/submission/<int:submission_id>/portfolio')
+def view_portfolio(submission_id):
+    submission = ProjectSubmission.query.get_or_404(submission_id)
+    
+    # Halaman portofolio hanya bisa diakses jika sudah ada skor dari AI
+    if not submission.interview_score:
+        flash('Halaman portofolio hanya tersedia untuk proyek yang sudah dinilai oleh AI.', 'warning')
+        return redirect(url_for('routes.my_projects'))
+
+    # Kita sengaja tidak menggunakan @login_required agar halaman ini bisa
+    # dibagikan secara publik kepada rekruter.
+    
+    return render_template(
+        'portfolio_page.html', 
+        title=f"Portofolio Proyek: {submission.project.title}",
+        submission=submission
+    )
+    
+# Di dalam file: app/routes.py
+
+# TAMBAHKAN FUNGSI BARU INI
+@bp.route('/submission/<int:submission_id>/retry-interview', methods=['POST'])
+@login_required
+def retry_interview(submission_id):
+    submission = ProjectSubmission.query.get_or_404(submission_id)
+    if submission.author != current_user:
+        abort(403)
+
+    # 1. Hapus skor dan feedback yang lama
+    submission.interview_score = None
+    submission.interview_feedback = None
+
+    # 2. Hapus semua riwayat pesan wawancara yang terkait
+    InterviewMessage.query.filter_by(submission_id=submission.id).delete()
+
+    db.session.commit()
+    
+    flash('Riwayat wawancara telah direset. Anda bisa memulai wawancara baru.', 'success')
+    # Arahkan pengguna langsung ke halaman wawancara yang baru dan bersih
+    return redirect(url_for('routes.interview', submission_id=submission.id))

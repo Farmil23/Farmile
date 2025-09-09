@@ -31,30 +31,32 @@
                         {% endif %}
                     </div>
 
-                    {% if data.submission %}
+                    {% if data.submission and data.submission.interview_score %}
+                        <p><strong>Skor Akhir:</strong> <span class="skor-badge">{{ data.submission.interview_score }}</span></p>
+                    {% elif data.submission %}
                         <p><strong>Link:</strong> <a href="{{ data.submission.project_link }}" target="_blank" rel="noopener noreferrer">Lihat Proyek</a></p>
                     {% else %}
                         <p>{{ data.user_project.project.description | truncate(100) }}</p>
                     {% endif %}
                     
-                    {% if data.submission %}
-                        {% if data.submission.interview_score %}
-                            <p><strong>Skor Akhir:</strong> <span class="skor-badge">{{ data.submission.interview_score }}</span></p>
+                    <div class="card-actions" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
+                        
+                        {% if data.submission and data.submission.interview_score %}
+                            <a href="{{ url_for('routes.view_portfolio', submission_id=data.submission.id) }}" class="button-primary" style="flex-grow: 1;" target="_blank">Lihat Portofolio</a>
+                            <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Riwayat</a>
+                            <form action="{{ url_for('routes.retry_interview', submission_id=data.submission.id) }}" method="POST" style="width: 100%; margin-top: 10px;">
+                                <button type="submit" class="button-secondary full-width">Ulangi Wawancara</button>
+                            </form>
+
+                        {% elif data.submission %}
+                            <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-primary full-width">Mulai / Lanjutkan Wawancara</a>
+                        
                         {% else %}
-                            <div class="sertifikat-actions">
-                                <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-primary">Mulai Wawancara</a>
-                                <a href="{{ url_for('routes.edit_submission', submission_id=data.submission.id) }}" class="button-secondary">Edit</a>
-                                <form action="{{ url_for('routes.cancel_submission', submission_id=data.submission.id) }}" method="POST">
-                                    <button type="submit" class="button-danger js-confirm-cancel">Hapus</button>
-                                </form>
-                            </div>
+                            <a href="{{ url_for('routes.project_detail', project_id=data.user_project.project.id) }}" class="button-primary full-width">Lanjutkan Mengerjakan</a>
                         {% endif %}
-                    {% else %}
-                        <div class="card-actions" style="margin-top: 20px;">
-                             <a href="{{ url_for('routes.project_detail', project_id=data.user_project.project.id) }}" class="button-primary full-width">Lanjutkan Mengerjakan</a>
-                        </div>
-                    {% endif %}
-                </div>
+
+                    </div>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}

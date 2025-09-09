@@ -189,9 +189,12 @@
         border-radius: 8px;
         width: 90%;
         max-width: 500px;
+        max-height: 90vh;   /* Biar tidak lebih tinggi dari layar */
+        overflow-y: auto;   /* Aktifkan scroll vertikal */
         position: relative;
         z-index: 1001;
     }
+    
     
     #eventModal, #taskModal, #confirmDeleteModal { z-index: 1010; }
     #dailyAgendaModal { z-index: 1000; }
