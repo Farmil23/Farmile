@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+  <button class="mobile-menu-toggle" id="mobileMenuToggle">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  {% include 'dashboard_sidebar.html' %}
+
+  <main class="dashboard-content">
+    {% block dashboard_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} {# Ini akan memuat script dari base.html jika ada #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.getElementById('dashboardSidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    // Ambil tombol close dari dalam sidebar
+    const sidebarClose = document.getElementById('sidebarClose'); 
+
+    function openSidebar() {
+        sidebar.classList.add('active');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    mobileMenuToggle.addEventListener('click', openSidebar);
+    if(sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+            closeSidebar();
+        }
+    });
+
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) { // Sesuai dengan media query di CSS
+            closeSidebar();
+        }
+    });
+});
+</script>
+
+{# Blok ini untuk script spesifik halaman turunan #}
+{% block page_scripts %}{% endblock %}
+{% endblock %}

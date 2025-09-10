@@ -1,111 +1,104 @@
-{% extends "base.html" %}
+{% extends "dashboard_base.html" %}
 
 {% block styles %}
+    {{ super() }}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/personal_hub.css') }}">
 {% endblock %}
 
-{% block content %}
-<div class="dashboard-layout">
-    {% include 'dashboard_sidebar.html' %}
-
-    <main class="dashboard-content">
-        <div class="page-header">
-            <div>
-                <h2>Proyek Saya</h2>
-                <p class="subtitle">Kelola semua proyek yang sedang Anda kerjakan dan yang sudah selesai.</p>
-            </div>
-            <div class="header-actions">
-                <a href="{{ url_for('routes.challenge_projects') }}" class="button-secondary">Ambil Challenge Project 🏆</a>
-                <a href="{{ url_for('routes.select_project') }}" class="button-primary">Ambil Project dari Roadmap</a>
-            </div>
+{% block dashboard_content %}
+    <div class="page-header">
+        <div>
+            <h2>Proyek Saya</h2>
+            <p class="subtitle">Kelola semua proyek yang sedang Anda kerjakan dan yang sudah selesai.</p>
         </div>
-        
-        {% if projects_data %}
-            <div class="projects-grid">
-                {% for data in projects_data %}
-                <div class="card project-card">
-                    <div class="project-card-header">
-                        <h4>{{ data.user_project.project.title }}</h4>
-                        
-                        {% if data.submission and data.submission.interview_score %}
-                            <span class="status-badge completed">Selesai (Dinilai)</span>
-                        {% elif data.submission %}
-                            <span class="status-badge pending">Menunggu Wawancara</span>
-                        {% else %}
-                            <span class="status-badge in-progress">Sedang Dikerjakan</span>
-                        {% endif %}
-                    </div>
-
-                    {% if data.submission and data.submission.interview_score %}
-                        <p><strong>Skor Akhir:</strong> <span class="skor-badge">{{ data.submission.interview_score }}</span></p>
-                    {% elif data.submission %}
-                        <p><strong>Link:</strong> <a href="{{ data.submission.project_link }}" target="_blank" rel="noopener noreferrer">Lihat Proyek</a></p>
-                    {% else %}
-                        <p>{{ data.user_project.project.description | truncate(100) }}</p>
-                    {% endif %}
+        <div class="header-actions">
+            <a href="{{ url_for('routes.challenge_projects') }}" class="button-secondary">Ambil Challenge Project 🏆</a>
+            <a href="{{ url_for('routes.select_project') }}" class="button-primary">Ambil Project dari Roadmap</a>
+        </div>
+    </div>
+    
+    {% if projects_data %}
+        <div class="projects-grid">
+            {% for data in projects_data %}
+            <div class="card project-card">
+                <div class="project-card-header">
+                    <h4>{{ data.user_project.project.title }}</h4>
                     
-                    <div class="card-actions" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
-                        
-                        {% if data.submission and data.submission.interview_score %}
-                            <a href="{{ url_for('routes.view_portfolio', submission_id=data.submission.id) }}" class="button-primary" style="flex-grow: 1;" target="_blank">Lihat Portofolio</a>
-                            <button type="button" class="button-secondary open-reflection-modal" 
-                                    data-reflection="{{ data.user_project.reflection or '' }}" 
-                                    data-userprojectid="{{ data.user_project.id }}"
-                                    style="flex-grow: 1;">
-                                Tambah/Edit Refleksi
-                            </button>
-                            <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Riwayat</a>
-                            <form action="{{ url_for('routes.retry_interview', submission_id=data.submission.id) }}" method="POST" style="width: 100%; margin-top: 10px;" class="js-confirm-delete" data-confirm-message="Anda yakin ingin mereset wawancara ini? Skor dan riwayat chat akan dihapus.">
-                                <button type="submit" class="button-secondary full-width">Ulangi Wawancara</button>
-                            </form>
-
-                        {% elif data.submission %}
-                            <div class="sertifikat-actions" style="width: 100%;">
-                                <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-primary">Mulai Wawancara</a>
-                                <a href="{{ url_for('routes.edit_submission', submission_id=data.submission.id) }}" class="button-secondary">Edit</a>
-                                <form action="{{ url_for('routes.cancel_submission', submission_id=data.submission.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan submission proyek ini?">
-                                    <button type="submit" class="button-danger">Hapus</button>
-                                </form>
-                            </div>
-
-                        {% else %}
-                            <a href="{{ url_for('routes.project_detail', project_id=data.user_project.project.id) }}" class="button-primary" style="flex-grow: 2;">Lanjutkan Mengerjakan</a>
-                            <form action="{{ url_for('routes.cancel_project', user_project_id=data.user_project.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan proyek ini? Semua progres akan hilang.">
-                                <button type="submit" class="button-danger">Batalkan</button>
-                            </form>
-                        {% endif %}
-                    </div>
+                    {% if data.submission and data.submission.interview_score %}
+                        <span class="status-badge completed">Selesai (Dinilai)</span>
+                    {% elif data.submission %}
+                        <span class="status-badge pending">Menunggu Wawancara</span>
+                    {% else %}
+                        <span class="status-badge in-progress">Sedang Dikerjakan</span>
+                    {% endif %}
                 </div>
-                {% endfor %}
+
+                {% if data.submission and data.submission.interview_score %}
+                    <p><strong>Skor Akhir:</strong> <span class="skor-badge">{{ data.submission.interview_score }}</span></p>
+                {% elif data.submission %}
+                    <p><strong>Link:</strong> <a href="{{ data.submission.project_link }}" target="_blank" rel="noopener noreferrer">Lihat Proyek</a></p>
+                {% else %}
+                    <p>{{ data.user_project.project.description | truncate(100) }}</p>
+                {% endif %}
+                
+                <div class="card-actions" style=" display: flex; flex-wrap: wrap;">
+                    
+                    {% if data.submission and data.submission.interview_score %}
+                        <a href="{{ url_for('routes.view_portfolio', submission_id=data.submission.id) }}" class="button-primary" style="flex-grow: 1;" target="_blank">Lihat Portofolio</a>
+                        <button type="button" class="button-secondary open-reflection-modal" 
+                                data-reflection="{{ data.user_project.reflection or '' }}" 
+                                data-userprojectid="{{ data.user_project.id }}"
+                                style="flex-grow: 1;">
+                            Tambah/Edit Refleksi
+                        </button>
+                        <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Riwayat</a>
+                        <form action="{{ url_for('routes.retry_interview', submission_id=data.submission.id) }}" method="POST" style="width: 100%; margin-top: 10px;" class="js-confirm-delete" data-confirm-message="Anda yakin ingin mereset wawancara ini? Skor dan riwayat chat akan dihapus.">
+                            <button type="submit" class="button-secondary full-width">Ulangi Wawancara</button>
+                        </form>
+
+                    {% elif data.submission %}
+                        <div class="sertifikat-actions" style="width: 100%;">
+                            <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-primary">Mulai Wawancara</a>
+                            <a href="{{ url_for('routes.edit_submission', submission_id=data.submission.id) }}" class="button-secondary">Edit</a>
+                            <form action="{{ url_for('routes.cancel_submission', submission_id=data.submission.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan submission proyek ini?">
+                                <button type="submit" class="button-danger">Hapus</button>
+                            </form>
+                        </div>
+
+                    {% else %}
+                        <a href="{{ url_for('routes.project_detail', project_id=data.user_project.project.id) }}" class="button-primary" style="flex-grow: 2;">Lanjutkan Mengerjakan</a>
+                        <form action="{{ url_for('routes.cancel_project', user_project_id=data.user_project.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan proyek ini? Semua progres akan hilang.">
+                            <button type="submit" class="button-danger">Batalkan</button>
+                        </form>
+                    {% endif %}
+                </div>
             </div>
-        {% else %}
-            <div class="card empty-state" style="text-align: center; padding: 40px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                <h3>Anda Belum Memiliki Proyek Aktif</h3>
-                <p>Mulai perjalanan Anda dengan mengambil proyek dari roadmap atau tantangan proyek.</p>
-                <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 20px;">Pilih Proyek Pertama</a>
-            </div>
-        {% endif %}
-    </main>
-</div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card empty-state" style="text-align: center; padding: 40px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <h3>Anda Belum Memiliki Proyek Aktif</h3>
+            <p>Mulai perjalanan Anda dengan mengambil proyek dari roadmap atau tantangan proyek.</p>
+            <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 20px;">Pilih Proyek Pertama</a>
+        </div>
+    {% endif %}
 {% endblock %}
 
-{% block scripts %}
+{% block page_scripts %}
 <div id="reflectionModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-            <h3>Refleksi Proyek</h3>
-            <button class="modal-close-btn">&times;</button>
-        </div>
-        <form id="reflectionForm">
+    <div class="modal-box card">
+        <h3>Refleksi Proyek</h3>
+        <button class="modal-close-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem;">&times;</button>
+        <form id="reflectionForm" style="text-align: left;">
             <input type="hidden" id="reflectionUserProjectId">
             <p class="text-secondary" style="margin-top: 0; margin-bottom: 1rem;">
                 Ceritakan tentang kontribusi dan hal-hal penting yang Anda pelajari selama mengerjakan proyek ini. Teks ini akan ditampilkan di halaman portofolio publik Anda.
             </p>
             <div class="form-group">
-                <textarea id="reflectionText" class="form-control" rows="8" required></textarea>
+                <textarea id="reflectionText" class="form-input" rows="8" required></textarea>
             </div>
-            <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+            <div class="modal-actions" style="display: flex; justify-content: flex-end; margin-top: 1rem;">
                 <button type="submit" class="button-primary">Simpan Refleksi</button>
             </div>
         </form>
@@ -161,6 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 reflectionModal.classList.remove('visible');
+                // Optional: Beri notifikasi sukses
+                alert('Refleksi berhasil disimpan!');
             } catch (error) {
                 alert(error.message);
             } finally {
@@ -171,4 +166,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
-{% endblock %}
+{% endblock %}RRR 

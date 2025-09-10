@@ -1,10 +1,14 @@
-{% extends "base.html" %}
+{% extends "dashboard_base.html" %}
 
-{% block content %}
+{% block dashboard_content %}
+
+
 <div class="project-detail-container">
     <div class="project-header">
         <h1>{{ project.title }}</h1>
-        <span class="difficulty-badge">{{ project.difficulty }}</span>
+        <span class="difficulty-badge difficulty-{{ project.difficulty.lower() if project.difficulty else 'beginner' }}">
+            {{ project.difficulty or 'Beginner' }}
+        </span>
     </div>
 
     <div class="project-content">

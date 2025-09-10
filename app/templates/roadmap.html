@@ -1,111 +1,112 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="dashboard-layout">
-    {% include 'dashboard_sidebar.html' %}
-    <main class="dashboard-content">
-        <div class="page-header">
-            <div>
-                <h2>Roadmap: {{ current_user.career_path|replace('-', ' ')|title }}</h2>
-                <p class="subtitle">Ikuti alur belajar ini untuk menguasai skill yang dibutuhkan.</p>
-            </div>
-            
-            <form action="{{ url_for('routes.change_career_path') }}" method="POST" class="career-path-selector" >
-                <label for="career_path_select">Ganti Jalur:</label>
-                <select name="new_path" id="career_path_select" class="form-select" style= "margin: 0px 20px">
-                    <option value="frontend" {% if current_user.career_path == 'frontend' %}selected{% endif %}>
-                        Frontend Developer
-                    </option>
-                    <option value="backend" {% if current_user.career_path == 'backend' %}selected{% endif %}>
-                        Backend Developer
-                    </option>
-                    <option value="data-analyst" {% if current_user.career_path == 'data-analyst' %}selected{% endif %}>
-                        Data Analyst
-                    </option>
-                    <option value="ai-ml-engineer" {% if current_user.career_path == 'ai-ml-engineer' %}selected{% endif %}>
-                        AI/ML Engineer
-                    </option>
-                    <option value="devops-engineer" {% if current_user.career_path == 'devops-engineer' %}selected{% endif %}>
-                        DevOps Engineer
-                    </option>
-                </select>
-                <button type="submit" class="button-primary">Ganti</button>
-            </form>
-        </div>
+{% extends "dashboard_base.html" %}
 
-        <h4 id="progress-text">Progres Keseluruhan: {{ progress }}%</h4>
-        <div class="progress-bar" style="margin-bottom: 30px;">
-            <div class="progress-bar-inner" style="width: {{ progress }}%;"></div>
-        </div>
+{% block dashboard_content %}
+  <div class="page-header">
+      <div>
+          <h2>Roadmap: {{ current_user.career_path|replace('-', ' ')|title }}</h2>
+          <p class="subtitle">Ikuti alur belajar ini untuk menguasai skill yang dibutuhkan.</p>
+      </div>
+      
+      <form action="{{ url_for('routes.change_career_path') }}" method="POST" class="career-path-selector" >
+          <label for="career_path_select">Ganti Jalur:</label>
+          <select name="new_path" id="career_path_select" class="form-select" >
+              <option value="frontend" {% if current_user.career_path == 'frontend' %}selected{% endif %}>
+                  Frontend Developer
+              </option>
+              <option value="backend" {% if current_user.career_path == 'backend' %}selected{% endif %}>
+                  Backend Developer
+              </option>
+              <option value="data-analyst" {% if current_user.career_path == 'data-analyst' %}selected{% endif %}>
+                  Data Analyst
+              </option>
+              <option value="ai-ml-engineer" {% if current_user.career_path == 'ai-ml-engineer' %}selected{% endif %}>
+                  AI/ML Engineer
+              </option>
+              <option value="devops-engineer" {% if current_user.career_path == 'devops-engineer' %}selected{% endif %}>
+                  DevOps Engineer
+              </option>
+          </select>
+          <button type="submit" class="button-primary">Ganti</button>
+      </form>
+  </div>
 
-        <div class="module-accordion">
-            {% for module in modules %}
-            <details class="module-item card" {% if loop.first %}open{% endif %}>
-                <summary>
-                    <div class="summary-title">
-                        <span class="module-order">Bagian {{ module.order }}</span>
-                        {{ module.title }}
+  <h4 id="progress-text">Progres Keseluruhan: {{ progress }}%</h4>
+  <div class="progress-bar" style="margin-bottom: 30px;">
+      <div class="progress-bar-inner" style="width: {{ progress }}%;"></div>
+  </div>
+
+  <div class="module-accordion">
+      {% for module in modules %}
+      <details class="module-item card" {% if loop.first %}open{% endif %}>
+          <summary>
+              <div class="summary-title">
+                  <span class="module-order">Bagian {{ module.order }}</span>
+                  {{ module.title }}
+              </div>
+          </summary>
+          <ul class="lesson-list">
+              {% for lesson in module.lessons %}
+              <li class="lesson-item">
+                  <div class="lesson-top">
+                      <div class="lesson-status">
+                          {% if lesson.id in completed_lesson_ids %}
+                              <svg class="icon-completed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                          {% else %}
+                              <svg class="icon-pending" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                          {% endif %}
+                      </div>
+                      <div class="lesson-info">
+                          <strong>{{ lesson.title }}</strong>
+                          <span>Estimasi: {{ lesson.estimated_time or '30' }} menit</span>
+                      </div>
+                  </div>
+                  <div class="lesson-bottom">
+                      <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST">
+                          <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
+                      </form>
+                      {% if lesson.id in completed_lesson_ids %}
+                          <form action="{{ url_for('routes.uncomplete_lesson', lesson_id=lesson.id) }}" method="POST" class="complete-form">
+                              <input type="hidden" name="source" value="roadmap">
+                              <button type="submit" class="button-secondary">Batal Selesai</button>
+                          </form>
+                      {% else %}
+                          <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST" class="complete-form">
+                              <input type="hidden" name="source" value="roadmap">
+                              <button type="submit" class="button-secondary">Tandai Selesai</button>
+                          </form>
+                      {% endif %}
+                      <a href="{{ url_for('routes.lesson_detail', lesson_id=lesson.id) }}" class="learn-link button-primary">Mulai Belajar</a>
+                  </div>
+              </li>
+              {% endfor %}
+          
+              {% for project in module.projects %}
+              <li class="lesson-item project-item">
+                  <div class="lesson-top">
+                     <div class="lesson-status">
+                          <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                     </div>
+                     <div class="project-card-header">
+                        <h4>{{ project.title }}</h4>
+                        {% if project.difficulty %}
+                            <span class="difficulty-badge difficulty-{{ project.difficulty.lower() }}">{{ project.difficulty }}</span>
+                        {% endif %}
                     </div>
-                </summary>
-                <ul class="lesson-list">
-                    {% for lesson in module.lessons %}
-                    <li class="lesson-item">
-                        <div class="lesson-top">
-                            <div class="lesson-status">
-                                {% if lesson.id in completed_lesson_ids %}
-                                    <svg class="icon-completed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                {% else %}
-                                    <svg class="icon-pending" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
-                                {% endif %}
-                            </div>
-                            <div class="lesson-info">
-                                <strong>{{ lesson.title }}</strong>
-                                <span>Estimasi: {{ lesson.estimated_time or '30' }} menit</span>
-                            </div>
-                        </div>
-                        <div class="lesson-bottom">
-                            <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST">
-                                <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
-                            </form>
-                            {% if lesson.id in completed_lesson_ids %}
-                                <form action="{{ url_for('routes.uncomplete_lesson', lesson_id=lesson.id) }}" method="POST" class="complete-form">
-                                    <input type="hidden" name="source" value="roadmap">
-                                    <button type="submit" class="button-secondary">Batal Selesai</button>
-                                </form>
-                            {% else %}
-                                <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST" class="complete-form">
-                                    <input type="hidden" name="source" value="roadmap">
-                                    <button type="submit" class="button-secondary">Tandai Selesai</button>
-                                </form>
-                            {% endif %}
-                            <a href="{{ url_for('routes.lesson_detail', lesson_id=lesson.id) }}" class="learn-link button-primary">Mulai Belajar</a>
-                        </div>
-                    </li>
-                    {% endfor %}
-                
-                    {% for project in module.projects %}
-                    <li class="lesson-item project-item">
-                        <div class="lesson-top">
-                           <div class="lesson-status">
-                                <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                           </div>
-                           <div class="lesson-info">
-                                <strong>🚀 Proyek: {{ project.title }}</strong>
-                                {% if project.difficulty %}<span class="difficulty-badge">{{ project.difficulty }}</span>{% endif %}
-                           </div>
-                        </div>
-                        <div class="lesson-bottom">
-                            <a href="{{ url_for('routes.project_detail', project_id=project.id) }}" class="button-primary">Lihat Proyek</a>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </details>
-            {% endfor %}
-        </div>
-    </main>
-</div>
+                  </div>
+                  <div class="lesson-bottom">
+                      <a href="{{ url_for('routes.project_detail', project_id=project.id) }}" class="button-primary">Lihat Proyek</a>
+                  </div>
+              </li>
+              {% endfor %}
+          </ul>
+      </details>
+      {% endfor %}
+  </div>
+{% endblock %}
 
-<script>
+
+{% block page_scripts %}
+  <script>
     document.addEventListener('DOMContentLoaded', () => {
         const lessonCheckboxes = document.querySelectorAll('.lesson-list input[type="checkbox"]');
         const progressBar = document.querySelector('.progress-bar-inner');
@@ -123,25 +124,25 @@
     
         lessonCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', async (e) => {
-                const lessonId = e.target.data.lessonId;
+                const lessonId = e.target.dataset.lessonId;
                 const endpoint = e.target.checked ? `/complete-lesson/${lessonId}` : `/uncomplete-lesson/${lessonId}`;
                 
                 try {
                     const response = await fetch(endpoint, { method: 'POST' });
                     if (!response.ok) {
-                        e.target.checked = !e.target.checked; // Batalkan aksi jika server error
+                        e.target.checked = !e.target.checked;
                     }
                 } catch (error) {
-                    e.target.checked = !e.target.checked; // Batalkan aksi jika ada error jaringan
+                    e.target.checked = !e.target.checked;
                 } finally {
-                    updateProgressBar(); // Selalu update UI
+                    updateProgressBar();
                 }
             });
         });
     
-        updateProgressBar(); // Panggil saat halaman dimuat
+        // Panggil saat halaman dimuat untuk inisialisasi
+        // Fungsi ini tidak lagi dibutuhkan karena progress bar di-render dari server
+        // updateProgressBar(); 
     });
-    </script>
+  </script>
 {% endblock %}
-
-

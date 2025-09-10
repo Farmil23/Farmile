@@ -214,6 +214,7 @@
     background-color: var(--content-bg, #111827);
     /* pastikan ini ada, ini penting untuk mencegah scrollbar ganda */
     overflow: hidden; 
+    width: 100%;
 }
 
 /* --- Jendela Chat & Gelembung Pesan --- */
@@ -298,16 +299,15 @@
 .chat-input-area .send-btn:hover {
     background-color: #2563eb;
 }
-/* --- Layout Utama Chat Page --- */
 .chat-page-container {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
-    width: 100%;                /* isi penuh layar */
-    max-width: 1200px;          /* biar nyaman dibaca, tidak terlalu melebar */
-    margin: 0 auto;             /* center di tengah */
-    padding: 0 1rem;            /* beri jarak kiri-kanan */
+    width: 100%;         /* isi penuh layar */
+    max-width: 1800px;     /* Hapus batas 1200px */
+    margin: 0;           /* Hilangkan auto-center */
+    padding: 0;          /* Hilangkan padding samping */
     box-sizing: border-box;
 }
 

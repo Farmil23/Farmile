@@ -33,21 +33,23 @@
       >
 
       <nav class="main-app-nav">
-        <a
-          href="{{ url_for('routes.dashboard') }}"
-          class="{{ 'active' if request.endpoint == 'routes.dashboard' else '' }}"
-          >DASHBOARD</a
-        >
-        <a
-          href="{{ url_for('routes.roadmap') }}"
-          class="{{ 'active' if request.endpoint == 'routes.roadmap' else '' }}"
-          >ROADMAP</a
-        >
-        <a
-          href="{{ url_for('routes.personal_hub') }}"
-          class="{{ 'active' if request.endpoint == 'routes.personal_hub' else '' }}"
-          >PERSONAL HUB</a
-        >
+        <div class="desktop-only-nav">
+            <a
+              href="{{ url_for('routes.dashboard') }}"
+              class="{{ 'active' if request.endpoint == 'routes.dashboard' else '' }}"
+              >DASHBOARD</a
+            >
+            <a
+              href="{{ url_for('routes.roadmap') }}"
+              class="{{ 'active' if request.endpoint == 'routes.roadmap' else '' }}"
+              >ROADMAP</a
+            >
+            <a
+              href="{{ url_for('routes.personal_hub') }}"
+              class="{{ 'active' if request.endpoint == 'routes.personal_hub' else '' }}"
+              >PERSONAL HUB</a
+            >
+        </div>
 
         {% if current_user.is_authenticated %}
         <div class="notification-wrapper">
@@ -100,10 +102,8 @@
       </div>
     </div>
 
-
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // --- Logika Konfirmasi Hapus Global ---
             const confirmModal = document.getElementById("confirmModal");
             
             if (confirmModal) {
@@ -112,7 +112,6 @@
                 const modalConfirmBtn = document.getElementById("modalConfirmBtn");
                 const modalCancelBtn = document.getElementById("modalCancelBtn");
         
-                // Fungsi canggih untuk menampilkan modal dan menunggu jawaban
                 const showConfirmModal = (title, message) => {
                     return new Promise((resolve) => {
                         modalTitle.textContent = title;
@@ -138,19 +137,17 @@
                     });
                 };
         
-                // Event listener untuk SEMUA form dengan kelas 'js-confirm-delete'
                 document.body.addEventListener('submit', async (e) => {
                     if (e.target.matches('.js-confirm-delete')) {
-                        e.preventDefault(); // Hentikan submit otomatis
+                        e.preventDefault(); 
                         
-                        // Ambil pesan dari atribut data, atau gunakan pesan default
                         const message = e.target.dataset.confirmMessage || "Tindakan ini tidak bisa dibatalkan. Anda yakin?";
                         const title = e.target.dataset.confirmTitle || "Konfirmasi Hapus";
         
                         const isConfirmed = await showConfirmModal(title, message);
         
                         if (isConfirmed) {
-                            e.target.submit(); // Jika dikonfirmasi, lanjutkan submit form
+                            e.target.submit();
                         }
                     }
                 });
