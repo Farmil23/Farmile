@@ -474,6 +474,34 @@ def generate_roadmap():
     return redirect(url_for('routes.roadmap'))
 """ 
 
+@bp.route('/cancel-project/<int:user_project_id>', methods=['POST'])
+@login_required
+def cancel_project(user_project_id):
+    user_project = UserProject.query.get_or_404(user_project_id)
+    if user_project.user_id != current_user.id:
+        abort(403)
+
+    # --- PERBAIKAN: Ambil nama proyek SEBELUM dihapus ---
+    project_title = user_project.project.title
+    
+    # Hapus juga submission terkait jika ada
+    submission = ProjectSubmission.query.filter_by(
+        user_id=current_user.id,
+        project_id=user_project.project_id
+    ).first()
+
+    if submission:
+        InterviewMessage.query.filter_by(submission_id=submission.id).delete()
+        db.session.delete(submission)
+
+    # Hapus entri UserProject
+    db.session.delete(user_project)
+    db.session.commit()
+    
+    # Gunakan nama yang sudah disimpan untuk pesan flash
+    flash(f"Proyek '{project_title}' berhasil dibatalkan.", 'success')
+    return redirect(url_for('routes.my_projects'))
+
 # ===============================================
 # RUTE PROYEK & WAWANCARA
 # ===============================================

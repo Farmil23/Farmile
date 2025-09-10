@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/personal_hub.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/personal_hub.css') }}">
 {% endblock %}
-
 
 {% block content %}
 <div class="dashboard-layout">
@@ -56,24 +55,32 @@
                                 Tambah/Edit Refleksi
                             </button>
                             <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Riwayat</a>
-                            <form action="{{ url_for('routes.retry_interview', submission_id=data.submission.id) }}" method="POST" style="width: 100%; margin-top: 10px;">
+                            <form action="{{ url_for('routes.retry_interview', submission_id=data.submission.id) }}" method="POST" style="width: 100%; margin-top: 10px;" class="js-confirm-delete" data-confirm-message="Anda yakin ingin mereset wawancara ini? Skor dan riwayat chat akan dihapus.">
                                 <button type="submit" class="button-secondary full-width">Ulangi Wawancara</button>
                             </form>
 
                         {% elif data.submission %}
-                            <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-primary full-width">Mulai / Lanjutkan Wawancara</a>
-                        
-                        {% else %}
-                            <a href="{{ url_for('routes.project_detail', project_id=data.user_project.project.id) }}" class="button-primary full-width">Lanjutkan Mengerjakan</a>
-                        {% endif %}
+                            <div class="sertifikat-actions" style="width: 100%;">
+                                <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-primary">Mulai Wawancara</a>
+                                <a href="{{ url_for('routes.edit_submission', submission_id=data.submission.id) }}" class="button-secondary">Edit</a>
+                                <form action="{{ url_for('routes.cancel_submission', submission_id=data.submission.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan submission proyek ini?">
+                                    <button type="submit" class="button-danger">Hapus</button>
+                                </form>
+                            </div>
 
+                        {% else %}
+                            <a href="{{ url_for('routes.project_detail', project_id=data.user_project.project.id) }}" class="button-primary" style="flex-grow: 2;">Lanjutkan Mengerjakan</a>
+                            <form action="{{ url_for('routes.cancel_project', user_project_id=data.user_project.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan proyek ini? Semua progres akan hilang.">
+                                <button type="submit" class="button-danger">Batalkan</button>
+                            </form>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
         {% else %}
             <div class="card empty-state" style="text-align: center; padding: 40px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                 <h3>Anda Belum Memiliki Proyek Aktif</h3>
                 <p>Mulai perjalanan Anda dengan mengambil proyek dari roadmap atau tantangan proyek.</p>
                 <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 20px;">Pilih Proyek Pertama</a>

@@ -280,3 +280,25 @@ body {
 ::-webkit-scrollbar-track { background: var(--sidebar-bg); }
 ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+/* Ganti .sertifikat-actions atau tambahkan jika belum ada */
+.project-card .card-actions, 
+.project-card .sertifikat-actions {
+    display: flex;
+    flex-wrap: wrap; /* Izinkan tombol turun ke bawah jika tidak cukup ruang */
+    gap: 10px; /* Jarak antar tombol */
+    margin-top: 20px;
+}
+
+/* Atur agar semua tombol/form di dalamnya mengisi ruang yang tersedia */
+.project-card .card-actions > *,
+.project-card .sertifikat-actions > * {
+    flex: 1 1 auto; /* Izinkan tombol untuk membesar dan menyusut */
+    display: flex;
+}
+
+/* Pastikan tombol di dalam form mengisi seluruh ruang form */
+.project-card .card-actions form button,
+.project-card .sertifikat-actions form button {
+    width: 100%;
+}
