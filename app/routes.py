@@ -1537,12 +1537,20 @@ def view_portfolio(submission_id):
         print("!!! KESIMPULAN: UserProject tidak ditemukan di database untuk user dan proyek ini.")
     print("="*50 + "\n")
     # --- AKHIR BLOK DEBUG ---
-
+    
+     # --- PERUBAHAN DI SINI ---
+    # Ambil string tech_stack dari database
+    tech_stack_str = submission.project.tech_stack or ""
+    # Pisahkan string berdasarkan koma, bersihkan spasi, dan hapus entri kosong
+    tech_stack_list = [tech.strip() for tech in tech_stack_str.split(',') if tech.strip()]
+    
+    
     return render_template(
         'portfolio_page.html', 
         title=f"Portofolio Proyek: {submission.project.title}",
         submission=submission,
-        user_project=user_project
+        user_project=user_project,
+        tech_stack=tech_stack_list
     )
     
 

@@ -7,6 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         :root {
             --bg-color: #0d1117;
@@ -62,6 +66,9 @@
             border-radius: 6px;
             border: 1px solid var(--border-color);
             transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         .project-links a:hover {
             background-color: #30363d;
@@ -116,16 +123,37 @@
         .footer a {
             color: var(--accent-blue);
         }
+
+        /* Tambahkan ini di dalam <style> di portfolio_page.html */
+
+            .tech-stack-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.75rem; /* Jarak antar badge */
+            }
+            
+            .tech-badge {
+                background-color: rgba(88, 166, 255, 0.1); /* Biru transparan */
+                color: var(--accent-blue);
+                padding: 0.25rem 0.75rem;
+                border-radius: 16px; /* Membuat bentuknya seperti pil */
+                font-size: 0.8rem;
+                font-weight: 500;
+                border: 1px solid rgba(88, 166, 255, 0.2);
+            }
+
+            
     </style>
 </head>
 <body>
 
-    <div class="portfolio-container">
+    <div class="portfolio-container" id="portfolio-content">
         <header class="portfolio-header">
             <h1>{{ submission.project.title }}</h1>
             <p class="author">Sebuah Proyek oleh <strong>{{ submission.author.name }}</strong></p>
             <div class="project-links">
                 <a href="{{ submission.project_link }}" target="_blank" rel="noopener noreferrer">Lihat Kode / Demo</a>
+                <a href="#" id="downloadPdfBtn">Unduh sebagai PDF</a>
             </div>
         </header>
 
@@ -136,7 +164,11 @@
 
         <section class="section">
             <h3>Teknologi yang Digunakan</h3>
-            <p>{{ submission.project.tech_stack }}</p>
+            <div class="tech-stack-container">
+                {% for tech in tech_stack %}
+                    <span class="tech-badge">{{ tech }}</span>
+                {% endfor %}
+            </div>
         </section>
         
         {% if user_project and user_project.reflection %}
@@ -145,6 +177,7 @@
             <p>{{ user_project.reflection | nl2br }}</p>
         </section>
         {% endif %}
+
         <section class="section">
             <h3>Validasi Wawancara oleh AI</h3>
             <div class="ai-validation-box">
@@ -162,6 +195,45 @@
             Portofolio ini dibuat dan divalidasi menggunakan <a href="{{ url_for('routes.index') }}">Farsight</a>.
         </footer>
     </div>
+
+    <script>
+        document.getElementById('downloadPdfBtn').addEventListener('click', function (event) {
+            event.preventDefault();
+
+            const portfolioContainer = document.getElementById('portfolio-content');
+            const downloadButton = this;
+            
+            // Sembunyikan tombol sementara agar tidak ikut tercetak di PDF
+            downloadButton.style.display = 'none';
+
+            html2canvas(portfolioContainer, {
+                scale: 2, // Meningkatkan resolusi gambar
+                backgroundColor: null, // Menggunakan background dari elemen
+                useCORS: true
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                
+                // Kalkulasi dimensi PDF agar proporsional
+                const pdfWidth = 595; // A4 width in points
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'pt',
+                    format: [pdfWidth, pdfHeight]
+                });
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                
+                const fileName = `Portfolio - {{ submission.project.title|replace(' ', '_') }}.pdf`;
+                pdf.save(fileName);
+                
+                // Tampilkan kembali tombolnya setelah selesai
+                downloadButton.style.display = 'inline-flex';
+            });
+        });
+    </script>
 
 </body>
 </html>
