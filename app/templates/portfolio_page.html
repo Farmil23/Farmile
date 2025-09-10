@@ -43,7 +43,9 @@
         .portfolio-header h1 {
             font-size: 2.5rem;
             margin: 0;
+            color: #ffffff !important; /* putih fix, biar tidak auto jadi hitam */
         }
+        
         .portfolio-header .author {
             font-size: 1rem;
             color: var(--text-secondary);
@@ -142,6 +144,20 @@
                 border: 1px solid rgba(88, 166, 255, 0.2);
             }
 
+            body {
+                font-family: 'Inter', sans-serif;
+                /* Hapus atau ganti: background-color: var(--bg-color); */
+                background-color: #0d1117; /* Gunakan nilai hardcoded dari --bg-color */
+                color: var(--text-primary);
+                /* ... lainnya ... */
+            }
+            .portfolio-container {
+                /* Hapus atau ganti: background-color: var(--card-bg); */
+                background-color: #161b22; /* Gunakan nilai hardcoded dari --card-bg */
+                /* ... lainnya ... */
+            }
+
+
             
     </style>
 </head>
@@ -207,8 +223,8 @@
             downloadButton.style.display = 'none';
 
             html2canvas(portfolioContainer, {
-                scale: 2, // Meningkatkan resolusi gambar
-                backgroundColor: '#161b22',
+                scale: 2,
+                backgroundColor: '#161b22', // <-- TAMBAHKAN BARIS INI
                 useCORS: true
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
@@ -229,8 +245,11 @@
                 const fileName = `Portfolio - {{ submission.project.title|replace(' ', '_') }}.pdf`;
                 pdf.save(fileName);
                 
+                document.body.style.backgroundColor = ''; // Atau kembalikan ke var(--bg-color);
+                portfolioContainer.style.backgroundColor = ''; // Atau kembalikan ke var(--card-bg);
                 // Tampilkan kembali tombolnya setelah selesai
                 downloadButton.style.display = 'inline-flex';
+             
             });
         });
     </script>
