@@ -16,12 +16,24 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from markupsafe import Markup, escape
 from datetime import datetime
 import pytz
+from flask import Flask, redirect, url_for, request, jsonify
 
 # Inisialisasi Ekstensi di luar factory
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = 'routes.login'
+
+# --- TAMBAHKAN BLOK KODE INI ---
+@login_manager.unauthorized_handler
+def unauthorized():
+    # Jika permintaan yang tidak sah adalah ke API, kirim error JSON.
+    if request.path.startswith('/api/'):
+        return jsonify(error="Authentication required. Please log in again."), 401
+    # Jika tidak, alihkan ke halaman login seperti biasa.
+    return redirect(url_for('routes.login'))
+# --- AKHIR DARI BLOK KODE BARU ---
+
 oauth = OAuth()
 ark_client = None
 

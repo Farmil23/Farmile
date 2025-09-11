@@ -281,3 +281,23 @@ class Notification(db.Model):
 
     def __repr__(self):
         return f'<Notification {self.message[:50]}>'
+    
+    
+    
+    
+    
+# Tambahkan ini di bagian bawah file app/models.py
+
+class UserResume(db.Model):
+    __tablename__ = 'user_resume'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    resume_content = db.Column(db.Text, nullable=False)  # Menyimpan teks hasil ekstraksi
+    ai_feedback = db.Column(db.Text, nullable=True)     # Menyimpan feedback dari AI
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    author = db.relationship('User', backref=db.backref('resumes', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return f'<UserResume {self.original_filename}>'

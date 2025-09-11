@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ai_resume_pro.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="resume-pro-layout">
+
+    <aside id="resume-history-sidebar" class="resume-history-sidebar">
+        <div class="sidebar-header">
+            <h3>Riwayat Resume</h3>
+        </div>
+        <div id="saved-resumes-list" class="saved-resumes-list">
+            {% if saved_resumes %}
+                {% for resume in saved_resumes %}
+                    <a href="#" class="resume-item" data-id="{{ resume.id }}">
+                        <span class="filename">{{ resume.original_filename }}</span>
+                        <span class="timestamp">{{ resume.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <p class="empty-list-text">Belum ada resume yang disimpan.</p>
+            {% endif %}
+        </div>
+    </aside>
+
+    <main class="resume-pro-main">
+        <div class="main-header">
+            <h1>AI Resume Pro</h1>
+            <div class="main-actions">
+                <button id="download-btn" class="button-secondary" style="display: none;">Unduh Hasil</button>
+                <button id="delete-btn" class="button-danger" style="display: none;">Hapus</button>
+            </div>
+        </div>
+
+        <div id="main-content-area" class="main-content-area">
+            <div id="upload-box" class="upload-box">
+                <input type="file" id="pdf-upload-input" accept=".pdf" hidden/>
+                <label for="pdf-upload-input" class="upload-label">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                    <span class="upload-text">Klik untuk Mengunggah atau Seret File PDF ke Sini</span>
+                    <span class="upload-hint">Ukuran file maksimal 5MB</span>
+                </label>
+            </div>
+
+            <div id="review-container" class="review-container" style="display: none;">
+                <div id="resume-output-wrapper" class="resume-output-wrapper">
+                    <div id="resume-output" class="resume-output a4-paper">
+                        <div class="resume-left-column">
+                            <div id="resume-photo-placeholder" class="resume-photo"></div>
+                            <div class="resume-section">
+                                <h3 class="resume-section-title">Data Pribadi</h3>
+                                <div id="personal-data-content" class="personal-data-list"></div>
+                            </div>
+                            <div class="resume-section">
+                                <h3 class="resume-section-title">Kontak</h3>
+                                <div id="contact-content" class="contact-list"></div>
+                            </div>
+                            <div class="resume-section">
+                                <h3 class="resume-section-title">Skill</h3>
+                                <div id="skills-content" class="skills-list"></div>
+                            </div>
+                            <div class="resume-section">
+                                <h3 class="resume-section-title">Sosial Media</h3>
+                                <div id="social-media-content" class="social-media-list"></div>
+                            </div>
+                        </div>
+                        <div class="resume-right-column">
+                            <div class="resume-header">
+                                <h1 id="resume-full-name"></h1>
+                                <h2 id="resume-professional-title"></h2>
+                            </div>
+                            <div class="resume-section">
+                                <h3 class="resume-section-title right">Profil</h3>
+                                <p id="profile-summary-content"></p>
+                            </div>
+                            <div class="resume-section">
+                                <h3 class="resume-section-title right">Riwayat Pekerjaan</h3>
+                                <div id="work-experience-content"></div>
+                            </div>
+                            <div class="resume-section">
+                                <h3 class="resume-section-title right">Pendidikan</h3>
+                                <div id="education-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div id="loading-spinner" class="spinner-container" style="display: none;">
+                <div class="spinner-content">
+                    <div class="spinner"></div>
+                    <p>Farmile sedang menganalisis CV-mu, mohon tunggu...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/ai_resume_pro.js') }}"></script>
+{% endblock %}

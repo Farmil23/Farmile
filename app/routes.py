@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -14,7 +14,8 @@ import pytz
     # Tambahkan ini di app/routes.py
 from flask import session # Pastikan session diimpor dari flask
 from collections import defaultdict
-    
+import PyPDF2
+import io
 from sqlalchemy import or_
 bp = Blueprint('routes', __name__)
 
@@ -1620,3 +1621,176 @@ def retry_interview(submission_id):
     flash('Riwayat wawancara telah direset. Anda bisa memulai wawancara baru.', 'success')
     # Arahkan pengguna langsung ke halaman wawancara yang baru dan bersih
     return redirect(url_for('routes.interview', submission_id=submission.id))
+
+
+
+
+
+
+
+
+# ===============================================
+# AI-RESUME SECTION
+# ===============================================
+    # Tambahkan import ini di bagian atas file app/routes.py
+import PyPDF2
+import io
+
+# ... (kode lainnya tetap sama) ...
+
+# Ganti DUA route terakhir di app/routes.py dengan TIGA route ini
+
+@bp.route('/ai-resume-pro')
+@login_required
+def ai_resume_pro():
+    """Menampilkan halaman AI Resume versi baru yang lebih fokus."""
+    saved_resumes = UserResume.query.filter_by(user_id=current_user.id).order_by(UserResume.created_at.desc()).all()
+    return render_template('ai_resume_pro.html', title="AI Resume Pro", saved_resumes=saved_resumes)
+
+@bp.route('/api/resumes/<int:resume_id>', methods=['GET', 'DELETE'])
+@login_required
+def handle_resume(resume_id):
+    """API untuk mengambil atau menghapus resume spesifik."""
+    resume = UserResume.query.get_or_404(resume_id)
+    if resume.user_id != current_user.id:
+        abort(403)
+
+    if request.method == 'GET':
+        return jsonify({
+            'id': resume.id,
+            'filename': resume.original_filename,
+            'resume_content': resume.resume_content,
+            'feedback': resume.ai_feedback
+        })
+
+    if request.method == 'DELETE':
+        db.session.delete(resume)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Resume berhasil dihapus.'})
+
+
+# GANTI FUNGSI review_resume_pdf_api DI app/routes.py DENGAN INI
+
+@bp.route('/api/ai/review-resume-pdf', methods=['POST'])
+@login_required
+def review_resume_pdf_api():
+    if 'resume_pdf' not in request.files:
+        return jsonify({'error': 'Tidak ada file yang diunggah.'}), 400
+
+    file = request.files['resume_pdf']
+    if file.filename == '' or not file.filename.lower().endswith('.pdf'):
+        return jsonify({'error': 'File tidak valid. Harap unggah file PDF.'}), 400
+
+    try:
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file.read()))
+        cv_text = ""
+        for page in pdf_reader.pages:
+            cv_text += page.extract_text()
+
+        if not cv_text.strip():
+            return jsonify({'error': 'Gagal membaca teks dari PDF. Pastikan PDF Anda berisi teks yang dapat dipilih (bukan gambar).'}), 400
+
+        # DATA PENCAPAIAN PENGGUNA (TETAP SAMA)
+        completed_projects = ProjectSubmission.query.filter(
+            ProjectSubmission.user_id == current_user.id,
+            ProjectSubmission.interview_score.isnot(None)
+        ).all()
+        user_data_summary = ""
+        if completed_projects:
+            user_data_summary += "- Proyek Tervalidasi di Platform Farmile:\n"
+            for submission in completed_projects:
+                user_data_summary += f"  - Judul: {submission.project.title}, Skor AI: {submission.interview_score}/100. Teknologi: {submission.project.tech_stack}\n"
+
+        # PROMPT BARU UNTUK MENJADI AI RESUME DESIGNER
+        prompt = f"""
+        PERAN DAN TUJUAN:
+        Anda adalah seorang desainer CV profesional dan Career Coach AI bernama 'Farmile'. Tugas Anda adalah mengubah teks CV mentah menjadi CV yang terstruktur secara profesional. Anda harus mem-parsing teks yang diberikan, memperbaikinya, dan mengintegrasikan data pencapaian tambahan, lalu mengembalikan hasilnya HANYA dalam format JSON yang valid.
+
+        TUGAS UTAMA:
+        1.  **Parse Teks CV**: Baca DRAF CV PENGGUNA dan identifikasi bagian-bagian utamanya (Data Pribadi, Profil, Riwayat Pekerjaan, Pendidikan, Skill, Sosial Media).
+        2.  **Perbaiki & Tingkatkan**: Tulis ulang deskripsi pekerjaan atau profil menjadi lebih profesional dan berorientasi pada dampak (gunakan action verbs).
+        3.  **Integrasikan Data Tambahan**: Jika DATA PENCAPAIAN PENGGUNA disediakan, gabungkan pencapaian tersebut secara alami ke dalam bagian yang relevan (misalnya, di bawah Riwayat Pekerjaan atau sebagai bagian Proyek baru).
+        4.  **Strukturkan sebagai JSON**: Kembalikan seluruh CV yang sudah diperbaiki HANYA dalam format JSON yang ketat sesuai struktur yang ditentukan di bawah. Jangan tambahkan teks atau penjelasan lain di luar JSON.
+
+        STRUKTUR OUTPUT JSON (WAJIB DIIKUTI):
+        {{
+            "personal_data": {{
+                "full_name": "Nama Lengkap",
+                "professional_title": "Jabatan Profesional",
+                "dob_place": "Tempat/Tanggal Lahir",
+                "gender": "Jenis Kelamin",
+                "religion": "Agama",
+                "nationality": "Kewarganegaraan"
+            }},
+            "contact": {{
+                "phone": "Nomor Telepon",
+                "email": "Alamat Email",
+                "address": "Alamat Lengkap"
+            }},
+            "profile_summary": "Tulis ulang ringkasan profil menjadi 2-4 kalimat yang kuat dan profesional.",
+            "work_experience": [
+                {{
+                    "job_title": "Jabatan",
+                    "company_name": "Nama Perusahaan | Lokasi",
+                    "date_range": "Bulan Tahun - Bulan Tahun",
+                    "responsibilities": [
+                        "Tulis ulang tanggung jawab 1 menjadi poin yang berorientasi pada hasil.",
+                        "Tulis ulang tanggung jawab 2..."
+                    ]
+                }}
+            ],
+            "education": [
+                {{
+                    "institution": "Nama Institusi",
+                    "degree": "Jenjang & Jurusan",
+                    "date_range": "Tahun - Tahun",
+                    "description": "Deskripsi singkat atau pencapaian (jika ada)."
+                }}
+            ],
+            "skills": ["Skill 1", "Skill 2", "Skill 3"],
+            "social_media": [
+                {{
+                    "platform": "Contoh: LinkedIn",
+                    "username": "Nama Pengguna"
+                }}
+            ]
+        }}
+
+        DATA INPUT:
+        1. DATA PENCAPAIAN PENGGUNA DARI PLATFORM FARMIILE (jika ada):
+        {user_data_summary}
+
+        2. DRAF CV PENGGUNA (TEKS MENTAH):
+        {cv_text}
+        """
+
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=[{"role": "user", "content": prompt}],
+            # Meminta output JSON secara eksplisit jika model mendukung
+            response_format={"type": "json_object"}
+        )
+        # Ambil konten JSON dari respons AI
+        ai_json_response = completion.choices[0].message.content
+
+        # Simpan resume ke database
+        new_resume = UserResume(
+            user_id=current_user.id,
+            original_filename=file.filename,
+            resume_content=cv_text,
+            ai_feedback=ai_json_response # Simpan hasil JSON dari AI
+        )
+        db.session.add(new_resume)
+        db.session.commit()
+
+        return jsonify({
+            'resume_id': new_resume.id,
+            'filename': new_resume.original_filename,
+            'resume_data_json': ai_json_response, # Kirim JSON ke frontend
+            'created_at': new_resume.created_at.strftime('%d %b %Y, %H:%M')
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"AI Resume PDF Rebuild Error: {e}")
+        return jsonify({'error': 'Terjadi kesalahan internal saat memproses PDF atau menghubungi AI.'}), 500
