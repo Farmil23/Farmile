@@ -1063,9 +1063,7 @@ def edit_profile():
         flash('Profil berhasil diperbarui!', 'success')
         return redirect(url_for('routes.profile'))
     return render_template('edit_profile.html', title="Edit Profil")
-# Di dalam file app/routes.py
 
-# Di dalam file app/routes.py
 
 @bp.route('/chat-ai/<int:session_id>', methods=['POST'])
 @login_required

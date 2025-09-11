@@ -1,18 +1,19 @@
 /* =================================================================
-   STYLESHEET LENGKAP UNTUK PERSONAL HUB
-   ================================================================= */
+STYLESHEET LENGKAP UNTUK PERSONAL HUB
+================================================================= */
 
-/* --- 1. Global & Theme Variables --- */
+/* --- 1. Variabel Tema & Dasar --- */
 :root {
-    /* Mode Gelap (Default) */
-    --hub-bg: #111827; /* Latar belakang paling dasar */
-    --sidebar-bg: #1f2937; /* Latar belakang sidebar */
-    --content-bg: #111827; /* Latar belakang area kalender */
-    --item-bg: #374151; /* Latar belakang item, modal, input */
+    --hub-bg: #111827;
+    --sidebar-bg: #1f2937;
+    --content-bg: #111827;
+    --modal-bg: #2d3748;
+    --item-bg: #374151;
     --item-bg-hover: #4b5563;
+    --input-bg: #1f2937;
     --border-color: #4b5563;
-    --text-primary: #f9fafb; /* Teks utama (putih) */
-    --text-secondary: #9ca3af; /* Teks sekunder (abu-abu) */
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
     --accent-blue: #3b82f6;
     --accent-blue-hover: #2563eb;
     --accent-red: #ef4444;
@@ -20,18 +21,13 @@
     --accent-green: #10b981;
 }
 
-body {
-    background-color: var(--hub-bg);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif; /* Ganti dengan font pilihan Anda */
-}
-
-
-/* --- 2. Main Layout --- */
+/* --- 2. Layout Utama --- */
 .hub-container {
     display: flex;
-    height: calc(100vh - 70px); /* Sesuaikan dengan tinggi header Anda */
+    /* Menggunakan flex-grow agar mengisi sisa ruang, lebih fleksibel */
+    flex-grow: 1;
     background-color: var(--hub-bg);
+    overflow: hidden; /* Mencegah double scrollbar */
 }
 
 .hub-sidebar {
@@ -42,16 +38,19 @@ body {
     flex-direction: column;
     overflow-y: auto;
     border-right: 1px solid var(--border-color);
+    flex-shrink: 0; /* Mencegah sidebar menyusut */
 }
 
 .hub-main-content {
     flex-grow: 1;
     padding: 24px;
     background-color: var(--content-bg);
+    overflow-y: auto; /* Izinkan kalender untuk scroll jika perlu */
+    display: flex;
+    flex-direction: column;
 }
 
-
-/* --- 3. Sidebar Styling --- */
+/* --- 3. Komponen Sidebar --- */
 .sidebar-header {
     margin-bottom: 24px;
 }
@@ -98,7 +97,6 @@ body {
     padding: 0;
     margin: 0;
 }
-
 .empty-item {
     color: var(--text-secondary);
     font-style: italic;
@@ -106,9 +104,6 @@ body {
     font-size: 0.9rem;
 }
 
-.task-category {
-    margin-bottom: 20px;
-}
 .task-category-header {
     font-size: 1.1rem;
     font-weight: 700;
@@ -122,16 +117,18 @@ body {
     font-size: 1.2rem;
 }
 
-
-/* --- 4. Main Content & FullCalendar --- */
+/* --- 4. Kalender (FullCalendar) --- */
 #calendar {
-    height: 100%;
+    flex-grow: 1; /* Membuat kalender mengisi ruang yang tersedia */
+    min-height: 400px; /* Tinggi minimal agar tidak gepeng */
     --fc-border-color: var(--border-color);
     --fc-daygrid-event-dot-width: 8px;
     --fc-list-event-dot-width: 10px;
     --fc-today-bg-color: rgba(59, 130, 246, 0.1);
     --fc-event-text-color: var(--text-primary);
+    --fc-daygrid-cell-aspect-ratio: 1.5; /* Rasio seimbang */
 }
+
 .fc .fc-button-primary {
     background-color: var(--item-bg);
     border-color: var(--border-color);
@@ -147,37 +144,35 @@ body {
     background-color: var(--fc-today-bg-color) !important;
 }
 
-
-/* --- 5. Modal Styling & Agenda Item --- */
+/* --- 5. Modal & Item Agenda --- */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background-color: rgba(0,0,0,0.7);
     display: none;
     align-items: center;
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s ease;
+    z-index: 1000;
 }
 .modal-overlay.visible {
     display: flex;
     opacity: 1;
 }
 .modal-content {
-    background-color: var(--sidebar-bg);
+    background-color: var(--modal-bg);
     padding: 24px;
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
     border: 1px solid var(--border-color);
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
-#eventModal, #taskModal, #confirmDeleteModal { z-index: 1010; }
-#dailyAgendaModal { z-index: 1000; }
 
 .modal-header {
     display: flex;
@@ -199,15 +194,13 @@ body {
     justify-content: flex-end;
     gap: 12px;
 }
-.daily-agenda-list { list-style: none; padding: 0; margin: 0; }
+
 .agenda-item {
     background-color: var(--item-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 12px 16px;
     margin-bottom: 10px;
-    position: relative;
-    z-index: 2;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -217,7 +210,6 @@ body {
 }
 .agenda-item-title {
     font-weight: 600;
-    font-size: 1rem;
     color: var(--text-primary);
     margin-bottom: 6px;
     display: flex;
@@ -233,15 +225,10 @@ body {
 .agenda-item-detail {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    margin: 4px 0 0 0;
     line-height: 1.5;
 }
-.agenda-item-detail strong {
-    color: var(--text-primary);
-}
 
-
-/* --- 6. Form Elements --- */
+/* --- 6. Form --- */
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; margin-bottom: 8px; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); }
 .form-control {
@@ -258,47 +245,100 @@ body {
     border-color: var(--accent-blue);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
-.form-group-checkbox { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
-.form-group-checkbox label { margin-bottom: 0; }
+
 .color-options { display: flex; gap: 10px; }
 .color-option { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: border-color 0.2s ease; }
 .color-option.selected { border-color: white; }
 
-
-/* --- 7. Buttons --- */
-.btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background-color 0.2s ease; }
-.btn-primary { background-color: var(--accent-blue); color: white; }
-.btn-primary:hover { background-color: var(--accent-blue-hover); }
-.btn-danger { background-color: var(--accent-red); color: white; }
-.btn-danger:hover { background-color: var(--accent-red-hover); }
-.btn-secondary { background-color: var(--item-bg); color: var(--text-primary); }
-.btn-secondary:hover { background-color: var(--item-bg-hover); }
-
-
-/* --- 8. Custom Scrollbar --- */
+/* --- 7. Scrollbar --- */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--sidebar-bg); }
 ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #666; }
 
-/* Ganti .sertifikat-actions atau tambahkan jika belum ada */
-.project-card .card-actions, 
-.project-card .sertifikat-actions {
-    display: flex;
-    flex-wrap: wrap; /* Izinkan tombol turun ke bawah jika tidak cukup ruang */
-    gap: 10px; /* Jarak antar tombol */
-    margin-top: 20px;
+.button-primary {
+    width:100%;
+}
+/* =================================================================
+    ATURAN RESPONSIVE UNTUK PERSONAL HUB (MOBILE)
+   ================================================================= */
+@media (max-width: 768px) {
+    .hub-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .hub-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        height: auto;
+        overflow-y: visible;
+    }
+
+    .hub-main-content {
+        padding: 16px;
+        /* PERBAIKAN: Beri tinggi yang cukup untuk kalender di mobile */
+        min-height: 70vh; 
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .fc .fc-toolbar.fc-header-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 1.5rem !important;
+    }
+    .fc .fc-toolbar-title {
+        font-size: 1.2rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    /* Menghilangkan rasio aspek di mobile agar konten muat */
+    #calendar {
+       --fc-daygrid-cell-aspect-ratio: 1.2;
+    }
 }
 
-/* Atur agar semua tombol/form di dalamnya mengisi ruang yang tersedia */
-.project-card .card-actions > *,
-.project-card .sertifikat-actions > * {
-    flex: 1 1 auto; /* Izinkan tombol untuk membesar dan menyusut */
-    display: flex;
-}
+@media (max-width: 1024px) { /* Diterapkan di tablet juga */
+    /* Tata letak utama diubah menjadi tumpukan vertikal */
+    .hub-container {
+        display: block; /* Hapus grid di layar kecil */
+        height: auto;
+    }
 
-/* Pastikan tombol di dalam form mengisi seluruh ruang form */
-.project-card .card-actions form button,
-.project-card .sertifikat-actions form button {
-    width: 100%;
+    /* Sidebar menjadi konten di bagian atas */
+    .hub-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        height: auto;
+        overflow-y: visible;
+    }
+
+    /* Konten kalender di bawahnya */
+    .hub-main-content {
+        padding: 16px;
+        min-height: 80vh; /* Pastikan kalender punya ruang yang cukup */
+    }
+    
+    /* Kalender dibuat lebih simpel */
+    .fc .fc-toolbar.fc-header-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 1.5rem !important;
+    }
+    .fc .fc-toolbar-title {
+        font-size: 1.2rem;
+    }
+    
+    /* Modal disesuaikan untuk layar kecil */
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
 }

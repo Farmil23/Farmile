@@ -1,308 +1,49 @@
 {% extends "base.html" %}
 
 {% block styles %}
+{{ super() }}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
-<style>
-    /* === CSS UTAMA UNTUK PERSONAL HUB === */
-    :root {
-        --hub-bg: #1a202c;
-        --sidebar-bg: #1f2937;
-        --content-bg: #111827;
-        --modal-bg: #2d3748;
-        --input-bg: #1f2937;
-        --border-color: #374151;
-        --text-primary: #e5e7eb;
-        --text-secondary: #9ca3af;
-        --accent-blue: #3b82f6;
-        --accent-red: #ef4444;
-        --accent-green: #10b981;
-    }
-
-    .hub-container {
-        display: flex;
-        height: calc(100vh - 80px); /* Sesuaikan dengan tinggi header Anda */
-        background-color: var(--hub-bg);
-        color: var(--text-primary);
-    }
-
-    .hub-sidebar {
-        width: 320px;
-        background-color: var(--sidebar-bg);
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-        border-right: 1px solid var(--border-color);
-    }
-
-    .hub-main-content {
-        flex-grow: 1;
-        padding: 24px;
-        background-color: var(--content-bg);
-    }
-
-    #calendar {
-        height: 100%;
-        --fc-border-color: var(--border-color);
-        --fc-daygrid-event-dot-width: 8px;
-        --fc-list-event-dot-width: 10px;
-        --fc-today-bg-color: rgba(59, 130, 246, 0.15);
-    }
-
-    .sidebar-header {
-        margin-bottom: 24px;
-    }
-    .sidebar-header h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin: 0;
-    }
-    .sidebar-header p {
-        color: var(--text-secondary);
-        margin: 4px 0 0;
-    }
-
-    .ai-organizer-box {
-        background-color: var(--content-bg);
-        padding: 16px;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        text-align: center;
-    }
-
-    .ai-organizer-box button {
-        width: 100%;
-        padding: 10px;
-        border: none;
-        background-color: var(--accent-blue);
-        color: white;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-    }
-
-    .sidebar-section h3 {
-        font-size: 0.875rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: var(--text-secondary);
-        letter-spacing: 0.05em;
-        margin-bottom: 12px;
-    }
-
-    .item-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .empty-item {
-        color: var(--text-secondary);
-        font-style: italic;
-        padding: 10px 0;
-    }
-
-    .task-category {
-        margin-bottom: 20px;
-    }
-
-    .task-category-header {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #e0e0e0;
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding-bottom: 5px;
-        border-bottom: 1px solid #4a4a4a;
-    }
-    
-    .task-category-header .icon {
-        font-size: 1.2rem;
-    }
-    
-    .agenda-item {
-        background-color: #2c3e50;
-        border: 1px solid #34495e;
-        border-radius: 8px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        position: relative;
-        z-index: 2;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .agenda-item:hover {
-        border-color: #4e6a85;
-        background-color: #314960;
-    }
-
-    .agenda-item-title {
-        font-weight: 600;
-        font-size: 1rem;
-        color: #ecf0f1;
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .item-color-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .agenda-item-detail {
-        font-size: 0.85rem;
-        color: #bdc3c7;
-        margin: 4px 0 0 0;
-        line-height: 1.4;
-    }
-
-    .agenda-item-detail strong {
-        color: #95a5a6;
-    }
-    
-    /* === CSS UNTUK MODAL === */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.7);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-    }
-    .modal-overlay.visible { display: flex; }
-    
-    .modal-content {
-        background-color: var(--modal-bg);
-        padding: 24px;
-        border-radius: 8px;
-        width: 90%;
-        max-width: 500px;
-        max-height: 90vh;   /* Biar tidak lebih tinggi dari layar */
-        overflow-y: auto;   /* Aktifkan scroll vertikal */
-        position: relative;
-        z-index: 1001;
-    }
-    
-    
-    #eventModal, #taskModal, #confirmDeleteModal { z-index: 1010; }
-    #dailyAgendaModal { z-index: 1000; }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        border-bottom: 1px solid var(--border-color);
-        padding-bottom: 12px;
-    }
-
-    .modal-close-btn {
-        background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer;
-    }
-
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; margin-bottom: 6px; font-size: 0.875rem; color: var(--text-secondary); }
-    .form-control {
-        width: 100%;
-        padding: 10px;
-        background-color: var(--input-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        color: var(--text-primary);
-    }
-    
-    .form-group-checkbox { display: flex; align-items: center; gap: 8px; }
-
-    .color-options { display: flex; gap: 10px; }
-    .color-option { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
-    .color-option.selected { border-color: white; }
-
-    .modal-footer { margin-top: 24px; text-align: right; }
-    .btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .btn-primary { background-color: var(--accent-blue); color: white; }
-    .btn-danger { background-color: var(--accent-red); color: white; }
-    .btn-secondary { background-color: var(--border-color); color: var(--text-primary); }
-
-    
-.notification-indicator {
-    position: absolute;
-    top: -5px;       /* Posisikan sedikit ke atas */
-    right: -8px;     /* Posisikan sedikit ke kanan */
-    
-    /* Ukuran & Bentuk */
-    min-width: 20px; /* Lebar minimum agar tidak terlalu kecil */
-    height: 20px;
-    padding: 3px;
-    border-radius: 50%; /* Ini yang membuatnya menjadi lingkaran */
-    
-    /* Warna */
-    background-color: var(--accent-red, #ef4444) !important; /* Ini yang membuatnya merah */
-    color: white;
-    border: 2px solid #1a202c; /* Ganti dengan warna background header Anda */
-
-    /* Teks di Dalam Lingkaran */
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1; /* Penting untuk perataan vertikal */
-
-    /* Perataan & Tampilan */
-    display: none; /* Sembunyikan secara default */
-    place-content: center; /* Cara modern untuk menengahkan teks (horizontal & vertikal) */
-}
-
-.notification-indicator.visible {
-    display: grid; /* Gunakan 'grid' agar 'place-content' berfungsi */
-}
-
-
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/personal_hub.css') }}">
 {% endblock %}
 
-
 {% block content %}
-<div class="hub-container">
-    <aside class="hub-sidebar">
-        <div class="sidebar-header">
-            <h2 id="sidebar-date-today">Memuat...</h2>
-            <p>Agenda Hari Ini</p>
-        </div>
+<div class="page-container" style="padding: 0;">
+    <div class="hub-container">
         
-        <div class="ai-organizer-box">
-            <p>Minta Farmile untuk menyusun prioritas berdasarkan agendamu hari ini.</p>
-            <button id="ai-organizer-btn" class="btn btn-primary">Minta Saran AI</button>
-        </div>
-
-        <div id="sidebar-events" class="sidebar-section">
-            <h3>ACARA</h3>
-            <ul class="item-list">
-                <li class="empty-item">Memuat...</li>
-            </ul>
-        </div>
-        
-        <div id="sidebar-tasks" class="sidebar-section" style="margin-top: 24px;">
-            <h3>DAFTAR TUGAS</h3>
-             <div id="task-categories-container">
-                <p class="empty-item">Memuat...</p>
+        <aside class="hub-sidebar">
+            <div class="sidebar-header">
+                <h2 id="sidebar-date-today">Memuat...</h2>
+                <p>Agenda Hari Ini</p>
+                
             </div>
-            <button id="add-task-btn" class="btn" style="width: 100%; margin-top: 16px; background-color: var(--border-color);">+ Tambah Tugas</button>
-        </div>
-    </aside>
+            
+            <div class="ai-organizer-box">
+                <p>Minta Farmile untuk menyusun prioritas berdasarkan agendamu hari ini.</p>
+                <button id="ai-organizer-btn" class="button-primary" >Minta Saran AI</button>
+                <a href="{{ url_for('routes.dashboard') }}" class="button-primary" style='margin-top: 5px; background-color: white'>Kembali ke Dasbor</a>
+            </div>
 
-    <main class="hub-main-content">
-        <div id="calendar"></div>
-    </main>
+            <div id="sidebar-events" class="sidebar-section">
+                <h3>ACARA</h3>
+                <ul class="item-list">
+                    <li class="empty-item">Memuat...</li>
+                </ul>
+            </div>
+            
+            <div id="sidebar-tasks" class="sidebar-section">
+                <h3>DAFTAR TUGAS</h3>
+                <div id="task-categories-container">
+                    <p class="empty-item">Memuat...</p>
+                </div>
+                <button id="add-task-btn" class="button-secondary" style="width: 100%; margin-top: 16px;">+ Tambah Tugas</button>
+            </div>
+        </aside>
+
+        <main class="hub-main-content">
+            <div id="calendar"></div>
+        </main>
+    </div>
 </div>
 
 <div id="dailyAgendaModal" class="modal-overlay">
@@ -311,11 +52,10 @@
             <h3 id="dailyAgendaTitle">Agenda Harian</h3>
             <button class="modal-close-btn">&times;</button>
         </div>
-        <div id="dailyAgendaContent" style="max-height: 60vh; overflow-y: auto;">
-            </div>
-        <div class="modal-footer" style="display: flex; gap: 10px;">
-             <button id="addNewTaskFromDailyBtn" class="btn btn-secondary">+ Tambah Tugas</button>
-             <button id="addNewEventFromDailyBtn" class="btn btn-primary">+ Tambah Acara</button>
+        <div id="dailyAgendaContent" style="max-height: 60vh; overflow-y: auto;"></div>
+        <div class="modal-footer">
+             <button id="addNewTaskFromDailyBtn" class="button-secondary">+ Tambah Tugas</button>
+             <button id="addNewEventFromDailyBtn" class="button-primary">+ Tambah Acara</button>
         </div>
     </div>
 </div>
@@ -328,31 +68,31 @@
         </div>
         <form id="eventForm">
             <input type="hidden" id="eventId">
-            <input type="hidden" id="eventColor">
+            <input type="hidden" id="eventColor" value="#3B82F6">
             <div class="form-group">
                 <label for="eventTitle">Judul Acara</label>
                 <input type="text" id="eventTitle" class="form-control" required>
             </div>
-             <div class="form-group">
+            <div class="form-group">
                 <label for="eventDescription">Deskripsi</label>
                 <textarea id="eventDescription" class="form-control" rows="3"></textarea>
             </div>
-             <div style="display: flex; gap: 1rem;">
+            <div style="display: flex; gap: 1rem;">
                 <div class="form-group" style="flex: 1;">
                     <label>Tanggal Mulai</label>
                     <input type="text" id="eventStartDate" class="form-control">
                 </div>
-                 <div class="form-group" style="flex: 1;">
+                <div class="form-group" style="flex: 1;">
                     <label>Waktu Mulai</label>
                     <input type="text" id="eventStartTime" class="form-control">
                 </div>
             </div>
-             <div style="display: flex; gap: 1rem;">
+            <div style="display: flex; gap: 1rem;">
                 <div class="form-group" style="flex: 1;">
                     <label>Tanggal Selesai</label>
                     <input type="text" id="eventEndDate" class="form-control">
                 </div>
-                 <div class="form-group" style="flex: 1;">
+                <div class="form-group" style="flex: 1;">
                     <label>Waktu Selesai</label>
                     <input type="text" id="eventEndTime" class="form-control">
                 </div>
@@ -361,7 +101,6 @@
                 <label for="eventLink">Link (opsional)</label>
                 <input type="url" id="eventLink" class="form-control">
             </div>
-
             <div class="form-group">
                 <label for="eventReminder">Ingatkan saya</label>
                 <select id="eventReminder" name="reminder_minutes" class="form-control">
@@ -372,7 +111,6 @@
                     <option value="-1">Jangan ingatkan</option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label>Warna</label>
                 <div class="color-options">
@@ -384,8 +122,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" id="eventDeleteBtn" class="btn btn-danger" style="margin-right: auto;">Hapus</button>
-                <button type="submit" class="btn btn-primary">Simpan</button>
+                <button type="button" id="eventDeleteBtn" class="button-danger" style="margin-right: auto;">Hapus</button>
+                <button type="submit" class="button-primary">Simpan</button>
             </div>
         </form>
     </div>
@@ -407,7 +145,7 @@
                 <label for="taskDescription">Deskripsi</label>
                 <textarea id="taskDescription" class="form-control" rows="3"></textarea>
             </div>
-             <div class="form-group">
+            <div class="form-group">
                 <label for="taskDueDate">Batas Waktu</label>
                 <input type="text" id="taskDueDate" class="form-control">
             </div>
@@ -420,7 +158,6 @@
                     <option value="urgent">Mendesak</option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label for="taskReminder">Ingatkan saya</label>
                 <select id="taskReminder" name="reminder_minutes" class="form-control">
@@ -431,10 +168,9 @@
                     <option value="-1">Jangan ingatkan</option>
                 </select>
             </div>
-
             <div class="modal-footer">
-                <button type="button" id="taskDeleteBtn" class="btn btn-danger" style="margin-right: auto;">Hapus</button>
-                <button type="submit" class="btn btn-primary">Simpan</button>
+                <button type="button" id="taskDeleteBtn" class="button-danger" style="margin-right: auto;">Hapus</button>
+                <button type="submit" class="button-primary">Simpan</button>
             </div>
         </form>
     </div>
@@ -444,36 +180,34 @@
     <div class="modal-content" style="max-width: 400px;">
         <div class="modal-header">
             <h3 id="confirmTitle">Konfirmasi Hapus</h3>
-             <button class="modal-close-btn">&times;</button>
+            <button class="modal-close-btn">&times;</button>
         </div>
         <p id="confirmMessage">Apakah Anda yakin ingin menghapus item ini?</p>
         <div class="modal-footer">
-            <button id="cancelDeleteBtn" class="btn btn-secondary">Batal</button>
-            <button id="confirmDeleteBtn" class="btn btn-danger">Ya, Hapus</button>
+            <button id="cancelDeleteBtn" class="button-secondary">Batal</button>
+            <button id="confirmDeleteBtn" class="button-danger">Ya, Hapus</button>
         </div>
     </div>
 </div>
+{% endblock %}
 
 
+{% block scripts %}
+{{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-
 <script>
+    // Menyimpan konfigurasi URL ke objek global agar bisa diakses oleh file .js
     window.APP_CONFIG = {
         api: {
-                events: "{{ url_for('routes.get_events') }}",
+            events: "{{ url_for('routes.get_events') }}",
             tasks: "{{ url_for('routes.get_tasks') }}"
-        },
-        static: {
-            logo: '{{ url_for('static', filename='images/logo.png') }}'
         },
         routes: {
             ask_ai: "{{ url_for('routes.ask_ai_from_hub') }}"
         }
     };
 </script>
-
 <script src="{{ url_for('static', filename='js/personal_hub.js') }}"></script>
-
 {% endblock %}
