@@ -108,3 +108,67 @@
 .template-creative .right-column ul { padding-left: 1.2rem; }
 
 @media (max-width: 1024px) { .resume-history-sidebar { display: none; } .review-container { grid-template-columns: 1fr; } }
+
+
+/* TAMBAHKAN INI DI BAGIAN BAWAH file ai_resume_pro.css */
+
+.resume-item-wrapper {
+    margin-bottom: 0.5rem;
+}
+
+.generated-cv-action {
+    padding: 0 0.75rem 0.75rem;
+}
+
+.view-generated-btn {
+    width: 100%;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background-color: var(--primary-light);
+    border: 1px solid var(--border-color);
+    color: var(--primary-color);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.view-generated-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* TAMBAHKAN INI DI BAGIAN BAWAH file ai_resume_pro.css */
+
+.resume-item-wrapper {
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.resume-item-wrapper:hover {
+    border-color: var(--primary-color);
+}
+.resume-item-wrapper .resume-item {
+    margin-bottom: 0;
+}
+.generated-cv-action {
+    padding: 0 0.75rem 0.75rem;
+    margin-top: -0.5rem;
+}
+.view-generated-btn {
+    width: 100%;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background-color: var(--primary-light);
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+.view-generated-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}

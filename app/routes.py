@@ -1651,16 +1651,15 @@ def ai_resume_pro():
 @login_required
 def handle_resume(resume_id):
     """API untuk mengambil atau menghapus resume spesifik."""
-    resume = UserResume.query.get_or_404(resume_id)
-    if resume.user_id != current_user.id:
-        abort(403)
+    resume = UserResume.query.filter_by(id=resume_id, user_id=current_user.id).first_or_404()
 
     if request.method == 'GET':
         return jsonify({
             'id': resume.id,
             'filename': resume.original_filename,
             'resume_content': resume.resume_content,
-            'feedback': resume.ai_feedback
+            'feedback': resume.ai_feedback,
+            'generated_cv_json': resume.generated_cv_json # Kirim data CV jadi
         })
 
     if request.method == 'DELETE':
@@ -1833,8 +1832,14 @@ def generate_formatted_resume():
             response_format={"type": "json_object"}
         )
         final_resume_json = completion.choices[0].message.content
-        return jsonify({'final_resume_json': final_resume_json})
 
+        # --- PERUBAHAN PENTING: SIMPAN HASIL KE DATABASE ---
+        resume.generated_cv_json = final_resume_json
+        db.session.commit()
+        # ----------------------------------------------------
+        
+        return jsonify({'final_resume_json': final_resume_json})
     except Exception as e:
+        db.session.rollback() # Tambahkan rollback jika gagal
         current_app.logger.error(f"AI Resume Generation Error: {e}")
         return jsonify({'error': 'Gagal membuat CV final dari AI.'}), 500

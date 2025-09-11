@@ -17,10 +17,13 @@
         <div id="saved-resumes-list" class="saved-resumes-list">
             {% if saved_resumes %}
                 {% for resume in saved_resumes %}
-                    <a href="#" class="resume-item" data-id="{{ resume.id }}">
-                        <span class="filename">{{ resume.original_filename }}</span>
-                        <span class="timestamp">{{ resume.created_at.strftime('%d %b %Y, %H:%M') }}</span>
-                    </a>
+                    <div class="resume-item-wrapper">
+                        <a href="#" class="resume-item" data-id="{{ resume.id }}">
+                            <span class="filename">{{ resume.original_filename }}</span>
+                            <span class="timestamp">{{ resume.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+                        </a>
+                        <div class="generated-cv-action" id="action-container-{{ resume.id }}"></div>
+                    </div>
                 {% endfor %}
             {% else %}
                 <p class="empty-list-text">Belum ada resume yang disimpan.</p>
@@ -55,15 +58,15 @@
                 <p>Pilih salah satu desain di bawah ini. Kami akan secara otomatis mengisinya dengan data dari CV Anda.</p>
                 <div class="template-grid">
                     <div class="template-card" data-template="modern">
-                        <img src="https://i.imgur.com/8A8e3mG.png" alt="Modern Template Preview">
+                        <img src="{{ url_for('static', filename='images/template-modern.png') }}" alt="Modern Template Preview">
                         <h4>Modern</h4>
                     </div>
                     <div class="template-card" data-template="classic">
-                        <img src="https://i.imgur.com/2c23KMq.png" alt="Classic Template Preview">
+                        <img src="{{ url_for('static', filename='images/template-classic.png') }}" alt="Classic Template Preview">
                         <h4>Classic</h4>
                     </div>
                     <div class="template-card" data-template="creative">
-                        <img src="https://i.imgur.com/T0fPETs.png" alt="Creative Template Preview">
+                        <img src="{{ url_for('static', filename='images/template-creative.png') }}" alt="Creative Template Preview">
                         <h4>Creative</h4>
                     </div>
                 </div>

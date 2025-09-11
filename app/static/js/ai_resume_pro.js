@@ -1,4 +1,4 @@
-// GANTI SEMUA ISI FILE app/static/js/ai_resume_pro.js DENGAN INI
+// File: app/static/js/ai_resume_pro.js
 
 document.addEventListener('DOMContentLoaded', () => {
     // Referensi Elemen
@@ -15,15 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const newAnalysisBtn = document.getElementById('new-analysis-btn');
 
     let currentResumeId = null;
-    let currentResumeData = null;
+    let currentResumeData = null; // Untuk menyimpan data resume yang aktif
 
     const showState = (state) => {
+        // Sembunyikan semua state utama
         uploadBox.style.display = 'none';
         reviewContainer.style.display = 'none';
         templateSelectionBox.style.display = 'none';
         resumePreviewBox.style.display = 'none';
         loadingSpinner.style.display = 'none';
-        mainActions.innerHTML = '';
+        mainActions.innerHTML = ''; // Kosongkan tombol aksi
 
         switch (state) {
             case 'upload':
@@ -39,9 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'review':
                 reviewContainer.style.display = 'grid';
                 mainTitle.textContent = `Hasil Analisis untuk ${currentResumeData.filename}`;
+                // Logika tombol dinamis
                 mainActions.innerHTML = `
                     <button id="delete-btn" class="button-danger">Hapus</button>
-                    <button id="create-resume-btn" class="button-primary">Buat Resume/CV</button>`;
+                    ${currentResumeData.generated_cv_json ? '<button id="view-generated-btn" class="button-secondary">Lihat CV Jadi</button>' : ''}
+                    <button id="create-resume-btn" class="button-primary">${currentResumeData.generated_cv_json ? 'Buat Ulang CV' : 'Buat Resume/CV'}</button>`;
                 addReviewActionListeners();
                 break;
             case 'template-selection':
@@ -96,8 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Gagal memuat.');
             const formattedData = {
-                resume_id: data.id, filename: data.filename,
-                resume_content: data.resume_content, feedback: data.feedback
+                resume_id: data.id,
+                filename: data.filename,
+                resume_content: data.resume_content,
+                feedback: data.feedback,
+                generated_cv_json: data.generated_cv_json
             };
             displayResumeData(formattedData);
         } catch (error) {
@@ -118,6 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(data.error || 'Gagal membuat CV final.');
 
             const finalResumeData = JSON.parse(data.final_resume_json);
+            
+            // Simpan data terbaru ke variabel global agar tombol "Lihat CV Jadi" berfungsi
+            currentResumeData.generated_cv_json = data.final_resume_json;
+
             renderTemplate(templateName, finalResumeData);
             showState('preview');
         } catch (error) {
@@ -215,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         resumePreviewBox.innerHTML = templateHTML;
     };
-
+    
     const downloadFinalCV = async () => {
         const resumeEl = document.getElementById('final-resume-content');
         if (!resumeEl) return;
@@ -224,21 +234,48 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.textContent = 'Mempersiapkan PDF...';
     
         try {
+            // Scroll ke atas untuk memastikan rendering dimulai dari awal
+            document.querySelector('.resume-preview-box').scrollTop = 0;
+            await new Promise(resolve => setTimeout(resolve, 100)); // Jeda render
+
             const canvas = await html2canvas(resumeEl, {
-                scale: 2.5, // Meningkatkan resolusi
+                scale: 2.5,
                 useCORS: true,
                 logging: false,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                windowHeight: resumeEl.scrollHeight,
+                scrollY: 0 
             });
             
-            const imgData = canvas.toDataURL('image/png', 1.0); // Kualitas Penuh
+            const imgData = canvas.toDataURL('image/png', 1.0);
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+
             const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / canvasHeight;
+            let imgHeight = pdfWidth / ratio;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+
             pdf.save(`CV - ${currentResumeData.filename.replace('.pdf', '')} - Farmile.pdf`);
+
         } catch (error) {
             console.error("PDF Generation Error:", error);
             alert("Maaf, terjadi kesalahan saat membuat PDF. Silakan coba lagi.");
@@ -248,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // Sisa fungsi (addReviewActionListeners, deleteResume, dll.) tetap sama
     const deleteResume = async () => {
         if (!currentResumeId || !confirm('Anda yakin ingin menghapus resume ini?')) return;
         try {
@@ -258,10 +294,21 @@ document.addEventListener('DOMContentLoaded', () => {
             showState('upload');
         } catch (error) { alert(error.message); }
     };
+
     function addReviewActionListeners() {
         document.getElementById('delete-btn')?.addEventListener('click', deleteResume);
         document.getElementById('create-resume-btn')?.addEventListener('click', () => showState('template-selection'));
+        const viewGeneratedBtn = document.getElementById('view-generated-btn');
+        if (viewGeneratedBtn) {
+            viewGeneratedBtn.addEventListener('click', () => {
+                if (currentResumeData && currentResumeData.generated_cv_json) {
+                    renderTemplate('modern', JSON.parse(currentResumeData.generated_cv_json)); // Asumsi template default saat melihat lagi
+                    showState('preview');
+                }
+            });
+        }
     }
+
     const addResumeToSidebar = (data) => {
         const list = document.getElementById('saved-resumes-list');
         list.querySelector('.empty-list-text')?.remove();

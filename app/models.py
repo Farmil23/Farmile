@@ -296,6 +296,14 @@ class UserResume(db.Model):
     resume_content = db.Column(db.Text, nullable=False)  # Menyimpan teks hasil ekstraksi
     ai_feedback = db.Column(db.Text, nullable=True)     # Menyimpan feedback dari AI
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    
+    
+    # --- TAMBAHKAN KOLOM BARU INI ---
+    generated_cv_json = db.Column(db.Text, nullable=True) # Menyimpan JSON CV final
+    # --------------------------------
+    
+    
 
     author = db.relationship('User', backref=db.backref('resumes', cascade="all, delete-orphan"))
 
