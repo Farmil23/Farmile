@@ -9,7 +9,10 @@
 
     <aside id="resume-history-sidebar" class="resume-history-sidebar">
         <div class="sidebar-header">
-            <h3>Riwayat Resume</h3>
+            <h3>Riwayat & Aksi</h3>
+        </div>
+        <div class="sidebar-actions">
+            <button id="new-analysis-btn" class="button-primary full-width">Analisis CV Baru</button>
         </div>
         <div id="saved-resumes-list" class="saved-resumes-list">
             {% if saved_resumes %}
@@ -27,11 +30,9 @@
 
     <main class="resume-pro-main">
         <div class="main-header">
-            <h1>AI Resume Pro</h1>
-            <div class="main-actions">
-                <button id="download-btn" class="button-secondary" style="display: none;">Unduh Hasil</button>
-                <button id="delete-btn" class="button-danger" style="display: none;">Hapus</button>
-            </div>
+            <h1 id="main-title">AI Resume Pro</h1>
+            <div id="main-actions" class="main-actions">
+                </div>
         </div>
 
         <div id="main-content-area" class="main-content-area">
@@ -45,53 +46,34 @@
             </div>
 
             <div id="review-container" class="review-container" style="display: none;">
-                <div id="resume-output-wrapper" class="resume-output-wrapper">
-                    <div id="resume-output" class="resume-output a4-paper">
-                        <div class="resume-left-column">
-                            <div id="resume-photo-placeholder" class="resume-photo"></div>
-                            <div class="resume-section">
-                                <h3 class="resume-section-title">Data Pribadi</h3>
-                                <div id="personal-data-content" class="personal-data-list"></div>
-                            </div>
-                            <div class="resume-section">
-                                <h3 class="resume-section-title">Kontak</h3>
-                                <div id="contact-content" class="contact-list"></div>
-                            </div>
-                            <div class="resume-section">
-                                <h3 class="resume-section-title">Skill</h3>
-                                <div id="skills-content" class="skills-list"></div>
-                            </div>
-                            <div class="resume-section">
-                                <h3 class="resume-section-title">Sosial Media</h3>
-                                <div id="social-media-content" class="social-media-list"></div>
-                            </div>
-                        </div>
-                        <div class="resume-right-column">
-                            <div class="resume-header">
-                                <h1 id="resume-full-name"></h1>
-                                <h2 id="resume-professional-title"></h2>
-                            </div>
-                            <div class="resume-section">
-                                <h3 class="resume-section-title right">Profil</h3>
-                                <p id="profile-summary-content"></p>
-                            </div>
-                            <div class="resume-section">
-                                <h3 class="resume-section-title right">Riwayat Pekerjaan</h3>
-                                <div id="work-experience-content"></div>
-                            </div>
-                            <div class="resume-section">
-                                <h3 class="resume-section-title right">Pendidikan</h3>
-                                <div id="education-content"></div>
-                            </div>
-                        </div>
+                <div class="panel resume-display-panel"><h3>Teks CV Anda</h3><pre id="resume-content-text"></pre></div>
+                <div class="panel feedback-panel"><h3>Feedback AI</h3><div id="feedback-content" class="feedback-content"></div></div>
+            </div>
+
+            <div id="template-selection-box" class="template-selection-box" style="display: none;">
+                <h2>Pilih Template Profesional</h2>
+                <p>Pilih salah satu desain di bawah ini. Kami akan secara otomatis mengisinya dengan data dari CV Anda.</p>
+                <div class="template-grid">
+                    <div class="template-card" data-template="modern">
+                        <img src="https://i.imgur.com/8A8e3mG.png" alt="Modern Template Preview">
+                        <h4>Modern</h4>
+                    </div>
+                    <div class="template-card" data-template="classic">
+                        <img src="https://i.imgur.com/2c23KMq.png" alt="Classic Template Preview">
+                        <h4>Classic</h4>
+                    </div>
+                    <div class="template-card" data-template="creative">
+                        <img src="https://i.imgur.com/T0fPETs.png" alt="Creative Template Preview">
+                        <h4>Creative</h4>
                     </div>
                 </div>
             </div>
-             <div id="loading-spinner" class="spinner-container" style="display: none;">
-                <div class="spinner-content">
-                    <div class="spinner"></div>
-                    <p>Farmile sedang menganalisis CV-mu, mohon tunggu...</p>
+
+            <div id="resume-preview-box" class="resume-preview-box" style="display: none;">
                 </div>
+            
+            <div id="loading-spinner" class="spinner-container" style="display: none;">
+                <div class="spinner-content"><div class="spinner"></div><p>Farmile sedang menganalisis CV-mu...</p></div>
             </div>
         </div>
     </main>

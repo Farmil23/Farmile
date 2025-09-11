@@ -1690,95 +1690,58 @@ def review_resume_pdf_api():
         if not cv_text.strip():
             return jsonify({'error': 'Gagal membaca teks dari PDF. Pastikan PDF Anda berisi teks yang dapat dipilih (bukan gambar).'}), 400
 
-        # DATA PENCAPAIAN PENGGUNA (TETAP SAMA)
+        # DATA PENCAPAIAN PENGGUNA (UNTUK KONTEKS AI)
         completed_projects = ProjectSubmission.query.filter(
             ProjectSubmission.user_id == current_user.id,
             ProjectSubmission.interview_score.isnot(None)
         ).all()
-        user_data_summary = ""
-        if completed_projects:
-            user_data_summary += "- Proyek Tervalidasi di Platform Farmile:\n"
+        user_data_summary = "- Proyek Tervalidasi di Platform Farmile:\n"
+        if not completed_projects:
+            user_data_summary += "  (Belum ada proyek yang divalidasi)"
+        else:
             for submission in completed_projects:
                 user_data_summary += f"  - Judul: {submission.project.title}, Skor AI: {submission.interview_score}/100. Teknologi: {submission.project.tech_stack}\n"
 
-        # PROMPT BARU UNTUK MENJADI AI RESUME DESIGNER
+        # MENGGUNAKAN PROMPT REVIEWER YANG SUDAH KAMU BUAT
         prompt = f"""
-        PERAN DAN TUJUAN:
-        Anda adalah seorang desainer CV profesional dan Career Coach AI bernama 'Farmile'. Tugas Anda adalah mengubah teks CV mentah menjadi CV yang terstruktur secara profesional. Anda harus mem-parsing teks yang diberikan, memperbaikinya, dan mengintegrasikan data pencapaian tambahan, lalu mengembalikan hasilnya HANYA dalam format JSON yang valid.
+        PERAN DAN TUJUAN
+        Anda adalah seorang Career Coach AI bernama 'Farmile'. Keahlian utama Anda adalah proses rekrutmen dan pengembangan talenta di industri teknologi global. Anda bersikap profesional, suportif, dan sangat jeli terhadap detail yang bisa membuat sebuah CV menonjol.
+        KONTEKS
+        Seorang pengguna bernama {current_user.name} telah meminta Anda untuk memberikan ulasan (review) terhadap Draf CV terbaru miliknya. Anda memiliki akses ke Draf CV tersebut dan juga rekam jejak pencapaian pengguna yang tersimpan di platform Farmile.
+        TUGAS UTAMA
+        Berikan ulasan CV yang komprehensif dan konstruktif untuk {current_user.name}. Ikuti langkah-langkah berikut:
 
-        TUGAS UTAMA:
-        1.  **Parse Teks CV**: Baca DRAF CV PENGGUNA dan identifikasi bagian-bagian utamanya (Data Pribadi, Profil, Riwayat Pekerjaan, Pendidikan, Skill, Sosial Media).
-        2.  **Perbaiki & Tingkatkan**: Tulis ulang deskripsi pekerjaan atau profil menjadi lebih profesional dan berorientasi pada dampak (gunakan action verbs).
-        3.  **Integrasikan Data Tambahan**: Jika DATA PENCAPAIAN PENGGUNA disediakan, gabungkan pencapaian tersebut secara alami ke dalam bagian yang relevan (misalnya, di bawah Riwayat Pekerjaan atau sebagai bagian Proyek baru).
-        4.  **Strukturkan sebagai JSON**: Kembalikan seluruh CV yang sudah diperbaiki HANYA dalam format JSON yang ketat sesuai struktur yang ditentukan di bawah. Jangan tambahkan teks atau penjelasan lain di luar JSON.
+        1. Analisis Draf CV: Pindai dan pahami isi dari Draf CV yang diberikan.
+        2. Bandingkan dengan Data: Silangkan informasi pada Draf CV dengan DATA PENCAPAIAN PENGGUNA. Temukan kekuatan yang sudah tercantum dan pencapaian berharga yang belum dimasukkan.
+        3. Sajikan Feedback Terstruktur: Buat ulasan dalam format Markdown yang rapi dan mudah dibaca. Sapa pengguna secara personal.
 
-        STRUKTUR OUTPUT JSON (WAJIB DIIKUTI):
-        {{
-            "personal_data": {{
-                "full_name": "Nama Lengkap",
-                "professional_title": "Jabatan Profesional",
-                "dob_place": "Tempat/Tanggal Lahir",
-                "gender": "Jenis Kelamin",
-                "religion": "Agama",
-                "nationality": "Kewarganegaraan"
-            }},
-            "contact": {{
-                "phone": "Nomor Telepon",
-                "email": "Alamat Email",
-                "address": "Alamat Lengkap"
-            }},
-            "profile_summary": "Tulis ulang ringkasan profil menjadi 2-4 kalimat yang kuat dan profesional.",
-            "work_experience": [
-                {{
-                    "job_title": "Jabatan",
-                    "company_name": "Nama Perusahaan | Lokasi",
-                    "date_range": "Bulan Tahun - Bulan Tahun",
-                    "responsibilities": [
-                        "Tulis ulang tanggung jawab 1 menjadi poin yang berorientasi pada hasil.",
-                        "Tulis ulang tanggung jawab 2..."
-                    ]
-                }}
-            ],
-            "education": [
-                {{
-                    "institution": "Nama Institusi",
-                    "degree": "Jenjang & Jurusan",
-                    "date_range": "Tahun - Tahun",
-                    "description": "Deskripsi singkat atau pencapaian (jika ada)."
-                }}
-            ],
-            "skills": ["Skill 1", "Skill 2", "Skill 3"],
-            "social_media": [
-                {{
-                    "platform": "Contoh: LinkedIn",
-                    "username": "Nama Pengguna"
-                }}
-            ]
-        }}
+        FOKUS Ulasan (WAJIB)
+        Ulasan Anda harus mencakup tiga bagian utama:
 
-        DATA INPUT:
-        1. DATA PENCAPAIAN PENGGUNA DARI PLATFORM FARMIILE (jika ada):
+        - **Kekuatan (Strong Points):** Tunjukkan 2-3 hal yang sudah sangat baik dari CV pengguna.
+        - **Area Peningkatan (Areas for Improvement):** Identifikasi 2-3 bagian pada CV yang berpotensi untuk ditingkatkan.
+        - **Saran Konkret (Actionable Advice):** Ini adalah bagian terpenting. Berikan saran yang bisa langsung diterapkan. Secara spesifik, ambil 1-2 pencapaian dari DATA PENCAPAIAN PENGGUNA yang belum ada di CV, lalu formulasikan menjadi poin CV yang siap pakai.
+
+        DATA INPUT
+        1. DATA PENCAPAIAN PENGGUNA DI PLATFORM KAMI:
         {user_data_summary}
 
-        2. DRAF CV PENGGUNA (TEKS MENTAH):
+        2. DRAF CV PENGGUNA:
         {cv_text}
         """
 
         completion = ark_client.chat.completions.create(
             model=current_app.config['MODEL_ENDPOINT_ID'],
-            messages=[{"role": "user", "content": prompt}],
-            # Meminta output JSON secara eksplisit jika model mendukung
-            response_format={"type": "json_object"}
+            messages=[{"role": "user", "content": prompt}]
         )
-        # Ambil konten JSON dari respons AI
-        ai_json_response = completion.choices[0].message.content
+        ai_feedback = completion.choices[0].message.content
 
         # Simpan resume ke database
         new_resume = UserResume(
             user_id=current_user.id,
             original_filename=file.filename,
             resume_content=cv_text,
-            ai_feedback=ai_json_response # Simpan hasil JSON dari AI
+            ai_feedback=ai_feedback
         )
         db.session.add(new_resume)
         db.session.commit()
@@ -1786,11 +1749,92 @@ def review_resume_pdf_api():
         return jsonify({
             'resume_id': new_resume.id,
             'filename': new_resume.original_filename,
-            'resume_data_json': ai_json_response, # Kirim JSON ke frontend
+            'resume_content': new_resume.resume_content,
+            'feedback': new_resume.ai_feedback,
             'created_at': new_resume.created_at.strftime('%d %b %Y, %H:%M')
         })
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"AI Resume PDF Rebuild Error: {e}")
+        current_app.logger.error(f"AI Resume PDF Review Error (v2): {e}")
         return jsonify({'error': 'Terjadi kesalahan internal saat memproses PDF atau menghubungi AI.'}), 500
+    # GANTI FUNGSI generate_formatted_resume DI app/routes.py DENGAN INI
+
+@bp.route('/api/ai/generate-formatted-resume', methods=['POST'])
+@login_required
+def generate_formatted_resume():
+    data = request.get_json()
+    resume_id = data.get('resume_id')
+    template_name = data.get('template_name')
+
+    if not resume_id or not template_name:
+        return jsonify({'error': 'Resume ID dan nama template dibutuhkan.'}), 400
+
+    resume = UserResume.query.get_or_404(resume_id)
+    if resume.user_id != current_user.id:
+        abort(403)
+
+    original_cv_text = resume.resume_content
+    ai_feedback = resume.ai_feedback
+
+    # PROMPT BARU DENGAN TAMBAHAN STRUKTUR SERTIFIKAT & PENGHARGAAN
+    prompt = f"""
+    PERAN DAN TUJUAN:
+    Anda adalah seorang Penulis CV Profesional dan Desainer Grafis AI. Tugas Anda adalah mengambil teks CV mentah, menerapkan serangkaian saran perbaikan, dan kemudian memformat ulang seluruh konten ke dalam struktur JSON yang ketat untuk template CV yang dipilih.
+
+    TUGAS UTAMA:
+    1.  **Parse Teks CV**: Baca DRAF CV MENTAH dan identifikasi bagian-bagian utamanya (Data Pribadi, Profil, Riwayat Pekerjaan, Pendidikan, Skill, Sosial Media, dan bagian baru seperti Sertifikat atau Penghargaan/Lomba).
+    2.  **Terapkan Perbaikan**: Tulis ulang DRAF CV MENTAH. Gunakan kata kerja aksi yang kuat, kuantifikasi pencapaian, dan gabungkan semua poin dari SARAN PERBAIKAN ke dalam konten yang baru.
+    3.  **Strukturkan sebagai JSON**: Susun ulang seluruh konten yang telah Anda tulis ulang ke dalam format JSON yang ketat. Strukturnya harus sama persis dengan contoh di bawah. JANGAN memberikan output selain JSON.
+
+    DATA INPUT:
+    1.  DRAF CV MENTAH:
+    ---
+    {original_cv_text}
+    ---
+
+    2.  SARAN PERBAIKAN DARI AI COACH:
+    ---
+    {ai_feedback}
+    ---
+
+    STRUKTUR OUTPUT JSON (WAJIB DIIKUTI):
+    {{
+        "personal_data": {{ "full_name": "Nama Lengkap", "professional_title": "Jabatan Profesional" }},
+        "contact": {{ "phone": "Nomor Telepon", "email": "Alamat Email", "address": "Alamat Lengkap" }},
+        "profile_summary": "Tulis ulang ringkasan profil menjadi 2-4 kalimat yang kuat dan profesional.",
+        "work_experience": [
+            {{
+                "job_title": "Jabatan", "company_name": "Nama Perusahaan | Lokasi", "date_range": "Bulan Tahun - Bulan Tahun",
+                "responsibilities": [ "Tulis ulang tanggung jawab 1.", "Tulis ulang tanggung jawab 2..." ]
+            }}
+        ],
+        "education": [
+            {{
+                "institution": "Nama Institusi", "degree": "Jenjang & Jurusan", "date_range": "Tahun - Tahun",
+                "description": "Deskripsi singkat (jika ada)."
+            }}
+        ],
+        "skills": ["Skill 1", "Skill 2", "Skill 3"],
+        "certifications_and_awards": [
+            {{
+                "title": "Judul Sertifikat atau Nama Lomba",
+                "issuer": "Penerbit Sertifikat atau Penyelenggara Lomba",
+                "date": "Tahun atau Tanggal",
+                "description": "Deskripsi singkat jika perlu (misal: Juara 1 dari 100+ peserta)."
+            }}
+        ]
+    }}
+    """
+    try:
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
+        )
+        final_resume_json = completion.choices[0].message.content
+        return jsonify({'final_resume_json': final_resume_json})
+
+    except Exception as e:
+        current_app.logger.error(f"AI Resume Generation Error: {e}")
+        return jsonify({'error': 'Gagal membuat CV final dari AI.'}), 500
