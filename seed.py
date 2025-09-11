@@ -28,18 +28,107 @@ with app.app_context():
             {
                 'title': 'Dasar-Dasar Frontend',
                 'lessons': [
-                    {'title': 'Pengenalan Cara Kerja Web & Version Control', 'lesson_type': 'article', 'url': 'https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/How_the_Web_works', 'estimated_time': 45, 'description': 'Pahami bagaimana sebuah website dapat diakses, mulai dari mengetik alamat di browser hingga halaman ditampilkan. Anda juga akan belajar dasar Git untuk melacak perubahan kode.'},
-                    {'title': 'HTML5 Semantic Elements & Forms', 'lesson_type': 'article', 'url': 'https://www.freecodecamp.org/news/semantic-html5-elements/', 'estimated_time': 60, 'description': 'Pelajari cara menyusun konten web dengan elemen HTML yang memiliki makna (seperti <article>, <nav>) untuk meningkatkan SEO dan aksesibilitas, serta cara membuat form interaktif.'},
-                    {'title': 'CSS Box Model, Flexbox, & Grid', 'lesson_type': 'video', 'url': 'https://www.youtube.com/watch?v=R_mokrBfjI8', 'estimated_time': 90, 'description': 'Kuasai fondasi layout CSS. Pahami Box Model (margin, border, padding), lalu taklukkan Flexbox untuk layout satu dimensi dan Grid untuk layout dua dimensi yang kompleks.'},
-                    {'title': 'Dasar JavaScript (ES6+), Tipe Data, & DOM Manipulation', 'lesson_type': 'article', 'url': 'https://javascript.info/', 'estimated_time': 120, 'description': 'Masuki dunia interaktivitas dengan JavaScript. Pelajari variabel, tipe data, fungsi, dan cara memanipulasi elemen HTML (DOM) untuk membuat halaman web yang hidup.'},
-                    {'title': 'Asynchronous JavaScript (Callbacks, Promises, Async/Await)', 'lesson_type': 'video', 'url': 'https://www.youtube.com/watch?v=V_Kr9OSfDeU', 'estimated_time': 60, 'description': 'Pelajari cara menangani operasi yang butuh waktu, seperti mengambil data dari API, tanpa membuat aplikasi Anda berhenti, menggunakan teknik modern seperti Promises dan Async/Await.'},
+                    {'title': 'Pengenalan Cara Kerja Web & Internet', 'lesson_type': 'video', 'url': 'https://youtube.com/playlist?list=PLcPLXPd9Lq7Weik1BTHjFSRmNavyJnmq0&si=uVYEDy20b6xYoS7A', 'estimated_time': 25, 'description': 'Pahami bagaimana sebuah website dapat diakses, mulai dari mengetik alamat di browser hingga halaman ditampilkan. Anda juga akan belajar tentang bagaimana nternet bekerja'},
+                    
+                    {'title': 'Setup Local enviroment', 'lesson_type': 'video', 'url': 'https://youtube.com/playlist?list=PLcPLXPd9Lq7V2yQ6ABdLFSptTvLGoQt45&si=inJTrmOmUol92Q7T', 'estimated_time': 7, 'description': 'Pelajari cara menyusun konten web dengan elemen HTML yang memiliki makna (seperti <article>, <nav>) untuk meningkatkan SEO dan aksesibilitas, serta cara membuat form interaktif.'},
+                    
+                    {
+                    "title": "Introduction to HTML dan Anatomy of an HTML Tag",
+                    "lesson_type": "video",
+                    "url": "https://www.youtube.com/playlist?list=PLcPLXPd9Lq7UQcavG9advwUq7L6GnWaJe",
+                    "estimated_time": 25,
+                    "description": "Pelajari dasar-dasar HTML dan pahami anatomi dari sebuah tag HTML. Kamu akan mengenal struktur dokumen HTML, bagian-bagian penting seperti tag pembuka, isi, dan penutup, serta bagaimana elemen-elemen tersebut membentuk kerangka halaman web."
+                    },
+                    
+                    {'title': 'Intermediate HTML', 'lesson_type': 'video', 'url': 'https://www.youtube.com/playlist?list=PLcPLXPd9Lq7WFMLzAbZ2Ri4nUf7F6FHdq', 'estimated_time': 40, 'description': 'Dalami pemahaman tentang HTML dengan membongkar anatomi elemen-elemen penting. Kamu akan belajar struktur dasar dokumen HTML, cara kerja tag, atribut, dan hierarki elemen, serta praktik terbaik dalam menyusun kode agar lebih rapi, semantik, dan mudah dipahami.'},
+                    
+                    {
+                    "title": "HTML Forms dan Praktik Membuat Contact Form",
+                    "lesson_type": "video",
+                    "url": "https://www.youtube.com/playlist?list=PLcPLXPd9Lq7XgPtbCaXnjJvvWoK-4oLV4",
+                    "estimated_time": 18,
+                    "description": "Pelajari cara membuat form di HTML untuk mengumpulkan data dari pengguna. Mulai dari elemen dasar form hingga praktik membangun Contact Me Form yang dapat digunakan pada website pribadi."
+                    },
+                    
+                    {
+                    "title": "Publish Your Website and build habbit project",
+                    "lesson_type": "video",
+                    "url": "https://www.youtube.com/playlist?list=PLcPLXPd9Lq7X6qOCGHjsnfrrejdGb5l4v",
+                    "estimated_time": 11,
+                    "description": "Pelajari cara mem-publish website yang sudah kamu buat agar bisa diakses oleh siapa saja di internet. Lesson ini juga memberikan insight tambahan tentang pentingnya konsistensi belajar dan membangun kebiasaan coding."
+                    },
+                    
+                    {
+                    "title": "Introduction to CSS",
+                    "lesson_type": "video",
+                    "url": "https://www.youtube.com/playlist?list=PLcPLXPd9Lq7XSPgoC5BCYzd8y8jpjgMvs",
+                    "estimated_time": 50,
+                    "description": "Pahami dasar-dasar CSS dan cara menghubungkannya dengan HTML. Pelajaran ini membahas tiga metode utama styling: Inline, Internal, dan External CSS untuk membangun website yang lebih terstruktur dan menarik."
+                    },
+                    
+                    {
+                    "title": "Debug and Anatomy of CSS",
+                    "lesson_type": "video",
+                    "url": "https://www.youtube.com/playlist?list=PLcPLXPd9Lq7UJx5t3BRNV8GK2Iwb4lXif",
+                    "estimated_time": 44,
+                    "description": "Pelajari cara mendeteksi dan memperbaiki error pada CSS, memahami struktur sintaks, serta mengenal selektor, class, dan id. Modul ini membekali dasar debugging dan penulisan kode CSS yang rapi serta efisien."
+                    },
+                    
+                    {
+                    "title": "CSS Display Property & Nested Layouts (Lesson 8 - Lesson 10)",
+                    "lesson_type": "video",
+                    "url": "https://youtu.be/G3e-cpL7ofc?si=Y4KJhou8slTNACQC&t=8742",
+                    "estimated_time": 30,
+                    "description": "Pelajari perbedaan display property seperti block, inline, dan inline-block, serta penggunaan elemen <div> untuk membuat layout. Materi juga mencakup teknik nested layouts yang penting untuk membangun struktur halaman web yang lebih kompleks dan responsif."
+                    },
+                    
+                    {
+                    "title": "CSS Grid, Flexbox, & Nested Flexbox (Lesson 11 - Lesson 13)",
+                    "lesson_type": "video",
+                    "url": "https://youtu.be/G3e-cpL7ofc?si=Y4KJhou8slTNACQC&t=11818",
+                    "estimated_time": 60,
+                    "description": "Pelajari CSS Grid untuk membuat layout berbasis grid yang fleksibel, Flexbox untuk mengatur elemen secara responsif dalam baris atau kolom, serta Nested Flexbox untuk membangun layout kompleks dengan struktur bersarang. Materi ini membekali keterampilan modern dalam responsive design."
+                     },
+                    
+                    {
+                    "title": "CSS Positioning & Advanced Features",
+                    "lesson_type": "video",
+                    "url": "https://youtu.be/G3e-cpL7ofc?si=Y4KJhou8slTNACQC&t=17076",
+                    "estimated_time": 90,
+                    "description": "Pelajari konsep CSS Position termasuk static, relative, absolute, dan fixed untuk mengontrol tata letak elemen. Lanjut dengan implementasi posisi absolute dan relative dalam studi kasus nyata, menyelesaikan project latihan, serta mengenal berbagai fitur lanjutan CSS yang memperkaya tampilan web modern."
+                }
                 ],
                 'project': {
-                    'title': 'Personal Portfolio Website', 'description': 'Buat website portofolio statis yang sepenuhnya responsif dan interaktif menggunakan HTML, CSS, dan JavaScript murni. Proyek ini menguji pemahaman fundamental Anda dalam membangun struktur, layout, dan fungsionalitas dasar web.', 'difficulty': 'Beginner',
-                    'project_goals': 'Menerapkan layout responsif dengan Flexbox/Grid. Menggunakan JavaScript untuk interaktivitas (misal: dark mode toggle, smooth scrolling). Menampilkan profil dan proyek secara profesional.', 'tech_stack': 'HTML5, CSS3, JavaScript (ES6+)',
-                    'evaluation_criteria': 'Desain responsif di berbagai perangkat, penggunaan elemen HTML semantik yang benar, kode JavaScript yang bersih dan efisien, dan fungsionalitas interaktif berjalan tanpa bug.', 'resources': 'MDN Web Docs, CSS-Tricks, JavaScript.info.'
+                    'title': 'Personal Portfolio Website',
+                    'description': 'Bangun website portofolio sederhana dengan HTML dan CSS untuk menampilkan profil, keterampilan, dan proyek. Proyek ini berfokus pada struktur HTML semantik, styling menggunakan CSS (inline, internal, dan external), serta pemahaman dasar debugging dan penggunaan selektor.',
+                    'difficulty': 'Beginner',
+                    'project_goals': 'Menerapkan struktur HTML5 yang benar, menggunakan CSS untuk layout dasar dengan Flexbox/Grid, memahami perbedaan class dan id, serta memastikan tampilan responsif di berbagai perangkat.',
+                    'tech_stack': 'HTML5, CSS3',
+                    'evaluation_criteria': 'Penggunaan elemen HTML semantik, CSS yang rapi dan terorganisir (eksternal stylesheet lebih diutamakan), layout responsif, serta konsistensi dalam penggunaan selektor class dan id.',
+                    'resources': 'MDN Web Docs, CSS-Tricks, FreeCodeCamp HTML & CSS Guides.'
+                }
+
+            },
+            {
+                'title': 'Javacript Introoduction',
+                'lessons': [
+                    {'title': 'Thinking in React: Component, Props, & JSX', 'lesson_type': 'article', 'url': 'https://react.dev/learn/thinking-in-react', 'estimated_time': 60, 'description': 'Ubah cara pandang Anda dalam membangun UI dengan konsep komponen. Pelajari cara membuat komponen yang dapat digunakan kembali dan bagaimana mereka berkomunikasi menggunakan "props".'},
+                    
+                    {'title': 'State Management: State & Hooks (useState, useEffect)', 'lesson_type': 'video', 'url': 'https://www.youtube.com/watch?v=O6P86uwfdR0', 'estimated_time': 90, 'description': 'Pahami bagaimana komponen React dapat "mengingat" data dengan `useState`. Pelajari juga `useEffect` untuk menjalankan kode sebagai respons terhadap perubahan state atau props.'},
+                    
+                    {'title': 'Handling Events & Conditional Rendering', 'lesson_type': 'article', 'url': 'https://react.dev/learn/responding-to-events', 'estimated_time': 45, 'description': 'Buat aplikasi Anda interaktif dengan menangani event dari pengguna (seperti klik tombol) dan pelajari cara menampilkan atau menyembunyikan elemen UI berdasarkan kondisi tertentu.'},
+                    
+                    {'title': 'Client-Side Routing dengan React Router', 'lesson_type': 'article', 'url': 'https://reactrouter.com/en/main/start/tutorial', 'estimated_time': 60, 'description': 'Bangun aplikasi multi-halaman (Single Page Application) yang cepat dan mulus, di mana perpindahan antar halaman tidak memerlukan refresh browser, menggunakan React Router.'},
+                    
+                    {'title': 'Interaksi dengan API (Fetch/Axios)', 'lesson_type': 'video', 'url': 'https://www.youtube.com/watch?v=66afc2-u_ac', 'estimated_time': 60, 'description': 'Pelajari cara mengambil data dari server atau API eksternal dan menampilkannya di dalam aplikasi React Anda, sebuah skill krusial untuk aplikasi web dinamis.'},
+                ],
+                'project': {
+                    'title': 'Aplikasi Pencarian Film', 'description': 'Buat aplikasi web yang memungkinkan pengguna mencari film menggunakan API publik (misal: The Movie Database API). Aplikasi harus menampilkan daftar film, detail film, dan memiliki fitur pencarian.', 'difficulty': 'Intermediate',
+                    'project_goals': 'Memahami arsitektur berbasis komponen. Mengelola state aplikasi yang kompleks (data, loading, error). Melakukan operasi CRUD sederhana (Create/Read).', 'tech_stack': 'React.js, JavaScript (ES6+), CSS, Fetch/Axios API',
+                    'evaluation_criteria': 'Fungsionalitas pencarian dan penampilan data berjalan sempurna, penggunaan Hooks yang tepat, komponen terstruktur dan dapat digunakan kembali (reusable).', 'resources': 'Dokumentasi resmi React, The Movie Database (TMDB) API.'
                 }
             },
+            
             {
                 'title': 'Framework Modern: React.js',
                 'lessons': [

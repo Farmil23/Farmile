@@ -309,3 +309,59 @@ class UserResume(db.Model):
 
     def __repr__(self):
         return f'<UserResume {self.original_filename}>'
+    
+# Tambahkan ini di bagian bawah file app/models.py
+
+class JobApplication(db.Model):
+    __tablename__ = 'job_application'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    company_name = db.Column(db.String(150), nullable=False)
+    position = db.Column(db.String(150), nullable=False)
+    status = db.Column(db.String(50), default='applied', nullable=False) # e.g., 'wishlist', 'applied', 'interview', 'offer', 'rejected'
+    application_date = db.Column(db.DateTime, default=datetime.utcnow)
+    job_link = db.Column(db.String(500), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    # Untuk menghubungkan dengan CV yang digunakan
+    resume_id = db.Column(db.Integer, db.ForeignKey('user_resume.id'), nullable=True) 
+
+    author = db.relationship('User', backref=db.backref('job_applications', cascade="all, delete-orphan"))
+    resume_used = db.relationship('UserResume')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'company_name': self.company_name,
+            'position': self.position,
+            'status': self.status,
+            'application_date': self.application_date.isoformat(),
+            'job_link': self.job_link,
+            'notes': self.notes,
+            'resume_filename': self.resume_used.original_filename if self.resume_used else None
+        }
+
+    def __repr__(self):
+        return f'<JobApplication {self.position} at {self.company_name}>'
+    
+    
+# Tambahkan ini di bagian bawah file app/models.py
+
+class JobCoachMessage(db.Model):
+    __tablename__ = 'job_coach_message'
+    id = db.Column(db.Integer, primary_key=True)
+    application_id = db.Column(db.Integer, db.ForeignKey('job_application.id'), nullable=False)
+    role = db.Column(db.String(10), nullable=False) # 'user' or 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    application = db.relationship('JobApplication', backref=db.backref('coach_messages', cascade="all, delete-orphan"))
+
+    def to_dict(self):
+        return {
+            'role': self.role,
+            'content': self.content,
+            'timestamp': self.timestamp.isoformat()
+        }
+
+    def __repr__(self):
+        return f'<JobCoachMessage for App {self.application_id}>'

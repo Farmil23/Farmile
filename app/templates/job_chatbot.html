@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="chat-page-layout">
+    <main class="chat-page-container">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <h2 id="session-title">AI Coach: {{ application.position }} at {{ application.company_name }}</h2>
+            </div>
+            <a href="{{ url_for('routes.job_tracker') }}" class="button-secondary">Kembali ke Job Tracker</a>
+        </div>
+        
+        <div id="chat-window" class="chat-window">
+            </div>
+
+        <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="Tanyakan apa saja tentang wawancara ini..." rows="1"></textarea>
+            <button id="send-chat-btn" class="button-primary" title="Kirim Pesan">
+                </button>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.JOB_CHAT_CONFIG = {
+        applicationId: {{ application.id }},
+        userProfilePic: '{{ current_user.profile_pic }}',
+        chatApiUrl: "{{ url_for('routes.chat_with_job_coach', app_id=application.id) }}",
+        initialMessages: {{ history | tojson | safe }}
+    };
+</script>
+<script src="{{ url_for('static', filename='js/job_chatbot.js') }}"></script>
+{% endblock %}

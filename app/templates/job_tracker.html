@@ -1,0 +1,65 @@
+{% extends "dashboard_base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/job_tracker.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="page-header">
+    <div>
+        <h2>Job Application Tracker</h2>
+        <p class="subtitle">Kelola semua lamaran kerjamu di satu tempat.</p>
+    </div>
+    <div class="header-actions">
+        <button id="add-application-btn" class="button-primary">Lacak Lamaran Baru</button>
+    </div>
+</div>
+
+<div id="kanban-board" class="kanban-board">
+    </div>
+
+<div id="application-modal" class="modal-overlay">
+    <div class="modal-box card">
+        <h3 id="modal-title">Lacak Lamaran Baru</h3>
+        <button class="modal-close-btn">&times;</button>
+        <form id="application-form">
+            <input type="hidden" id="application-id">
+            <div class="form-group">
+                <label for="company-name">Nama Perusahaan</label>
+                <input type="text" id="company-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="position">Posisi yang Dilamar</label>
+                <input type="text" id="position" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="job-link">Link Lowongan (Opsional)</label>
+                <input type="url" id="job-link" class="form-input">
+            </div>
+            <div class="form-group">
+                <label for="notes">Catatan (Opsional)</label>
+                <textarea id="notes" class="form-input" rows="4"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="button-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="confirm-delete-modal" class="modal-overlay">
+    <div class="modal-box card" style="max-width: 450px; text-align: center;">
+        <h3 id="confirm-modal-title">Konfirmasi Tindakan</h3>
+        <p id="confirm-modal-message" class="text-secondary">Apakah Anda yakin?</p>
+        <div class="modal-actions">
+            <button id="modal-cancel-btn" class="button-secondary">Batal</button>
+            <button id="modal-confirm-btn" class="button-danger">Ya, Lanjutkan</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+    <script src="{{ url_for('static', filename='js/job_tracker.js') }}"></script>
+{% endblock %}

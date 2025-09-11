@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -1843,3 +1843,188 @@ def generate_formatted_resume():
         db.session.rollback() # Tambahkan rollback jika gagal
         current_app.logger.error(f"AI Resume Generation Error: {e}")
         return jsonify({'error': 'Gagal membuat CV final dari AI.'}), 500
+    
+    
+    
+    
+# Tambahkan ini di bagian paling bawah app/routes.py
+
+@bp.route('/job-tracker')
+@login_required
+def job_tracker():
+    """Menampilkan halaman utama Job Application Tracker."""
+    return render_template('job_tracker.html', title="Job Application Tracker")
+
+@bp.route('/api/applications', methods=['GET', 'POST'])
+@login_required
+def handle_applications():
+    """API untuk mengambil semua lamaran atau menambah lamaran baru."""
+    if request.method == 'GET':
+        apps = JobApplication.query.filter_by(user_id=current_user.id).order_by(JobApplication.application_date.desc()).all()
+        return jsonify([app.to_dict() for app in apps])
+
+    if request.method == 'POST':
+        data = request.get_json()
+        if not data or not data.get('company_name') or not data.get('position'):
+            return jsonify({'error': 'Nama perusahaan dan posisi wajib diisi.'}), 400
+
+        new_app = JobApplication(
+            user_id=current_user.id,
+            company_name=data['company_name'],
+            position=data['position'],
+            status=data.get('status', 'applied'),
+            job_link=data.get('job_link'),
+            notes=data.get('notes'),
+            resume_id=data.get('resume_id')
+        )
+        db.session.add(new_app)
+        db.session.commit()
+        return jsonify(new_app.to_dict()), 201
+
+@bp.route('/api/applications', methods=['POST'])
+@login_required
+def add_application():
+    """API untuk menambah lamaran baru."""
+    data = request.get_json()
+    if not data or not data.get('company_name') or not data.get('position'):
+        return jsonify({'error': 'Nama perusahaan dan posisi wajib diisi.'}), 400
+
+    new_app = JobApplication(
+        user_id=current_user.id,
+        company_name=data['company_name'],
+        position=data['position'],
+        status=data.get('status', 'applied'),
+        job_link=data.get('job_link'),
+        notes=data.get('notes'),
+        resume_id=data.get('resume_id')
+    )
+    db.session.add(new_app)
+    db.session.commit()
+    return jsonify(new_app.to_dict()), 201
+
+
+
+@bp.route('/api/applications/<int:app_id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+def handle_single_application(app_id):
+    """API untuk mengambil, memperbarui, atau menghapus satu lamaran spesifik."""
+    app = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
+
+    if request.method == 'GET':
+        return jsonify(app.to_dict())
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        app.company_name = data.get('company_name', app.company_name)
+        app.position = data.get('position', app.position)
+        app.status = data.get('status', app.status)
+        app.job_link = data.get('job_link', app.job_link)
+        app.notes = data.get('notes', app.notes)
+        db.session.commit()
+        return jsonify(app.to_dict())
+
+    if request.method == 'DELETE':
+        db.session.delete(app)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Lamaran berhasil dihapus.'})
+
+@bp.route('/api/applications/<int:app_id>', methods=['DELETE'])
+@login_required
+def delete_application(app_id):
+    """API untuk menghapus lamaran."""
+    app = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
+    db.session.delete(app)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Lamaran berhasil dihapus.'})
+
+
+
+
+# AI JOBS
+@bp.route('/job-tracker/coach/<int:app_id>')
+@login_required
+def job_coach_chatbot(app_id):
+    """Menampilkan halaman chatbot khusus UNTUK SATU LAMARAN KERJA."""
+    application = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
+    
+    # Kunci utama: Hanya mengambil riwayat untuk 'application_id' yang spesifik
+    history = JobCoachMessage.query.filter_by(application_id=app_id).order_by(JobCoachMessage.timestamp.asc()).all()
+    
+    history_as_dicts = [msg.to_dict() for msg in history]
+
+    return render_template(
+        'job_chatbot.html', 
+        title=f"AI Coach for {application.position}",
+        application=application,
+        history=history_as_dicts
+    )
+
+# GANTI FUNGSI chat_with_job_coach YANG LAMA DENGAN INI
+@bp.route('/api/job-coach/<int:app_id>/chat', methods=['POST'])
+@login_required
+def chat_with_job_coach(app_id):
+    """API untuk berinteraksi dengan AI Job Coach DENGAN MEMORI."""
+    application = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
+    user_message_content = request.get_json().get('message')
+
+    if not user_message_content:
+        return jsonify({'error': 'Pesan tidak boleh kosong.'}), 400
+
+    # 1. Simpan pesan pengguna ke database
+    user_message = JobCoachMessage(application_id=app_id, role='user', content=user_message_content)
+    db.session.add(user_message)
+    db.session.commit() # Commit di sini agar riwayat langsung tercatat
+
+    # 2. Ambil seluruh riwayat percakapan untuk konteks AI
+    history = JobCoachMessage.query.filter_by(application_id=app_id).order_by(JobCoachMessage.timestamp.asc()).all()
+    conversation_history = "\n".join([f"{msg.role}: {msg.content}" for msg in history])
+
+    # Kumpulkan konteks pekerjaan
+    job_context = f"- Nama Perusahaan: {application.company_name}\n- Posisi yang Dilamar: {application.position}"
+    latest_resume = UserResume.query.filter_by(user_id=current_user.id).order_by(UserResume.created_at.desc()).first()
+    resume_context = latest_resume.resume_content if latest_resume else "CV pengguna tidak tersedia."
+
+    prompt = f"""
+    PERAN DAN TUJUAN:
+    Anda adalah seorang Pelatih Wawancara AI elit bernama 'Farmile'. Anda tegas, cerdas, dan suportif. Misi Anda adalah mempersiapkan {current_user.name} untuk wawancara kerja yang akan datang.
+
+    KONTEKS WAWANCARA:
+    {job_context}
+
+    CV PENGGUNA (UNTUK REFERENSI ANDA):
+    ---
+    {resume_context}
+    ---
+    
+    ATURAN INTERAKSI:
+    1.  **Sapa Pengguna**: Mulailah percakapan PERTAMA KALI SAJA dengan menyapa {current_user.name}. Jika sudah ada riwayat, langsung lanjutkan percakapan.
+    2.  **Jadilah Proaktif**: Tawarkan untuk memulai dengan latihan pertanyaan teknis, pertanyaan perilaku (behavioral), atau strategi negosiasi gaji.
+    3.  **Berikan Jawaban Mendalam**: Jika pengguna meminta contoh jawaban, berikan jawaban menggunakan metode STAR (Situation, Task, Action, Result).
+    4.  **Fokus pada Konteks**: Selalu kaitkan saran Anda dengan posisi dan perusahaan yang sedang dibahas.
+    
+    RIWAYAT PERCAKAPAN SEBELUMNYA (UNTUK KONTEKS ANDA):
+    ---
+    {conversation_history}
+    ---
+    
+    TUGAS ANDA:
+    Berdasarkan seluruh riwayat di atas, berikan balasan yang relevan dan melanjutkan percakapan. JANGAN ulangi sapaan jika percakapan sudah berjalan.
+    """
+
+    try:
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=[{"role": "user", "content": prompt}]
+        )
+        ai_response_content = completion.choices[0].message.content
+
+        # 3. Simpan balasan AI ke database
+        ai_message = JobCoachMessage(application_id=app_id, role='assistant', content=ai_response_content)
+        db.session.add(ai_message)
+        db.session.commit()
+
+        return jsonify({'response': ai_response_content})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"AI Job Coach Error: {e}")
+        return jsonify({'error': 'Gagal menghubungi AI Coach.'}), 500
