@@ -166,7 +166,7 @@ STYLESHEET LENGKAP UNTUK PERSONAL HUB
     padding: 24px;
     border-radius: 12px;
     width: 90%;
-    max-width: 500px;
+    max-width: 700px;
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
@@ -258,6 +258,7 @@ STYLESHEET LENGKAP UNTUK PERSONAL HUB
 
 .button-primary {
     width:100%;
+    margin-top: 20px;
 }
 /* =================================================================
     ATURAN RESPONSIVE UNTUK PERSONAL HUB (MOBILE)
@@ -301,6 +302,14 @@ STYLESHEET LENGKAP UNTUK PERSONAL HUB
     /* Menghilangkan rasio aspek di mobile agar konten muat */
     #calendar {
        --fc-daygrid-cell-aspect-ratio: 1.2;
+    }
+
+    .button-primary {
+        padding: 12px 0;
+        margin-top: 8px;
+    }
+    .button-secondary {
+        padding: 10px 0;
     }
 }
 

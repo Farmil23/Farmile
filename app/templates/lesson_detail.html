@@ -1,9 +1,15 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "dashboard_base.html" %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lesson_detail.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
 <div class="content-layout">
     <div class="page-header">
         <div>
-            <a href="{{ url_for('routes.roadmap') }}" class="back-link">‹ Kembali ke Roadmap</a>
+            <a href="{{ url_for('routes.roadmap') }}" class="back-link button-secondary">‹ Kembali ke Roadmap</a>
             <h1>{{ lesson.title }}</h1>
             <p class="subtitle">Modul: {{ lesson.module.title }}</p>
         </div>
@@ -18,7 +24,7 @@
         <div class="video-container">
             {# Mengubah link YouTube biasa menjadi link embed #}
             <iframe width="560" height="315" src="{{ lesson.video_url.replace('watch?v=', 'embed/') }}" 
-                    title="YouTube video player" frameborder="0" 
+                    title="YouTube video player"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                     allowfullscreen>
             </iframe>
@@ -28,7 +34,7 @@
         {% if lesson.url %}
         <h3>Artikel Pendukung</h3>
         <p>Untuk pemahaman lebih dalam, kunjungi artikel berikut:</p>
-        <a href="{{ lesson.url }}" target="_blank" class="button-secondary">Baca Artikel Eksternal ↗</a>
+        <a href="{{ lesson.url }}" target="_blank" rel="noopener noreferrer" class="button-secondary">Baca Artikel Eksternal ↗</a>
         {% endif %}
     </div>
 
