@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -2171,3 +2171,140 @@ def handle_resume(resume_id):
         db.session.delete(resume)
         db.session.commit()
         return jsonify({'success': True, 'message': 'Resume berhasil dihapus.'})
+    
+    
+    
+    
+    
+    
+    
+    
+# ===============================================
+# RUTE UNTUK FITUR KOMUNITAS
+# ===============================================
+
+@bp.route('/community')
+@login_required
+def community_page():
+    """Menampilkan halaman utama Komunitas untuk menemukan pengguna lain."""
+    # Logika untuk auto-generate username jika belum ada
+    if not current_user.username:
+        base_username = current_user.name.lower().replace(' ', '-')
+        username = base_username
+        counter = 1
+        # Loop untuk memastikan username unik
+        while User.query.filter_by(username=username).first():
+            username = f"{base_username}-{counter}"
+            counter += 1
+        current_user.username = username
+        db.session.commit()
+
+    # Ambil semua pengguna lain untuk ditampilkan di halaman
+    users = User.query.filter(User.id != current_user.id).all()
+    return render_template('community.html', title="Komunitas", users=users)
+
+@bp.route('/community/groups')
+@login_required
+def community_groups():
+    """Menampilkan halaman direktori semua grup belajar."""
+    all_groups = StudyGroup.query.order_by(StudyGroup.created_at.desc()).all()
+    return render_template('community_groups.html', title="Grup Belajar", groups=all_groups)
+
+@bp.route('/u/<username>')
+@login_required # Tambahkan login_required agar hanya user terdaftar yang bisa melihat profil detail
+def public_profile(username):
+    """Menampilkan halaman profil publik seorang pengguna."""
+    user = User.query.filter_by(username=username).first_or_404()
+    
+    # Ambil proyek yang sudah selesai untuk ditampilkan di portofolio
+    completed_submissions = ProjectSubmission.query.filter(
+        ProjectSubmission.user_id == user.id,
+        ProjectSubmission.interview_score.isnot(None)
+    ).all()
+    
+    return render_template('public_profile.html', 
+                           title=f"Profil {user.name}",
+                           user=user, 
+                           submissions=completed_submissions)
+
+    # Di dalam app/routes.py
+
+# === GANTI SEMUA API KONEKSI ANDA DENGAN BLOK DI BAWAH INI ===
+
+@bp.route('/api/connect/request/<int:user_id>', methods=['POST'])
+@login_required
+def send_connection_request(user_id):
+    # Gunakan .get() untuk mencari user, yang mengembalikan None jika tidak ada
+    receiver = User.query.get(user_id)
+    if not receiver:
+        return jsonify({'error': 'Pengguna tidak ditemukan.'}), 404
+
+    if receiver == current_user:
+        return jsonify({'error': 'Tidak bisa terhubung dengan diri sendiri.'}), 400
+    if current_user.is_connected(receiver) or current_user.sent_connection_request(receiver):
+        return jsonify({'error': 'Sudah terhubung atau permintaan sudah dikirim.'}), 400
+
+    req = ConnectionRequest(sender_id=current_user.id, receiver_id=receiver.id)
+    db.session.add(req)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Permintaan koneksi terkirim.'})
+
+@bp.route('/api/connect/accept/<int:request_id>', methods=['POST'])
+@login_required
+def accept_connection_request(request_id):
+    req = ConnectionRequest.query.get(request_id)
+    if not req:
+        return jsonify({'error': 'Permintaan tidak ditemukan.'}), 404
+    if req.receiver_id != current_user.id:
+        abort(403)
+    
+    sender = req.sender
+    current_user.add_connection(sender)
+    
+    db.session.delete(req)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Anda sekarang terhubung dengan {sender.name}.'})
+
+@bp.route('/api/connect/reject/<int:request_id>', methods=['POST'])
+@login_required
+def reject_connection_request(request_id):
+    req = ConnectionRequest.query.get(request_id)
+    if not req:
+        return jsonify({'error': 'Permintaan tidak ditemukan.'}), 404
+    if req.receiver_id != current_user.id:
+        abort(403)
+    
+    db.session.delete(req)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Permintaan koneksi ditolak.'})
+
+@bp.route('/api/connect/cancel/<int:user_id>', methods=['POST'])
+@login_required
+def cancel_connection_request(user_id):
+    receiver = User.query.get(user_id)
+    if not receiver:
+        return jsonify({'error': 'Pengguna tidak ditemukan.'}), 404
+        
+    req = ConnectionRequest.query.filter_by(sender_id=current_user.id, receiver_id=receiver.id).first()
+    if not req:
+        return jsonify({'error': 'Permintaan koneksi tidak ditemukan.'}), 404
+        
+    db.session.delete(req)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Permintaan koneksi dibatalkan.'})
+
+@bp.route('/api/connect/remove/<int:user_id>', methods=['POST'])
+@login_required
+def remove_connection(user_id):
+    user_to_remove = User.query.get(user_id)
+    if not user_to_remove:
+        return jsonify({'error': 'Pengguna tidak ditemukan.'}), 404
+        
+    if not current_user.is_connected(user_to_remove):
+        return jsonify({'error': 'Anda tidak terhubung dengan pengguna ini.'}), 400
+        
+    current_user.remove_connection(user_to_remove)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Koneksi dengan {user_to_remove.name} telah dihapus.'})
+
+# === AKHIR BLOK PENGGANTIAN ===

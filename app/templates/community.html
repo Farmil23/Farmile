@@ -1,0 +1,56 @@
+{% extends "dashboard_base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/community.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="page-header">
+    <div>
+        <h2>Temukan Komunitas Farmile</h2>
+        <p class="subtitle">Cari teman belajar, mentor, atau kolaborator untuk proyekmu berikutnya.</p>
+    </div>
+</div>
+
+<div class="community-nav">
+    <a href="{{ url_for('routes.community_page') }}" class="nav-tab active">Pengguna</a>
+    <a href="{{ url_for('routes.community_groups') }}" class="nav-tab">Grup Belajar</a>
+</div>
+
+<div class="user-grid">
+    {% for user in users %}
+    <div class="user-card card" data-user-id="{{ user.id }}">
+        <a href="{{ url_for('routes.public_profile', username=user.username) if user.username else '#' }}">
+            <img src="{{ user.profile_pic }}" alt="Profil {{ user.name }}" class="user-avatar">
+        </a>
+        <h4>
+            <a href="{{ url_for('routes.public_profile', username=user.username) if user.username else '#' }}" class="user-name-link">
+                {{ user.name }}
+            </a>
+        </h4>
+        <p class="user-career">
+            {{ user.career_path|replace('-', ' ')|title if user.career_path else 'Explorer' }}
+        </p>
+        
+        <div class="card-actions">
+            {% set received_req = current_user.received_requests.filter_by(sender_id=user.id).first() %}
+            {% if current_user.is_connected(user) %}
+                <button class="button-secondary action-btn" data-action="remove-connection">Hapus Koneksi</button>
+            {% elif current_user.sent_connection_request(user) %}
+                <button class="button-secondary action-btn" data-action="cancel-request">Batalkan Permintaan</button>
+            {% elif received_req %}
+                <button class="button-primary action-btn" data-action="accept-request" data-request-id="{{ received_req.id }}">Terima</button>
+                <button class="button-danger action-btn" data-action="reject-request" data-request-id="{{ received_req.id }}">Tolak</button>
+            {% else %}
+                <button class="button-primary action-btn" data-action="send-request">Tambah Koneksi</button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+    <script src="{{ url_for('static', filename='js/community.js') }}"></script>
+{% endblock %}

@@ -1,6 +1,29 @@
 from app import db
 from flask_login import UserMixin
 from datetime import datetime
+from sqlalchemy import or_
+
+
+
+connections = db.Table('connections',
+    db.Column('user_a_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('user_b_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+)
+
+
+# --- GANTI SELURUH CLASS ConnectionRequest DENGAN INI ---
+class ConnectionRequest(db.Model):
+    __tablename__ = 'connection_request'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+    # Definisikan relasi dengan back_populates
+    sender = db.relationship('User', foreign_keys=[sender_id], back_populates='sent_requests')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='received_requests')
+
+
 
 class User(UserMixin, db.Model):
     __tablename__ = "user"
@@ -22,14 +45,53 @@ class User(UserMixin, db.Model):
     
     timezone = db.Column(db.String(50), nullable=False, server_default='Asia/Jakarta')
     
+    # ---> TAMBAHKAN BARIS INI TEPAT DI SINI <---
+    username = db.Column(db.String(80), unique=True, nullable=True)
+    
+    # --- TAMBAHKAN DUA RELASI BARU INI DI DALAM CLASS USER ---
+    sent_requests = db.relationship('ConnectionRequest', foreign_keys=[ConnectionRequest.sender_id], back_populates='sender', lazy='dynamic', cascade="all, delete-orphan")
+    received_requests = db.relationship('ConnectionRequest', foreign_keys=[ConnectionRequest.receiver_id], back_populates='receiver', lazy='dynamic', cascade="all, delete-orphan")
+    
     
     # Relasi ke fitur baru Personal Hub
     tasks = db.relationship('Task', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
     events = db.relationship('Event', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='author', lazy='dynamic', cascade="all, delete-orphan")
+    
+    # --- Tambahkan relasi ini di dalam class User ---
+    connected = db.relationship(
+        'User', secondary=connections,
+        primaryjoin=(connections.c.user_a_id == id),
+        secondaryjoin=(connections.c.user_b_id == id),
+        backref=db.backref('connections', lazy='dynamic'), lazy='dynamic')
+
+    # --- Tambahkan fungsi helper ini di dalam class User ---
+    def add_connection(self, user):
+        if not self.is_connected(user):
+            self.connected.append(user)
+            user.connected.append(self)
+
+    def remove_connection(self, user):
+        if self.is_connected(user):
+            self.connected.remove(user)
+            user.connected.remove(self)
+
+    def is_connected(self, user):
+        return self.connected.filter(
+            connections.c.user_b_id == user.id).count() > 0
+
+    def sent_connection_request(self, user):
+        return ConnectionRequest.query.filter_by(sender_id=self.id, receiver_id=user.id).count() > 0
+
+    def received_connection_request(self, user):
+        return ConnectionRequest.query.filter_by(sender_id=user.id, receiver_id=self.id).count() > 0
 
     def __repr__(self):
         return f"<User {self.name}>"
+
+
+
+
 
 class Roadmap(db.Model):
     __tablename__ = "roadmap"
@@ -41,6 +103,7 @@ class Roadmap(db.Model):
 
     def __repr__(self):
         return f"<Roadmap {self.title}>"
+
 
 class Module(db.Model):
     __tablename__ = "module"

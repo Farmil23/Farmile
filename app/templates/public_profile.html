@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="settings-content" style="max-width: 1200px; margin: 2rem auto;">
+
+    <div style="margin-bottom: 1.5rem;">
+        <a href="{{ url_for('routes.community_page') }}" class="button-secondary">
+            <i class="fas fa-arrow-left"></i> Kembali ke Komunitas
+        </a>
+    </div>
+    <div class="profile-header">
+        <div class="profile-cover">
+            <div class="cover-gradient"></div>
+        </div>
+        <div class="profile-info">
+            <div class="profile-avatar-section">
+                <img src="{{ user.profile_pic }}" alt="Foto Profil" class="profile-avatar">
+            </div>
+            <div class="profile-details">
+                <h1 class="profile-name">{{ user.name }}</h1>
+                <p class="profile-email">{{ user.email }}</p>
+                <div class="profile-badges">
+                    <span class="career-badge">{{ user.career_path|replace('-', ' ')|title if user.career_path else 'Explorer' }}</span>
+                    <span class="semester-badge">Semester {{ user.semester if user.semester else 'N/A' }}</span>
+                </div>
+                <div class="profile-actions">
+                    {% if current_user.is_authenticated and current_user.id != user.id %}
+                        {% set received_req = current_user.received_requests.filter_by(sender_id=user.id).first() %}
+                        <div class="action-buttons-wrapper">
+                            {% if current_user.is_connected(user) %}
+                                <button class="button-secondary action-btn" data-action="remove-connection" data-user-id="{{ user.id }}">Hapus Koneksi</button>
+                            {% elif current_user.sent_connection_request(user) %}
+                                <button class="button-secondary action-btn" data-action="cancel-request" data-user-id="{{ user.id }}">Batalkan Permintaan</button>
+                            {% elif received_req %}
+                                <button class="button-primary action-btn" data-action="accept-request" data-request-id="{{ received_req.id }}">Terima</button>
+                                <button class="button-danger action-btn" data-action="reject-request" data-request-id="{{ received_req.id }}">Tolak</button>
+                            {% else %}
+                                <button class="button-primary action-btn" data-action="send-request" data-user-id="{{ user.id }}">Tambah Koneksi</button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-stats">
+        <div class="stat-item">
+            <div class="stat-number">{{ user.user_progress.count() }}</div>
+            <div class="stat-label">Materi Diselesaikan</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ user.submissions.count() }}</div>
+            <div class="stat-label">Proyek Disubmit</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ user.chat_sessions.count() }}</div>
+            <div class="stat-label">Sesi Chat AI</div>
+        </div>
+    </div>
+
+    <div class="profile-section">
+        <div class="section-header">
+            <h3>Proyek Terverifikasi</h3>
+        </div>
+        <div class="projects-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+            {% for submission in submissions %}
+            <div class="project-card card">
+                <div class="project-header">
+                    <h4 class="project-title">{{ submission.project.title }}</h4>
+                    <span class="project-status approved">Skor: {{ submission.interview_score }}</span>
+                </div>
+                <p class="project-description">{{ submission.project.description | truncate(120) }}</p>
+                 <div class="card-actions" style="margin-top: 1rem;">
+                    <a href="{{ url_for('routes.view_portfolio', submission_id=submission.id) }}" class="button-primary full-width" target="_blank">Lihat Detail Portofolio</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <h4>Belum ada proyek terverifikasi</h4>
+                <p>{{ user.name }} belum menyelesaikan dan memvalidasi proyek apa pun.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const actionWrapper = document.querySelector('.action-buttons-wrapper');
+
+        if(actionWrapper){
+            actionWrapper.addEventListener('click', async (e) => {
+                const button = e.target.closest('button.action-btn');
+                if (!button) return;
+
+                const userId = button.dataset.userId;
+                const action = button.dataset.action;
+                const requestId = button.dataset.requestId;
+
+                let url = '';
+                const options = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                };
+
+                switch (action) {
+                    case 'send-request':
+                        url = `/api/connect/request/${userId}`;
+                        break;
+                    case 'cancel-request':
+                        url = `/api/connect/cancel/${userId}`;
+                        break;
+                    case 'accept-request':
+                        url = `/api/connect/accept/${requestId}`;
+                        break;
+                    case 'reject-request':
+                        url = `/api/connect/reject/${requestId}`;
+                        break;
+                    case 'remove-connection':
+                        url = `/api/connect/remove/${userId}`;
+                        break;
+                    default:
+                        return;
+                }
+
+                button.disabled = true;
+                button.textContent = 'Memproses...';
+
+                try {
+                    const response = await fetch(url, options);
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Terjadi kesalahan.');
+                    window.location.reload();
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                    window.location.reload();
+                }
+            });
+        }
+    });
+    </script>
+{% endblock %}
