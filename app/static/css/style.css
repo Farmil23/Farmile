@@ -4739,3 +4739,33 @@ span.flatpickr-weekday {
     color: #ef4444;
     border-color: rgba(239, 68, 68, 0.2);
 }
+
+
+/* === Gaya untuk Tabel di Konten Materi === */
+.core-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.core-content th, .core-content td {
+    border: 1px solid var(--border-color);
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.core-content th {
+    background-color: var(--sidebar-bg); /* Menggunakan warna sidebar untuk header tabel */
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.core-content tr:nth-of-type(even) {
+    background-color: var(--background-color);
+}
+
+.core-content tr:hover {
+    background-color: var(--primary-light);
+}

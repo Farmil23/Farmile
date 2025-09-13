@@ -1,11 +1,11 @@
 /* =============================================== */
-/* ===         STYLE UNTUK DETAIL MATERI         === */
+/* === STYLE UNTUK DETAIL MATERI (VERSI FINAL) === */
 /* =============================================== */
 
 /* --- 1. Layout Utama & Header Halaman --- */
 .content-layout {
     max-width: 900px;
-    margin: 2rem auto; /* Beri jarak dari atas dan bawah */
+    margin: 2rem auto;
     padding: 0 1rem;
 }
 
@@ -43,27 +43,120 @@
     padding: 2rem;
 }
 
-.lesson-content h3 {
+/* --- 3. Gaya untuk Konten Materi Inti (Hasil Generate AI) --- */
+.core-content h3 {
     font-size: 1.5rem;
     font-weight: 600;
-    margin-top: 0;
+    margin-top: 2.5rem;
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
 }
 
-/* Aturan untuk konten setelah h3 pertama */
-.lesson-content h3:not(:first-of-type) {
-    margin-top: 2.5rem;
-}
-
-.lesson-content p {
-    font-size: 1.1rem;
+.core-content p {
+    font-size: 1rem;
     line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.core-content ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    margin-bottom: 1.5rem;
     color: var(--text-secondary);
 }
 
-/* --- 3. Video & Link Eksternal --- */
+.core-content li {
+    margin-bottom: 0.75rem;
+}
+
+.core-content pre {
+    background-color: #0d1117;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.core-content code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    color: #e6edf3;
+}
+
+/* --- Gaya untuk Tabel --- */
+.core-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    border-radius: 8px;
+    overflow: hidden; /* Penting untuk border-radius */
+}
+
+.core-content th, .core-content td {
+    border: 1px solid var(--border-color);
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.core-content th {
+    background-color: var(--sidebar-bg);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.core-content tr:nth-of-type(even) {
+    background-color: var(--background-color);
+}
+
+.core-content tr:hover {
+    background-color: var(--primary-light);
+}
+
+
+/* --- Gaya untuk Tantangan Mini --- */
+.core-content details {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.core-content details:hover {
+    border-color: var(--accent-blue);
+}
+
+.core-content summary {
+    cursor: pointer;
+    padding: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background-color: var(--background-color);
+    border-radius: 8px;
+}
+
+.core-content details[open] > summary {
+    border-bottom: 1px solid var(--border-color);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.core-content details > p,
+.core-content details > pre {
+    padding: 1rem;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* --- 4. Video & Link Eksternal --- */
 .video-container {
     position: relative;
     padding-bottom: 56.25%; /* Rasio 16:9 */
@@ -90,7 +183,7 @@
     gap: 0.5rem;
 }
 
-/* --- 4. Tombol Aksi di Bawah --- */
+/* --- 5. Tombol Aksi di Bawah --- */
 .lesson-actions {
     margin-top: 2rem;
     padding-top: 2rem;
@@ -105,7 +198,247 @@
     padding: 0.8rem 1.8rem;
 }
 
-/* --- 5. Aturan Responsif untuk Mobile --- */
+
+/* =============================================== */
+/* === STYLE UNTUK DETAIL MATERI (VERSI FINAL) === */
+/* =============================================== */
+
+/* --- 1. Layout Utama & Header Halaman --- */
+.content-layout {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-top: 1rem;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+.page-header .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+/* --- 2. Konten Materi di Dalam Card --- */
+.lesson-content {
+    padding: 2.5rem;
+    background-color: var(--card-bg-color);
+    border-radius: 16px;
+}
+
+/* --- 3. Gaya Inti untuk Konten Hasil Generate AI --- */
+.core-content h3 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--primary-color);
+}
+
+.core-content h3:first-of-type {
+    margin-top: 1rem;
+}
+
+.core-content p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* --- PERBAIKAN UTAMA UNTUK DAFTAR (UL/LI) --- */
+.core-content ul {
+    list-style: none; /* Hapus bullet point default */
+    padding-left: 0; /* Hapus padding default browser */
+    margin-bottom: 1.5rem;
+}
+
+.core-content li {
+    padding-left: 2.5rem; /* Beri ruang untuk bullet point custom */
+    position: relative;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+.core-content li::before {
+    content: '•'; /* Buat bullet point custom */
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    color: var(--primary-color); /* Ubah warna bullet point */
+    font-size: 1.5rem;
+    line-height: inherit;
+}
+/* --- AKHIR PERBAIKAN --- */
+
+
+.core-content strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* --- Gaya untuk Blok Kode --- */
+.core-content pre {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.core-content code {
+    font-family: 'SF Mono', 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    color: #cbd5e1;
+}
+
+/* --- Gaya untuk Tabel --- */
+.core-content table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 2rem 0;
+    font-size: 0.95rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.core-content th, .core-content td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.core-content th {
+    background-color: var(--sidebar-bg);
+    color: var(--text-primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom-width: 2px;
+}
+
+.core-content tr:last-child td {
+    border-bottom: none;
+}
+
+.core-content tr {
+    transition: background-color 0.2s ease;
+}
+
+.core-content tr:hover {
+    background-color: var(--primary-light);
+}
+
+/* --- Gaya untuk Tantangan Mini --- */
+.core-content details {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin: 2rem 0;
+    background-color: var(--background-color);
+    transition: all 0.2s ease;
+}
+
+.core-content details:hover {
+    border-color: var(--primary-color);
+}
+
+.core-content summary {
+    cursor: pointer;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    position: relative;
+    list-style: none;
+}
+
+.core-content summary::-webkit-details-marker {
+    display: none;
+}
+
+.core-content summary::before {
+    content: '▶';
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%) rotate(0deg);
+    transition: transform 0.2s ease;
+    color: var(--primary-color);
+}
+
+.core-content details[open] > summary::before {
+    transform: translateY(-50%) rotate(90deg);
+}
+
+.core-content details[open] > summary {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.core-content details > p,
+.core-content details > pre {
+    padding: 0.5rem;
+    margin: 0;
+}
+
+/* --- Video & Link Eksternal --- */
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+    background-color: #000;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* --- Tombol Aksi di Bawah --- */
+.lesson-actions {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* --- 6. Aturan Responsif untuk Mobile --- */
 @media (max-width: 768px) {
     .content-layout {
         margin: 1rem auto;
@@ -117,5 +450,13 @@
 
     .lesson-content {
         padding: 1.5rem;
+    }
+
+    .core-content h3 {
+        font-size: 1.3rem;
+    }
+
+    .core-content pre, .core-content table {
+        font-size: 0.85rem;
     }
 }

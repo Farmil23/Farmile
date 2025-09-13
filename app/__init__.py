@@ -128,6 +128,7 @@ def create_app(config_class=Config):
         if not api_key: raise ValueError("ARK_API_KEY not found in config.")
         os.environ['ARK_API_KEY'] = api_key
         ark_client = Ark(base_url="https://ark.ap-southeast.bytepluses.com/api/v3")
+        app.ark_client = ark_client
         app.logger.info("BytePlus Ark client initialized successfully!")
     except Exception as e:
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")

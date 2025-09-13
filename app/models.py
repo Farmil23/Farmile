@@ -71,6 +71,9 @@ class Lesson(db.Model):
     url = db.Column(db.String(500))
     estimated_time = db.Column(db.Integer)
     
+    content = db.Column(db.Text, nullable=True) # <-- BARIS INI DITAMBAHKAN
+    
+    
     user_progress = db.relationship('UserProgress', backref='lesson', lazy='dynamic', cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='lesson', lazy='dynamic')
 
