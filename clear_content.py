@@ -3,7 +3,7 @@ from app.models import Lesson
 
 # Daftar judul lesson yang kontennya ingin Anda hapus
 lessons_to_clear = [
-    "CSS Box Model: Margin, Padding, Border"
+    "Manajemen Konfigurasi dengan ConfigMap & Secret"
 ]
 
 app = create_app()

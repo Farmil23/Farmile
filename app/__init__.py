@@ -1,7 +1,7 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, url_for, request, jsonify
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
@@ -11,12 +11,9 @@ from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from apscheduler.schedulers.background import BackgroundScheduler
-
-# Import tambahan untuk filter Jinja2
 from markupsafe import Markup, escape
 from datetime import datetime
 import pytz
-from flask import Flask, redirect, url_for, request, jsonify
 
 # Inisialisasi Ekstensi di luar factory
 db = SQLAlchemy()
@@ -24,15 +21,11 @@ migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = 'routes.login'
 
-# --- TAMBAHKAN BLOK KODE INI ---
 @login_manager.unauthorized_handler
 def unauthorized():
-    # Jika permintaan yang tidak sah adalah ke API, kirim error JSON.
     if request.path.startswith('/api/'):
         return jsonify(error="Authentication required. Please log in again."), 401
-    # Jika tidak, alihkan ke halaman login seperti biasa.
     return redirect(url_for('routes.login'))
-# --- AKHIR DARI BLOK KODE BARU ---
 
 oauth = OAuth()
 ark_client = None
@@ -48,6 +41,8 @@ class SecureModelView(ModelView):
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('routes.login', next=request.url))
+
+# ======================= KELAS-KELAS VIEW UNTUK ADMIN =======================
 
 class UserView(SecureModelView):
     column_list = ('id', 'name', 'email', 'semester', 'career_path', 'is_admin')
@@ -71,13 +66,54 @@ class LessonView(SecureModelView):
     column_list = ('order', 'title', 'module', 'lesson_type', 'estimated_time')
     column_searchable_list = ('title', 'description')
     column_filters = ('lesson_type', 'module.title')
-    form_columns = ('module', 'title', 'description', 'order', 'lesson_type', 'url', 'estimated_time')
+    form_columns = ('module', 'title', 'description', 'order', 'lesson_type', 'url', 'estimated_time', 'content')
     form_ajax_refs = {
-        'module': {
-            'fields': ['title'],
-            'page_size': 10
-        }
+        'module': { 'fields': ['title'], 'page_size': 10 }
     }
+
+class ProjectView(SecureModelView):
+    column_list = ('title', 'module', 'difficulty', 'is_challenge')
+    column_searchable_list = ('title', 'description', 'tech_stack')
+    column_filters = ('difficulty', 'is_challenge', 'module.title')
+    form_columns = (
+        'module', 'title', 'description', 'difficulty', 'is_challenge', 
+        'project_goals', 'tech_stack', 'evaluation_criteria', 'resources'
+    )
+    form_ajax_refs = {
+        'module': { 'fields': ['title'], 'page_size': 10 }
+    }
+
+class ModuleView(SecureModelView):
+    column_list = ('title', 'roadmap', 'career_path', 'order', 'level')
+    column_searchable_list = ('title',)
+    column_filters = ('career_path', 'level', 'roadmap.title')
+    form_columns = ('roadmap', 'user', 'title', 'order', 'career_path', 'level')
+    form_ajax_refs = {
+        'roadmap': { 'fields': ['title'], 'page_size': 10 },
+        'user': { 'fields': ['name', 'email'], 'page_size': 10 }
+    }
+
+class SubmissionView(SecureModelView):
+    column_list = ('id', 'project', 'author', 'interview_score', 'project_link')
+    column_searchable_list = ('project.title', 'author.name')
+    column_filters = ('interview_score',)
+    form_columns = ('project', 'author', 'project_link', 'interview_score', 'interview_feedback')
+    form_ajax_refs = {
+        'project': { 'fields': ['title'], 'page_size': 10 },
+        'author': { 'fields': ['name', 'email'], 'page_size': 10 }
+    }
+
+class UserProjectView(SecureModelView):
+    column_list = ('id', 'user', 'project', 'status', 'started_at')
+    column_searchable_list = ('user.name', 'project.title')
+    column_filters = ('status',)
+    form_columns = ('user', 'project', 'status', 'started_at', 'reflection')
+    form_ajax_refs = {
+        'user': { 'fields': ['name', 'email'], 'page_size': 10 },
+        'project': { 'fields': ['title'], 'page_size': 10 }
+    }
+
+# ======================= AKHIR DARI KELAS VIEW =======================
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -91,29 +127,24 @@ def create_app(config_class=Config):
 
     # Filter Jinja2 Kustom
     def fromisoformat_filter(s):
-        if s:
-            return datetime.fromisoformat(s.replace('Z', '+00:00'))
+        if s: return datetime.fromisoformat(s.replace('Z', '+00:00'))
         return s
 
     def localdatetime_filter(dt, fmt="%d %B %Y, %H:%M"):
-        if dt is None:
-            return ""
-        utc_zone = pytz.utc
+        if dt is None: return ""
+        if dt.tzinfo is None: dt = pytz.utc.localize(dt)
         local_zone = pytz.timezone('Asia/Jakarta')
-        utc_dt = dt.replace(tzinfo=utc_zone)
-        local_dt = utc_dt.astimezone(local_zone)
-        return local_dt.strftime(fmt)
+        return dt.astimezone(local_zone).strftime(fmt)
 
     def nl2br_filter(s):
-        if s:
-            return Markup(escape(s).replace('\n', '<br>\n'))
+        if s: return Markup(escape(s).replace('\\n', '<br>\\n'))
         return s
     
     app.jinja_env.filters['fromisoformat'] = fromisoformat_filter
     app.jinja_env.filters['localdatetime'] = localdatetime_filter
     app.jinja_env.filters['nl2br'] = nl2br_filter
 
-    # Konfigurasi Klien Eksternal (OAuth & AI)
+    # Konfigurasi Klien Eksternal
     oauth.register(
         name='google',
         client_id=app.config.get('GOOGLE_CLIENT_ID'),
@@ -138,46 +169,46 @@ def create_app(config_class=Config):
     from app.models import User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 
+    # ======================= PENDAFTARAN VIEW YANG SUDAH DIPERBAIKI =======================
     admin.add_view(UserView(User, db.session))
     admin.add_view(TaskView(Task, db.session))
     admin.add_view(EventView(Event, db.session))
     admin.add_view(LessonView(Lesson, db.session))
+    admin.add_view(ProjectView(Project, db.session))
+    admin.add_view(ModuleView(Module, db.session))
+    admin.add_view(SubmissionView(ProjectSubmission, db.session, name="Submissions"))
+    admin.add_view(UserProjectView(UserProject, db.session))
+    
+    # Model yang tidak punya relasi kompleks bisa tetap menggunakan SecureModelView
     admin.add_view(SecureModelView(Roadmap, db.session))
-    admin.add_view(SecureModelView(Module, db.session))
-    admin.add_view(SecureModelView(Project, db.session))
-    admin.add_view(SecureModelView(ProjectSubmission, db.session, name="Submissions"))
     admin.add_view(SecureModelView(Notification, db.session))
-    admin.add_view(SecureModelView(UserProject, db.session)) # Memastikan UserProject ada di admin
+    # ======================= AKHIR DARI PENDAFTARAN VIEW =======================
 
-    # Inisialisasi Scheduler Notifikasi
+    # Inisialisasi Scheduler
     try:
         from app.scheduler_jobs import check_reminders
         scheduler = BackgroundScheduler(daemon=True)
         scheduler.add_job(check_reminders, 'interval', seconds=60, args=[app])
         scheduler.start()
         app.logger.info("Notification scheduler started successfully.")
-    except ImportError:
-        app.logger.warning("scheduler_jobs.py not found, scheduler not started.")
     except Exception as e:
         app.logger.error(f"Failed to start scheduler: {e}")
 
-    # Daftarkan Blueprints & Perintah CLI
+    # Daftarkan Blueprints & CLI
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)
-    
     from app import commands
     app.cli.add_command(commands.ensure_admin)
 
     # Konfigurasi Logging
     if not app.debug and not app.testing:
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
+        if not os.path.exists('logs'): os.mkdir('logs')
         file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+        file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
         app.logger.setLevel(logging.INFO)
         app.logger.info('Farsight app startup')
 
     return app
+

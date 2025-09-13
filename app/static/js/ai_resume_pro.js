@@ -13,8 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainActions = document.getElementById('main-actions');
     const mainTitle = document.getElementById('main-title');
     const newAnalysisBtn = document.getElementById('new-analysis-btn');
-
-    // Referensi Elemen untuk Job Matcher
     const jobMatcherPanel = document.getElementById('job-matcher-panel');
     const jobDescriptionInput = document.getElementById('job-description-input');
     const matchJobBtn = document.getElementById('match-job-btn');
@@ -86,30 +84,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     const analysisItem = document.createElement('div');
                     analysisItem.className = 'saved-analysis-item card';
                     const analysisDate = new Date(analysis.created_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
-                    
-                     // --- PASTIKAN BARIS DI BAWAH INI SEPERTI INI ---
-                analysisItem.innerHTML = `
-                    <details>
-                        <summary>
-                            <strong>Analisis pada ${analysisDate}</strong>
-                            <p class="text-secondary">${analysis.job_description.substring(0, 100)}...</p>
-                        </summary>
-                        <div class="analysis-result-content">
-                            ${analysis.match_result} 
-                        </div>
-                    </details>
-                `;
+                    analysisItem.innerHTML = `
+                        <details>
+                            <summary>
+                                <strong>Analisis pada ${analysisDate}</strong>
+                                <p class="text-secondary">${analysis.job_description.substring(0, 100)}...</p>
+                            </summary>
+                            <div class="analysis-result-content">${analysis.match_result}</div>
+                        </details>`;
                     savedAnalysesList.appendChild(analysisItem);
                 });
             } else {
                 savedAnalysesList.innerHTML = '<p class="text-secondary" style="text-align: center; padding: 1rem;">Belum ada analisis lowongan untuk CV ini.</p>';
             }
         }
-
         showState('review');
-        document.querySelectorAll('.resume-item').forEach(el => {
-            el.classList.toggle('active', el.dataset.id == currentResumeId);
-        });
+        document.querySelectorAll('.resume-item.active').forEach(el => el.classList.toggle('active', el.dataset.id == currentResumeId));
     };
 
     const processFile = async (file) => {
@@ -118,13 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('resume_pdf', file);
         try {
             const response = await fetch('/api/ai/review-resume-pdf', { method: 'POST', body: formData });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Terjadi kesalahan server.');
-            }
+            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Terjadi kesalahan server.'); }
             const data = await response.json();
             addResumeToSidebar(data);
-            // Panggil fetchAndDisplayResume untuk memuat data lengkap termasuk array 'analyses' kosong
             await fetchAndDisplayResume(data.resume_id);
         } catch (error) {
             alert(`Error: ${error.message}`);
@@ -136,10 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showState('loading');
         try {
             const response = await fetch(`/api/resumes/${resumeId}`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Gagal memuat.');
-            }
+            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Gagal memuat.'); }
             const data = await response.json();
             displayResumeData(data);
         } catch (error) {
@@ -149,15 +132,169 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     const generateAndShowFinalResume = async (templateName) => {
-        // (Fungsi ini tidak perlu diubah, bisa dibiarkan seperti sebelumnya)
+        showState('loading');
+        try {
+            const response = await fetch('/api/ai/generate-formatted-resume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resume_id: currentResumeId, template_name: templateName })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Gagal membuat CV final.');
+            const finalResumeData = JSON.parse(data.final_resume_json);
+            currentResumeData.generated_cv_json = data.final_resume_json;
+            renderTemplate(templateName, finalResumeData);
+            showState('preview');
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+            showState('review');
+        }
     };
 
     const renderTemplate = (templateName, data) => {
-        // (Fungsi ini tidak perlu diubah, bisa dibiarkan seperti sebelumnya)
+        const workExpHTML = (data.work_experience || []).map(job => `
+            <div class="item">
+                <div class="item-header">
+                    <p class="item-title">${job.job_title || ''} | <strong>${job.company_name || ''}</strong></p>
+                    <p class="item-date">${job.date_range || ''}</p>
+                </div>
+                <ul>${(job.responsibilities || []).map(r => `<li>${r}</li>`).join('')}</ul>
+            </div>`).join('');
+        
+        const educationHTML = (data.education || []).map(edu => `
+            <div class="item">
+                 <div class="item-header">
+                    <p class="item-title"><strong>${edu.institution || ''}</strong></p>
+                    <p class="item-date">${edu.date_range || ''}</p>
+                </div>
+                <p class="item-issuer">${edu.degree || ''}</p>
+                <p>${edu.description || ''}</p>
+            </div>`).join('');
+            
+        const certsHTML = (data.certifications_and_awards || []).map(cert => `
+            <div class="item">
+                <div class="item-header">
+                    <p class="item-title"><strong>${cert.title || ''}</strong></p>
+                    <p class="item-date">${cert.date || ''}</p>
+                </div>
+                <p class="item-issuer">${cert.issuer || ''}</p>
+                <p>${cert.description || ''}</p>
+            </div>`).join('');
+
+        let templateHTML = '';
+        switch(templateName) {
+            case 'classic':
+                templateHTML = `
+                <div class="resume-template template-classic" id="final-resume-content">
+                    <div class="header">
+                        <h1>${data.personal_data?.full_name || ''}</h1>
+                        <p class="contact-info">${data.contact?.address || ''} &bull; ${data.contact?.phone || ''} &bull; ${data.contact?.email || ''}</p>
+                    </div>
+                    <div class="section"><h2>Profil</h2><p>${data.profile_summary || ''}</p></div>
+                    <div class="section"><h2>Riwayat Pekerjaan</h2>${workExpHTML}</div>
+                    <div class="section"><h2>Pendidikan</h2>${educationHTML}</div>
+                    <div class="section"><h2>Sertifikat & Penghargaan</h2>${certsHTML}</div>
+                    <div class="section"><h2>Keahlian</h2><p>${(data.skills || []).join(', ')}</p></div>
+                </div>`;
+                break;
+            case 'creative':
+                 templateHTML = `
+                 <div class="resume-template template-creative" id="final-resume-content">
+                    <div class="left-column">
+                        <div class="photo"></div>
+                        <div class="section"><h2>Kontak</h2>
+                            <div class="contact-item"><strong>Telepon</strong><span>${data.contact?.phone || ''}</span></div>
+                            <div class="contact-item"><strong>Email</strong><span>${data.contact?.email || ''}</span></div>
+                            <div class="contact-item"><strong>Alamat</strong><span>${data.contact?.address || ''}</span></div>
+                        </div>
+                        <div class="section"><h2>Keahlian</h2>
+                            ${(data.skills || []).map(s => `<div class="skill-item"><span>${s}</span></div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="right-column">
+                        <h1>${data.personal_data?.full_name || ''}</h1>
+                        <p class="professional-title">${data.personal_data?.professional_title || ''}</p>
+                        <div class="section"><h2>Profil</h2><p>${data.profile_summary || ''}</p></div>
+                        <div class="section"><h2>Riwayat Pekerjaan</h2>${workExpHTML}</div>
+                        <div class="section"><h2>Pendidikan</h2>${educationHTML}</div>
+                        <div class="section"><h2>Sertifikat & Penghargaan</h2>${certsHTML}</div>
+                    </div>
+                 </div>`;
+                break;
+            case 'modern':
+            default:
+                templateHTML = `
+                <div class="resume-template template-modern" id="final-resume-content">
+                    <div class="header">
+                        <h1>${data.personal_data?.full_name || ''}</h1>
+                        <p class="professional-title">${data.personal_data?.professional_title || ''}</p>
+                        <p class="contact-info">${data.contact?.address || ''} &bull; ${data.contact?.phone || ''} &bull; ${data.contact?.email || ''}</p>
+                    </div>
+                    <div class="section"><h2>Profil Profesional</h2><p>${data.profile_summary || ''}</p></div>
+                    <div class="section"><h2>Riwayat Pekerjaan</h2>${workExpHTML}</div>
+                    <div class="section"><h2>Pendidikan</h2>${educationHTML}</div>
+                    <div class="section"><h2>Sertifikat & Penghargaan</h2>${certsHTML}</div>
+                    <div class="section"><h2>Keahlian</h2><div class="skills-list">${(data.skills || []).map(s => `<span class="skill-item">${s}</span>`).join('')}</div></div>
+                </div>`;
+                break;
+        }
+        resumePreviewBox.innerHTML = templateHTML;
     };
     
     const downloadFinalCV = async () => {
-        // (Fungsi ini tidak perlu diubah, bisa dibiarkan seperti sebelumnya)
+        const resumeEl = document.getElementById('final-resume-content');
+        if (!resumeEl) return;
+        const btn = document.getElementById('download-final-cv-btn');
+        btn.disabled = true;
+        btn.textContent = 'Mempersiapkan PDF...';
+    
+        try {
+            document.querySelector('.resume-preview-box').scrollTop = 0;
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const canvas = await html2canvas(resumeEl, {
+                scale: 2.5,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                windowHeight: resumeEl.scrollHeight,
+                scrollY: 0 
+            });
+            
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const ratio = canvas.width / canvas.height;
+            let imgHeight = pdfWidth / ratio;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save(`CV - ${currentResumeData.filename.replace('.pdf', '')} - Farmile.pdf`);
+
+        } catch (error) {
+            console.error("PDF Generation Error:", error);
+            alert("Maaf, terjadi kesalahan saat membuat PDF. Silakan coba lagi.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Unduh CV Final';
+        }
     };
     
     const deleteResume = async () => {
@@ -165,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/resumes/${currentResumeId}`, { method: 'DELETE' });
             if (!response.ok) throw new Error('Gagal menghapus.');
-            // Cari wrapper untuk dihapus
             document.querySelector(`.resume-item[data-id='${currentResumeId}']`).closest('.resume-item-wrapper').remove();
             showState('upload');
         } catch (error) { alert(error.message); }
@@ -206,27 +342,16 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Harap pilih resume dan isi deskripsi pekerjaan.');
             return;
         }
-
         matchJobBtn.disabled = true;
         matchJobBtn.textContent = 'Menganalisis...';
-    
         try {
             const response = await fetch('/api/ai/match-job-description', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    resume_id: currentResumeId,
-                    job_description: jobDescription
-                })
+                body: JSON.stringify({ resume_id: currentResumeId, job_description: jobDescription })
             });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Server error');
-            }
-
-            // Muat ulang data untuk menampilkan analisis baru di daftar riwayat
+            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Server error'); }
             await fetchAndDisplayResume(currentResumeId);
-
         } catch (error) {
             alert(`Gagal mendapatkan analisis: ${error.message}`);
         } finally {
