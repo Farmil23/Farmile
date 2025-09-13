@@ -318,3 +318,98 @@
     justify-content: center;
     gap: 0.5rem;
 }
+
+/* =============================================== */
+/* ===     STYLE KOMUNITAS (VERSI FINAL)       === */
+/* =============================================== */
+
+.community-nav {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nav-tab {
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.nav-tab:hover {
+    color: var(--text-primary);
+}
+
+.nav-tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.user-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.user-card {
+    padding: 2rem 1.5rem;
+    transition: all 0.2s ease;
+    /* Membuat card menjadi flex container */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.user-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px var(--shadow-hover);
+}
+
+.user-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    border: 3px solid var(--border-color);
+    object-fit: cover;
+    transition: border-color 0.2s ease;
+}
+
+.user-card:hover .user-avatar {
+    border-color: var(--primary-color);
+}
+
+.user-name-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.user-card h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    /* Trik agar tinggi konsisten (untuk 1-2 baris nama) */
+    min-height: 2.5em; 
+    display: flex;
+    align-items: center;
+    text-align: center;
+}
+
+.user-career {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.user-card .card-actions {
+    /* Mendorong tombol ke bagian bawah card */
+    margin-top: auto; 
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}

@@ -459,3 +459,58 @@ class JobMatchAnalysis(db.Model):
             'match_result': self.match_result,
             'created_at': self.created_at.isoformat()
         }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+# Di dalam app/models.py
+
+# --- Tambahkan dua class baru ini di bagian paling bawah file ---
+
+class Conversation(db.Model):
+    """Model ini merepresentasikan satu ruang chat antara dua pengguna."""
+    __tablename__ = 'conversation'
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow) # Waktu pesan terakhir untuk sorting
+    
+    # Relasi ke partisipan (pengguna) dalam percakapan
+    participants = db.relationship('User', secondary='conversation_participants',
+                                 backref=db.backref('conversations', lazy='dynamic'))
+    messages = db.relationship('DirectMessage', backref='conversation', lazy='dynamic', cascade="all, delete-orphan")
+
+# Tabel asosiasi untuk melacak siapa saja yang ada di dalam sebuah percakapan
+conversation_participants = db.Table('conversation_participants',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('conversation_id', db.Integer, db.ForeignKey('conversation.id'), primary_key=True)
+)
+
+class DirectMessage(db.Model):
+    """Model ini merepresentasikan satu pesan individual."""
+    __tablename__ = 'direct_message'
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    
+    sender = db.relationship('User')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "sender": {
+                "id": self.sender.id,
+                "name": self.sender.name,
+                "profile_pic": self.sender.profile_pic
+            },
+            "content": self.content,
+            "timestamp": self.timestamp.isoformat() + "Z"
+        }

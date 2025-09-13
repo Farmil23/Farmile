@@ -11,6 +11,12 @@
         <h2>Temukan Komunitas Farmile</h2>
         <p class="subtitle">Cari teman belajar, mentor, atau kolaborator untuk proyekmu berikutnya.</p>
     </div>
+    <div class="header-actions">
+        <a href="{{ url_for('routes.messages_inbox') }}" class="button-primary">
+            <i class="fas fa-inbox"></i> Buka Inbox
+        </a>
+    </div>
+
 </div>
 
 <div class="community-nav">
@@ -36,6 +42,9 @@
         <div class="card-actions">
             {% set received_req = current_user.received_requests.filter_by(sender_id=user.id).first() %}
             {% if current_user.is_connected(user) %}
+                <a href="{{ url_for('routes.direct_message_page', user_id=user.id) }}" class="button-primary">
+                    <i class="fas fa-comment-dots"></i> Kirim Pesan
+                </a>
                 <button class="button-secondary action-btn" data-action="remove-connection">Hapus Koneksi</button>
             {% elif current_user.sent_connection_request(user) %}
                 <button class="button-secondary action-btn" data-action="cancel-request">Batalkan Permintaan</button>

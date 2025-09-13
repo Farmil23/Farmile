@@ -1,0 +1,55 @@
+{% extends "dashboard_base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/inbox.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="page-header">
+    <div>
+        <h2>Pesan Pribadi</h2>
+        <p class="subtitle">Semua percakapan Anda dengan pengguna lain.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('routes.community_page') }}" class="button-secondary">
+            <i class="fas fa-arrow-left"></i> Kembali ke Komunitas
+        </a>
+    </div>
+    </div>
+
+<div class="inbox-container">
+    {% if conversations %}
+        <ul class="conversation-list">
+            {% for conv in conversations %}
+                {% set other_user = conv.participants|selectattr('id', '!=', current_user.id)|first %}
+                {% if other_user %}
+                <li class="conversation-item">
+                    <a href="{{ url_for('routes.direct_message_page', user_id=other_user.id) }}">
+                        <img src="{{ other_user.profile_pic }}" alt="Avatar" class="avatar">
+                        <div class="conv-details">
+                            <span class="username">{{ other_user.name }}</span>
+                            {# Logika untuk menampilkan pesan terakhir dengan aman #}
+                            {% set last_msg = conv.messages.order_by(DirectMessage.timestamp.desc()).first() %}
+                            <span class="last-message">
+                                {% if last_msg %}
+                                    {{ last_msg.content | truncate(40) }}
+                                {% else %}
+                                    Belum ada pesan.
+                                {% endif %}
+                            </span>
+                        </div>
+                        <span class="timestamp">{{ conv.timestamp|localdatetime('%H:%M') }}</span>
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="card empty-state" style="text-align: center;">
+            <h4>Belum Ada Percakapan</h4>
+            <p>Mulai terhubung dengan pengguna lain di halaman Komunitas untuk memulai percakapan.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

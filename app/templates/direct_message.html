@@ -1,0 +1,34 @@
+{% extends "dashboard_base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/direct_message.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <a href="{{ url_for('routes.messages_inbox') }}" class="back-link">&larr; Kembali ke Inbox</a>
+        <div class="recipient-info">
+            <img src="{{ other_user.profile_pic }}" alt="Avatar">
+            <h3>{{ other_user.name }}</h3>
+        </div>
+    </div>
+    <div class="chat-window" id="chat-window">
+        </div>
+    <div class="chat-input-area">
+        <textarea id="message-input" placeholder="Ketik pesan..." rows="1"></textarea>
+        <button id="send-btn" class="button-primary">Kirim</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+    <script>
+        window.DM_CONFIG = {
+            conversationId: {{ conversation.id }},
+            currentUserId: {{ current_user.id }}
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/direct_message.js') }}"></script>
+{% endblock %}

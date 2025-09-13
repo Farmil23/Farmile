@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -2308,3 +2308,67 @@ def remove_connection(user_id):
     return jsonify({'success': True, 'message': f'Koneksi dengan {user_to_remove.name} telah dihapus.'})
 
 # === AKHIR BLOK PENGGANTIAN ===
+
+@bp.route('/messages')
+@login_required
+def messages_inbox():
+    """Menampilkan halaman inbox dengan semua percakapan pengguna."""
+    user_conversations = current_user.conversations.order_by(Conversation.timestamp.desc()).all()
+    # Tambahkan 'DirectMessage=DirectMessage' untuk mengirim class ke template
+    return render_template('inbox.html', 
+                           title="Pesan", 
+                           conversations=user_conversations, 
+                           DirectMessage=DirectMessage)
+
+@bp.route('/messages/<int:user_id>')
+@login_required
+def direct_message_page(user_id):
+    """Menampilkan halaman chat dengan pengguna spesifik."""
+    other_user = User.query.get_or_404(user_id)
+    if not current_user.is_connected(other_user):
+        flash("Anda harus terhubung dengan pengguna untuk mengirim pesan.", "warning")
+        return redirect(url_for('routes.public_profile', username=other_user.username))
+
+    # Cari percakapan yang sudah ada antara kedua pengguna
+    conversation = current_user.conversations.filter(
+        Conversation.participants.any(id=other_user.id)
+    ).first()
+    
+    # Jika belum ada percakapan, buat yang baru
+    if not conversation:
+        conversation = Conversation()
+        conversation.participants.append(current_user)
+        conversation.participants.append(other_user)
+        db.session.add(conversation)
+        db.session.commit()
+
+    return render_template('direct_message.html', title=f"Pesan dengan {other_user.name}", conversation=conversation, other_user=other_user)
+
+@bp.route('/api/messages/<int:conversation_id>', methods=['GET', 'POST'])
+@login_required
+def handle_direct_messages(conversation_id):
+    """API untuk mengirim atau mengambil pesan langsung."""
+    conversation = Conversation.query.get_or_404(conversation_id)
+    if current_user not in conversation.participants:
+        abort(403)
+
+    if request.method == 'GET':
+        messages = conversation.messages.order_by(DirectMessage.timestamp.asc()).all()
+        return jsonify([msg.to_dict() for msg in messages])
+
+    if request.method == 'POST':
+        content = request.get_json().get('content')
+        if not content or not content.strip():
+            return jsonify({'error': 'Pesan tidak boleh kosong'}), 400
+        
+        message = DirectMessage(
+            conversation_id=conversation.id,
+            sender_id=current_user.id,
+            content=content
+        )
+        conversation.timestamp = datetime.utcnow()
+        
+        db.session.add(message)
+        db.session.commit()
+        
+        return jsonify(message.to_dict()), 201
