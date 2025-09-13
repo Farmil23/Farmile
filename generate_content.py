@@ -30,13 +30,21 @@ def generate_and_save_content():
             try:
                 # Prompt final dengan instruksi kebersihan kode
                 prompt = f"""
-                Anda adalah seorang penulis konten teknis ahli yang bertugas membuat materi pembelajaran komprehensif.
-                Tugas Anda adalah membuat konten untuk topik: "{lesson.title}".
+                Anda adalah seorang Senior Technical Instructor dan Curriculum Designer di sebuah perusahaan Edutech global terkemuka.
+                Tugas Anda adalah membuat materi pembelajaran yang SANGAT LENGKAP, DETAIL, DAN KOMPREHENSIF untuk topik: "{lesson.title}".
+                Target audiens adalah mahasiswa IT yang ingin memahami konsep dari dasar hingga penerapannya di industri.
 
-                Anda WAJIB menghasilkan output hanya dalam format HTML murni.
+                Anda WAJIB menghasilkan output hanya dalam format HTML murni dan setiap lesson memiliki format yang sama dan konsisten, tidak ada perbedaan diantara lesson hanya materi yang berbeda.
+                
+                
                 Gunakan tag HTML standar: <h3>, <p>, <ul>, <li>, <strong>, dan <pre><code>.
 
                 **ATURAN PENTING**: JANGAN tambahkan baris kosong (empty new lines) yang tidak perlu di antara elemen-elemen HTML. Buat kode HTML yang rapat dan bersih.
+                
+                **ATURAN STRUKTUR HTML (SANGAT PENTING):**
+                1.  **JANGAN** membuat daftar bernomor di dalam satu tag `<p>`.
+                2.  **SELALU** gunakan tag `<ul>` dan `<li>` untuk membuat daftar poin.
+                3. jika sudah ada li, jangan gunakan li::marked
 
                 **KEMAMPUAN TAMBAHAN:**
                 1.  **Tabel**: Jika perlu, gunakan tag `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, dan `<td>`.
@@ -45,22 +53,24 @@ def generate_and_save_content():
                 Struktur HTML yang harus Anda hasilkan adalah sebagai berikut:
                 
                 <h3>🚀 Pendahuluan Singkat</h3>
-                <p>Jelaskan apa itu topik ini dan mengapa ini penting.</p>
-
+                <p>Jelaskan tools apa saja yang akan digunakan nanti saat latihan dan juga jelaskan singkat tentang tools ini</p>
+                <p>Jelaskan apa itu topik ini dan mengapa ini penting dan jelaskan materi ini yang sangat sesuai dengan kebutuhan industri sebagai expert</p>
+                <li> disini jika ada list simpan disini jangan di p </li>
+                
                 <h3>🤔 Analogi Sederhana</h3>
-                <p>Jelaskan konsep inti menggunakan analogi dari dunia nyata.</p>
+                <p>Jelaskan konsep inti menggunakan analogi dari dunia nyata dan jelaskan bagaimana cara kerjanya dengan sangat detail dan lengkap seperti expert</p>
 
-                <h3>核心 Konsep Inti</h3>
+                <h3>Materi inti pada lesson "{lesson.title}"</h3>
                 <p>Pecah menjadi beberapa poin utama. Jika ada rumus, gunakan LaTeX. Contoh: `\\( E=mc^2 \\)`.</p>
                 
                 <h3>💻 Contoh Kode Praktis atau Tabel Perbandingan</h3>
                 <p>Jika topiknya tentang kode, berikan contoh dalam `<pre><code>`. Jika tentang konsep, buatlah tabel perbandingan.</p>
                 
                 <h3>💡 Tantangan Mini</h3>
-                <p>Buat satu soal latihan kecil.</p>
+                <p>Buat satu soal latihan kecil dan latihan ini harus sesuai dengan materi yanga sudah diberikan dan kasih pengetahuan dimana, tools yang akan digunakan apa dan bagaimana cara mengerjakannya</p>
                 <details>
                     <summary>Lihat Solusi</summary>
-                    <p>Solusi tantangan di sini.</p>
+                    <p>Solusi tantangan di sini jelaskan dengan lengkap, jika ada code berikan saja codenya dengan format yang sesuai.</p>
                 </details>
 
                 <h3>✅ Kesimpulan</h3>

@@ -449,7 +449,8 @@ def change_career_path():
         'backend', 
         'data-analyst', 
         'ai-ml-engineer', 
-        'devops-engineer'
+        'devops-engineer',
+        'cyber-security'
     ]
     
     # Cek apakah new_path ada di dalam daftar yang valid

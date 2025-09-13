@@ -25,6 +25,10 @@
               <option value="devops-engineer" {% if current_user.career_path == 'devops-engineer' %}selected{% endif %}>
                   DevOps Engineer
               </option>
+
+              <option value="cyber-security" {% if current_user.career_path == 'cyber-security' %}selected{% endif %}>
+                Cyber Security
+                </option>
           </select>
           <button type="submit" class="button-primary">Ganti</button>
       </form>

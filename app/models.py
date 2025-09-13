@@ -54,6 +54,8 @@ class Module(db.Model):
     lessons = db.relationship('Lesson', backref='module', cascade="all, delete-orphan")
     projects = db.relationship('Project', backref='module', cascade="all, delete-orphan")
 
+    level = db.Column(db.String(50), default='beginner', nullable=False) # <-- TAMBAHKAN BARIS INI
+    
     def __repr__(self):
         return f"<Module {self.title}>"
 

@@ -460,3 +460,21 @@
         font-size: 0.85rem;
     }
 }
+
+
+
+li::marker {
+    color : transparent;
+}
+
+/* =============================================== */
+/* ===         PERBAIKAN UNTUK RUMUS SVG         === */
+/* =============================================== */
+
+.core-content mjx-container {
+    overflow-x: auto;  /* Aktifkan scroll horizontal jika rumus terlalu panjang */
+    overflow-y: hidden; /* Sembunyikan scroll vertikal yang tidak perlu */
+    max-width: 100%;   /* Pastikan wadah tidak lebih lebar dari kontainer induknya */
+    padding: 1rem 0;   /* Beri sedikit ruang vertikal agar tidak terlalu mepet */
+}
+
