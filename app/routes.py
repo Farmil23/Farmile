@@ -1001,21 +1001,31 @@ def rename_session(session_id):
 def new_chat_for_lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
 
-    new_session = ChatSession(user_id=current_user.id, title=f"Diskusi: {lesson.title}")
+    new_session = ChatSession(
+        user_id=current_user.id,
+        title=f"Diskusi: {lesson.title}",
+        lesson_id=lesson.id
+    )
     db.session.add(new_session)
-    db.session.flush()  # <-- id langsung keluar
+    db.session.flush()
+
+    # --- PERUBAHAN DI SINI ---
+    # Mengambil deskripsi sebagai ringkasan dan menghapus link
+    summary = lesson.description or "Ringkasan untuk materi ini akan segera tersedia."
 
     welcome_message_content = (
         f"Selamat datang di materi **{lesson.title}**. 📘✨\n\n"
-        f"Kamu bisa mulai belajar dari sumber berikut: {lesson.url if lesson.url else 'Belum ada link, tapi jangan khawatir, materinya akan segera siap untukmu.'}\n\n"
-        f"Kenapa topik ini penting? Karena pemahaman di sini bakal jadi kunci untuk menguasai langkah berikutnya. 🔑\n"
-        f"Kalau ada bagian yang bikin kamu bingung atau justru bikin penasaran, ayo kita bahas bareng supaya makin jelas dan seru 🚀"
+        f"**Ringkasan Materi:**\n"
+        f"*{summary}*\n\n"
+        f"Aku sudah membaca seluruh konten materi ini dan siap membantumu. "
+        f"Kalau ada bagian yang bikin kamu bingung atau justru bikin penasaran, ayo kita bahas bareng supaya makin jelas dan seru! 🚀"
     )
+    # --- AKHIR PERUBAHAN ---
 
     welcome_message = ChatMessage(
-        session_id=new_session.id, 
-        user_id=current_user.id, 
-        role='assistant', 
+        session_id=new_session.id,
+        user_id=current_user.id,
+        role='assistant',
         content=welcome_message_content
     )
     db.session.add(welcome_message)
@@ -1068,6 +1078,7 @@ def edit_profile():
     return render_template('edit_profile.html', title="Edit Profil")
 
 
+# Ganti seluruh fungsi chat_ai yang lama dengan ini
 @bp.route('/chat-ai/<int:session_id>', methods=['POST'])
 @login_required
 def chat_ai(session_id):
@@ -1085,23 +1096,38 @@ def chat_ai(session_id):
     db.session.add(user_message)
     db.session.commit()
 
-    # 3. Bangun Konteks Pengguna (Jadwal, Roadmap, dll.)
+    # --- PERUBAHAN UTAMA DIMULAI DI SINI ---
+
+    lesson_context_string = ""
+    # Cek apakah sesi ini terhubung ke sebuah lesson
+    if session_data.lesson_id:
+        lesson = Lesson.query.get(session_data.lesson_id)
+        if lesson and lesson.content:
+            # Jika ada, buat string konteks dari konten materi
+            lesson_context_string = f"""
+[KONTEKS MATERI SPESIFIK]
+Judul Materi: {lesson.title}
+Isi Materi Lengkap:
+---
+{lesson.content}
+---
+"""
+
+    # 3. Bangun Konteks Pengguna (tetap dibangun untuk prompt umum)
     user_timezone_str = current_user.timezone or 'Asia/Jakarta'
     local_tz = pytz.timezone(user_timezone_str)
     now_local = datetime.now(local_tz)
     today_local = now_local.date()
 
-    # Ambil data jadwal dari Personal Hub
     todays_events = Event.query.filter(db.func.date(Event.start_time) == today_local, Event.user_id == current_user.id).all()
     relevant_tasks = Task.query.filter(
         Task.user_id == current_user.id, Task.status != 'done',
         or_(db.func.date(Task.due_date) <= today_local, Task.due_date == None)
     ).all()
     
-    event_list_str = "\n- ".join([f"{e.title}" for e in todays_events]) or "Tidak ada"
-    task_list_str = "\n- ".join([f"{t.title}" for t in relevant_tasks]) or "Tidak ada"
+    event_list_str = "\\n- ".join([f"{e.title}" for e in todays_events]) or "Tidak ada"
+    task_list_str = "\\n- ".join([f"{t.title}" for t in relevant_tasks]) or "Tidak ada"
     
-    # Ambil data roadmap belajar
     roadmap_context_str = "Pengguna belum memilih jalur karier."
     if current_user.career_path:
         all_modules = Module.query.filter(
@@ -1116,47 +1142,61 @@ def chat_ai(session_id):
             next_lesson = next((l for l in sorted(all_lessons, key=lambda l: (l.module.order, l.order)) if l.id not in completed_lesson_ids), None)
             
             roadmap_context_str = (
-                f"Progress Roadmap '{current_user.career_path}': {completed_lessons_count} dari {total_lessons_count} materi selesai.\n"
-                f"Materi Selanjutnya: '{next_lesson.title if next_lesson else 'Semua materi sudah selesai!'}'.\n"
+                f"Progress Roadmap '{current_user.career_path}': {completed_lessons_count} dari {total_lessons_count} materi selesai.\\n"
+                f"Materi Selanjutnya: '{next_lesson.title if next_lesson else 'Semua materi sudah selesai!'}'.\\n"
             )
         else:
             roadmap_context_str = "Roadmap untuk jalur karier ini belum dibuat."
 
-    # Gabungkan semua konteks menjadi satu string
     user_context_string = (
-        f"Nama pengguna: {current_user.name}.\n"
-        f"Semester: {current_user.semester}.\n"
-        f"Jalur Karier: {current_user.career_path}.\n"
+        f"Nama pengguna: {current_user.name}.\\n"
+        f"Semester: {current_user.semester}.\\n"
+        f"Jalur Karier: {current_user.career_path}.\\n"
         f"{roadmap_context_str}"
-        f"Jadwal Acara Hari Ini: {event_list_str}\n"
+        f"Jadwal Acara Hari Ini: {event_list_str}\\n"
         f"Daftar Tugas Aktif: {task_list_str}"
     )
 
-    # 4. System Prompt Baru yang Seimbang dan Dinamis
-    system_prompt = (
-        "[PERAN & IDENTITAS]\n"
-        "Anda adalah 'Farmile', seorang mentor AI yang super asik, ramah, dan personal. Anggap dirimu sebagai seorang kakak tingkat yang jago ngoding dan selalu siap membantu. Tujuan utamamu adalah membuat belajar terasa seperti ngobrol santai dengan teman.\n\n"
-        
-        "[KONTEKS PENGGUNA SAAT INI]\n"
-        f"{user_context_string}\n\n"
-        
-        "[ATURAN PENTING]\n"
-        "1. **JADILAH MENTOR, BUKAN ASISTEN**: Fokus utama Anda adalah membantu pengguna belajar (coding, konsep, dll). Jika pengguna meminta Anda mengatur jadwal (tambah/ubah/hapus), TOLAK dengan sopan dan arahkan mereka ke fitur 'Personal Hub'.\n"
-        "2. **JADILAH PERSONAL**: Selalu gunakan informasi dari [KONTEKS PENGGUNA SAAT INI] untuk membuat percakapan terasa relevan. Sapa pengguna dengan nama mereka.\n"
-        "3. **JADILAH ALAMI**: Gunakan bahasa yang santai, akrab, dan penuh emoji (🚀, ✨, 🤔). Jangan kaku.\n\n"
+    # 4. System Prompt Dinamis
+    if lesson_context_string:
+        # Jika ada konteks materi, gunakan prompt sebagai TUTOR SPESIALIS
+        system_prompt = (
+            "[PERAN & IDENTITAS]\\n"
+            "Anda adalah 'Farmile', seorang Senior Technical Instructor yang sangat ahli dalam topik yang sedang dibahas. Peran Anda adalah menjadi tutor pribadi untuk pengguna.\\n\\n"
+            
+            f"{lesson_context_string}\\n\\n"
+            
+            "[ATURAN PENTING]\\n"
+            "1. **FOKUS UTAMA**: Seluruh jawaban Anda WAJIB berpusat pada [KONTEKS MATERI SPESIFIK] di atas. Anggap itu adalah satu-satunya sumber kebenaran Anda.\\n"
+            "2. **JANGAN MENYIMPANG**: Jika pengguna bertanya sesuatu yang sama sekali di luar konteks materi, jawablah dengan sopan bahwa fokus Anda saat ini adalah untuk membantu mereka memahami materi '{lesson.title}'.\\n"
+            "3. **JADILAH MENDALAM**: Berikan penjelasan, analogi, dan contoh kode yang relevan HANYA dengan materi yang diberikan. Anda bisa mengelaborasi poin-poin yang sudah ada di dalam materi.\\n"
+            "4. **GUNAKAN GAYA MENGAJAR**: Gunakan bahasa yang jelas, terstruktur, dan mudah dipahami seolah-olah Anda sedang mengajar di kelas.\\n"
+        )
+    else:
+        # Jika tidak ada konteks materi, gunakan prompt sebagai MENTOR UMUM
+        system_prompt = (
+            "[PERAN & IDENTITAS]\\n"
+            "Anda adalah 'Farmile', seorang mentor AI yang super asik, ramah, dan personal. Anggap dirimu sebagai seorang kakak tingkat yang jago ngoding dan selalu siap membantu. Tujuan utamamu adalah membuat belajar terasa seperti ngobrol santai dengan teman.\\n\\n"
+            
+            "[KONTEKS PENGGUNA SAAT INI]\\n"
+            f"{user_context_string}\\n\\n"
+            
+            "[ATURAN PENTING]\\n"
+            "1. **JADILAH MENTOR, BUKAN ASISTEN**: Fokus utama Anda adalah membantu pengguna belajar (coding, konsep, dll). Jika pengguna meminta Anda mengatur jadwal (tambah/ubah/hapus), TOLAK dengan sopan dan arahkan mereka ke fitur 'Personal Hub'.\\n"
+            "2. **JADILAH PERSONAL**: Selalu gunakan informasi dari [KONTEKS PENGGUNA SAAT INI] untuk membuat percakapan terasa relevan. Sapa pengguna dengan nama mereka.\\n"
+            "3. **JADILAH ALAMI**: Gunakan bahasa yang santai, akrab, dan penuh emoji (🚀, ✨, 🤔). Jangan kaku.\\n\\n"
 
-        "[CONTOH INTERAKSI]\n"
-        "Pengguna: 'haii'\n"
-        "Respons Anda: 'Haii juga, [Nama Pengguna]! Siap buat ngoding atau ada yang bikin pusing hari ini? Sini, cerita aja! 🤔'\n\n"
-        
-        "Pengguna: 'tolong tambahin tugas deadline besok'\n"
-        "Respons Anda: 'Wih, semangat banget buat tugasnya! 👍 Kalo buat nyatet deadline, tempat paling pas itu di Personal Hub kamu biar rapi. Tapi, kalau kamu mau kita bahas dulu tugasnya, aku siap banget bantu mecahin masalahnya!'"
-    )
+            "[CONTOH INTERAKSI]\\n"
+            "Pengguna: 'haii'\\n"
+            "Respons Anda: 'Haii juga, [Nama Pengguna]! Siap buat ngoding atau ada yang bikin pusing hari ini? Sini, cerita aja! 🤔'\\n\\n"
+            
+            "Pengguna: 'tolong tambahin tugas deadline besok'\\n"
+            "Respons Anda: 'Wih, semangat banget buat tugasnya! 👍 Kalo buat nyatet deadline, tempat paling pas itu di Personal Hub kamu biar rapi. Tapi, kalau kamu mau kita bahas dulu tugasnya, aku siap banget bantu mecahin masalahnya!'"
+        )
 
     # 5. Bangun Riwayat Pesan dengan Struktur yang Benar
     messages = [{"role": "system", "content": system_prompt}]
     
-    # Ambil SEMUA pesan dalam sesi ini untuk menjaga alur percakapan
     all_messages_in_session = ChatMessage.query.filter_by(session_id=session_id).order_by(ChatMessage.timestamp.asc()).all()
     for msg in all_messages_in_session:
         messages.append({"role": msg.role, "content": msg.content})
@@ -1186,9 +1226,6 @@ def chat_ai(session_id):
         db.session.add(ai_error_message)
         db.session.commit()
         return jsonify({'response': error_message})
-
-
-
 
 
 

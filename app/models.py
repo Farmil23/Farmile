@@ -231,6 +231,11 @@ class ChatSession(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
     messages = db.relationship("ChatMessage", backref="session", lazy="dynamic", cascade="all, delete-orphan")
     project = db.relationship('Project', back_populates='chat_session')
+    
+    # --- TAMBAHKAN DUA BARIS INI ---
+    lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=True)
+    lesson = db.relationship('Lesson', backref=db.backref('chat_sessions', cascade="all, delete-orphan"))
+    # --- AKHIR PERUBAHAN ---
 
 class ChatMessage(db.Model):
     # ... (Model ini tidak perlu diubah)
