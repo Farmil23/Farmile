@@ -375,3 +375,24 @@ class JobCoachMessage(db.Model):
 
     def __repr__(self):
         return f'<JobCoachMessage for App {self.application_id}>'
+    
+    
+# Tambahkan di bagian paling bawah file app/models.py
+
+class JobMatchAnalysis(db.Model):
+    __tablename__ = 'job_match_analysis'
+    id = db.Column(db.Integer, primary_key=True)
+    user_resume_id = db.Column(db.Integer, db.ForeignKey('user_resume.id'), nullable=False)
+    job_description = db.Column(db.Text, nullable=False)
+    match_result = db.Column(db.Text, nullable=False) # Hasil analisis dari AI
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    resume = db.relationship('UserResume', backref=db.backref('analyses', lazy='dynamic', cascade="all, delete-orphan"))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'job_description': self.job_description,
+            'match_result': self.match_result,
+            'created_at': self.created_at.isoformat()
+        }

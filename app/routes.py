@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -1686,26 +1686,6 @@ def ai_resume_pro():
     saved_resumes = UserResume.query.filter_by(user_id=current_user.id).order_by(UserResume.created_at.desc()).all()
     return render_template('ai_resume_pro.html', title="AI Resume Pro", saved_resumes=saved_resumes)
 
-@bp.route('/api/resumes/<int:resume_id>', methods=['GET', 'DELETE'])
-@login_required
-def handle_resume(resume_id):
-    """API untuk mengambil atau menghapus resume spesifik."""
-    resume = UserResume.query.filter_by(id=resume_id, user_id=current_user.id).first_or_404()
-
-    if request.method == 'GET':
-        return jsonify({
-            'id': resume.id,
-            'filename': resume.original_filename,
-            'resume_content': resume.resume_content,
-            'feedback': resume.ai_feedback,
-            'generated_cv_json': resume.generated_cv_json # Kirim data CV jadi
-        })
-
-    if request.method == 'DELETE':
-        db.session.delete(resume)
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'Resume berhasil dihapus.'})
-
 
 # GANTI FUNGSI review_resume_pdf_api DI app/routes.py DENGAN INI
 
@@ -2067,3 +2047,127 @@ def chat_with_job_coach(app_id):
         db.session.rollback()
         current_app.logger.error(f"AI Job Coach Error: {e}")
         return jsonify({'error': 'Gagal menghubungi AI Coach.'}), 500
+
+
+
+@bp.route('/api/ai/match-job-description', methods=['POST'])
+@login_required
+def match_job_description_api():
+    data = request.get_json()
+    resume_id = data.get('resume_id')
+    job_description = data.get('job_description')
+
+    if not resume_id or not job_description:
+        return jsonify({'error': 'Resume ID dan deskripsi pekerjaan dibutuhkan.'}), 400
+
+    resume = UserResume.query.get_or_404(resume_id)
+    if resume.user_id != current_user.id:
+        abort(403)
+
+    # Prompt HTML tetap sama
+    prompt = f"""
+    PERAN DAN TUJUAN:
+    Anda adalah seorang Pakar Perekrutan Teknologi dan Spesialis Desain UI. Tugas Anda adalah menganalisis kecocokan CV dengan deskripsi pekerjaan (JD) dan menyajikan hasilnya dalam format HTML murni yang bersih dan terstruktur.
+
+    TUGAS UTAMA:
+    Berikan analisis lengkap, lalu format seluruh output HANYA sebagai satu blok kode HTML. JANGAN tambahkan teks atau penjelasan apa pun di luar tag HTML utama.
+
+    STRUKTUR HTML YANG WAJIB DIIKUTI (Gunakan kelas CSS yang sama persis):
+    <div class="ats-analysis-result">
+        <div class="ats-score-card">
+            <div class="score-value">[SKOR ATS 1-100]</div>
+            <div class="score-label">Skor Kecocokan ATS</div>
+        </div>
+        <div class="analysis-section">
+            <h4>Analisis Singkat</h4>
+            <p>[2-3 kalimat ringkasan kekuatan dan kelemahan CV terhadap JD di sini]</p>
+        </div>
+        <div class="analysis-section">
+            <h4>Kata Kunci yang Hilang (Missing Keywords)</h4>
+            <ul class="keywords-list">
+                <li><strong>[Kata Kunci 1]:</strong> [Penjelasan singkat mengapa ini penting]</li>
+                <li><strong>[Kata Kunci 2]:</strong> [Penjelasan singkat mengapa ini penting]</li>
+                </ul>
+        </div>
+        <div class="analysis-section">
+            <h4>Saran Implementasi</h4>
+            <div class="suggestion-block">
+                <h5>[Lokasi di CV, misal: Di Bagian "Keahlian"]</h5>
+                <p>[Saran konkret dalam bentuk kalimat atau poin yang bisa langsung disalin]</p>
+            </div>
+            <div class="suggestion-block">
+                <h5>[Lokasi lain di CV, misal: Di Bagian "Pengalaman"]</h5>
+                <p>[Saran konkret lainnya]</p>
+            </div>
+        </div>
+    </div>
+
+    DATA INPUT:
+    1.  CV KANDIDAT:
+    ---
+    {resume.resume_content}
+    ---
+    2.  DESKRIPSI PEKERJAAN (JD):
+    ---
+    {job_description}
+    ---
+    """
+
+    try:
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw_html = completion.choices[0].message.content
+        
+        # --- PERBAIKAN UTAMA: BERSIHKAN OUTPUT AI ---
+        # Menghapus ```html dari awal dan ``` dari akhir
+        cleaned_html = raw_html.strip()
+        if cleaned_html.startswith("```html"):
+            cleaned_html = cleaned_html[7:] # Hapus ```html
+        if cleaned_html.endswith("```"):
+            cleaned_html = cleaned_html[:-3] # Hapus ```
+        
+        match_result_html = cleaned_html.strip()
+        # --- AKHIR PERBAIKAN ---
+
+        # Simpan hasil analisis HTML yang sudah bersih ke database
+        new_analysis = JobMatchAnalysis(
+            user_resume_id=resume.id,
+            job_description=job_description,
+            match_result=match_result_html
+        )
+        db.session.add(new_analysis)
+        db.session.commit()
+        
+        return jsonify({'match_result': match_result_html})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"AI Job Match Error: {e}")
+        return jsonify({'error': 'Gagal mendapatkan analisis kecocokan dari AI.'}), 500
+
+# Ganti fungsi handle_resume dengan ini
+@bp.route('/api/resumes/<int:resume_id>', methods=['GET', 'DELETE'])
+@login_required
+def handle_resume(resume_id):
+    """API untuk mengambil atau menghapus resume spesifik."""
+    resume = UserResume.query.filter_by(id=resume_id, user_id=current_user.id).first_or_404()
+
+    if request.method == 'GET':
+        # --- PERUBAHAN UTAMA: MUAT RIWAYAT ANALISIS ---
+        saved_analyses = resume.analyses.order_by(JobMatchAnalysis.created_at.desc()).all()
+        # --- AKHIR PERUBAHAN ---
+
+        return jsonify({
+            'id': resume.id,
+            'filename': resume.original_filename,
+            'resume_content': resume.resume_content,
+            'feedback': resume.ai_feedback,
+            'generated_cv_json': resume.generated_cv_json,
+            'analyses': [analysis.to_dict() for analysis in saved_analyses] # <-- KIRIM DATA BARU
+        })
+
+    if request.method == 'DELETE':
+        db.session.delete(resume)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Resume berhasil dihapus.'})

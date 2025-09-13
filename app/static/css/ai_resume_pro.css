@@ -236,3 +236,107 @@
         padding: 1rem;
     }
 }
+
+.review-container .panel.full-width {
+    grid-column: 1 / -1; /* Membuat panel ini memakan lebar 2 kolom */
+}
+.form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--background-color);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    resize: vertical;
+}
+#match-result-content {
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+/* Tambahkan di bagian bawah ai_resume_pro.css */
+.saved-analysis-item {
+    margin-top: 1rem;
+    padding: 0;
+    background-color: var(--background-color);
+}
+.saved-analysis-item summary {
+    padding: 1rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+.saved-analysis-item p {
+    margin-top: 0.5rem;
+}
+.analysis-result-content {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Tambahkan di bagian bawah ai_resume_pro.css */
+
+.ats-analysis-result {
+    padding: 1rem;
+}
+
+.ats-score-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.ats-score-card .score-value {
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.ats-score-card .score-label {
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.analysis-section {
+    margin-bottom: 2rem;
+}
+
+.analysis-section h4 {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.analysis-section p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.keywords-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.keywords-list li {
+    background-color: var(--background-color);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid var(--primary-color);
+}
+
+.suggestion-block {
+    margin-top: 1rem;
+}
+
+.suggestion-block h5 {
+    font-weight: 600;
+    color: var(--text-primary);
+}

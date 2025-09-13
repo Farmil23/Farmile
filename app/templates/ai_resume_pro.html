@@ -35,7 +35,7 @@
         <div class="main-header">
             <h1 id="main-title">AI Resume Pro</h1>
             <div id="main-actions" class="main-actions">
-                </div>
+            </div>
         </div>
 
         <div id="main-content-area" class="main-content-area">
@@ -51,6 +51,24 @@
             <div id="review-container" class="review-container" style="display: none;">
                 <div class="panel resume-display-panel"><h3>Teks CV Anda</h3><pre id="resume-content-text"></pre></div>
                 <div class="panel feedback-panel"><h3>Feedback AI</h3><div id="feedback-content" class="feedback-content"></div></div>
+                
+                <div id="job-matcher-panel" class="panel full-width" style="display: none;">
+                    <h3>✨ Analisis Kecocokan Lowongan (ATS Checker)</h3>
+                    <p class="text-secondary" style="margin-top: -10px; margin-bottom: 20px;">
+                        Tempel deskripsi pekerjaan di bawah ini untuk melihat seberapa cocok CV-mu dan dapatkan saran kata kunci.
+                    </p>
+                    <div class="form-group">
+                        <textarea id="job-description-input" class="form-textarea" rows="8" placeholder="Contoh: 'We are looking for a Backend Developer with experience in Node.js, PostgreSQL, and Docker...'"></textarea>
+                    </div>
+                    <div class="modal-actions" style="justify-content: flex-start; margin-top: 10px;">
+                        <button id="match-job-btn" class="button-primary">Analisis Sekarang</button>
+                    </div>
+                    
+                    <div id="analysis-results-container" style="margin-top: 20px;">
+                        <div id="match-result-content"></div>
+                        <div id="saved-analyses-list" style="margin-top: 20px;"></div>
+                    </div>
+                    </div>
             </div>
 
             <div id="template-selection-box" class="template-selection-box" style="display: none;">
@@ -73,7 +91,7 @@
             </div>
 
             <div id="resume-preview-box" class="resume-preview-box" style="display: none;">
-                </div>
+            </div>
             
             <div id="loading-spinner" class="spinner-container" style="display: none;">
                 <div class="spinner-content"><div class="spinner"></div><p>Farmile sedang menganalisis CV-mu...</p></div>
