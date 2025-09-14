@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mainTitle.textContent = `Hasil Analisis untuk ${currentResumeData.filename}`;
                 mainActions.innerHTML = `
                     <button id="delete-btn" class="button-danger">Hapus</button>
+                    
                     ${currentResumeData.generated_cv_json ? '<button id="view-generated-btn" class="button-secondary">Lihat CV Jadi</button>' : ''}
                     <button id="create-resume-btn" class="button-primary">${currentResumeData.generated_cv_json ? 'Buat Ulang CV' : 'Buat Resume/CV'}</button>`;
                 addReviewActionListeners();
