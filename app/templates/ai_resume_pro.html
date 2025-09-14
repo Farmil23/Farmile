@@ -13,6 +13,7 @@
         </div>
         <div class="sidebar-actions">
             <button id="new-analysis-btn" class="button-primary full-width">Analisis CV Baru</button>
+            <a href="{{ url_for('routes.dashboard') }}" class="button-secondary" style = "margin-top: 5px;">Kembali ke Dasbor</a>
         </div>
         <div id="saved-resumes-list" class="saved-resumes-list">
             {% if saved_resumes %}

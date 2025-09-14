@@ -1,0 +1,64 @@
+{% extends "dashboard_base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/group_chat.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="group-chat-layout">
+    <aside class="group-sidebar card">
+        <h3>{{ group.name }}</h3>
+        <p class="text-secondary">{{ group.description }}</p>
+        <hr>
+        <h4><i class="fas fa-users"></i> Anggota ({{ group.members.count() }})</h4>
+        <ul class="member-list">
+            {% for member in group.members.all() %}
+            <li>
+                <a href="{{ url_for('routes.public_profile', username=member.username) if member.username else '#' }}" title="Lihat Profil">
+                    <img src="{{ member.profile_pic }}" alt="{{ member.name }}">
+                    <span>{{ member.name }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="sidebar-actions">
+             <a href="{{ url_for('routes.community_groups') }}" class="button-secondary full-width">
+                <i class="fas fa-arrow-left"></i> Kembali ke Daftar Grup
+            </a>
+        </div>
+    </aside>
+
+    <main class="chat-container card">
+        <div id="chat-window" class="chat-window">
+            <div class="chat-welcome">
+                <h4>Selamat Datang di #{{ group.name }}</h4>
+                <p>Mulai percakapan dengan anggota grup lainnya!</p>
+            </div>
+            </div>
+        <div class="chat-input-area">
+            <input type="file" id="image-input" accept="image/*" hidden>
+            <button id="upload-image-btn" class="icon-btn" title="Kirim Gambar">
+                <i class="fas fa-paperclip"></i>
+            </button>
+            <button id="share-code-btn" class="icon-btn" title="Bagikan Kode">
+                <i class="fas fa-code"></i>
+            </button>
+            <textarea id="chat-input" placeholder="Ketik pesan..." rows="1"></textarea>
+            <button id="send-btn" class="button-primary">Kirim</button>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+    <script>
+        // Kirim data yang dibutuhkan ke JavaScript
+        window.GROUP_CHAT_CONFIG = {
+            groupId: {{ group.id }},
+            currentUserId: {{ current_user.id }}
+        };
+    </script>
+    {# Kita akan buat file ini di langkah selanjutnya #}
+    <script src="{{ url_for('static', filename='js/group_chat.js') }}"></script> 
+{% endblock %}

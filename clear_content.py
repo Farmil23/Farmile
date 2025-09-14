@@ -3,7 +3,7 @@ from app.models import Lesson
 
 # Daftar judul lesson yang kontennya ingin Anda hapus
 lessons_to_clear = [
-    "Manajemen Konfigurasi dengan ConfigMap & Secret"
+    "HTML Fundamental: Struktur & Elemen Dasar"
 ]
 
 app = create_app()

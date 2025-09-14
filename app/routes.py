@@ -996,6 +996,12 @@ def rename_session(session_id):
         return jsonify({'status': 'success', 'new_title': session.title})
     return jsonify({'status': 'error', 'message': 'Nama tidak boleh kosong'}), 400
 
+
+
+
+# Di dalam file: app/routes.py
+# (Anda bisa menambahkannya setelah fungsi new_chat_session)
+
 @bp.route('/chatbot/new/lesson/<int:lesson_id>', methods=['POST'])
 @login_required
 def new_chat_for_lesson(lesson_id):
@@ -1009,8 +1015,7 @@ def new_chat_for_lesson(lesson_id):
     db.session.add(new_session)
     db.session.flush()
 
-    # --- PERUBAHAN DI SINI ---
-    # Mengambil deskripsi sebagai ringkasan dan menghapus link
+    # Mengambil deskripsi sebagai ringkasan
     summary = lesson.description or "Ringkasan untuk materi ini akan segera tersedia."
 
     welcome_message_content = (
@@ -1020,7 +1025,6 @@ def new_chat_for_lesson(lesson_id):
         f"Aku sudah membaca seluruh konten materi ini dan siap membantumu. "
         f"Kalau ada bagian yang bikin kamu bingung atau justru bikin penasaran, ayo kita bahas bareng supaya makin jelas dan seru! 🚀"
     )
-    # --- AKHIR PERUBAHAN ---
 
     welcome_message = ChatMessage(
         session_id=new_session.id,

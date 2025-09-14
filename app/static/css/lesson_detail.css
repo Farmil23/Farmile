@@ -478,3 +478,6 @@ li::marker {
     padding: 1rem 0;   /* Beri sedikit ruang vertikal agar tidak terlalu mepet */
 }
 
+body {
+    margin: 0;
+}

@@ -1,0 +1,103 @@
+/* =============================================== */
+/* ===         STYLE UNTUK HALAMAN CHAT GRUP     === */
+/* =============================================== */
+
+.group-chat-layout {
+    display: flex;
+    height: calc(100vh - 120px); /* Tinggi maksimal viewport */
+    gap: 1.5rem;
+}
+
+.group-sidebar {
+    flex: 0 0 300px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.group-sidebar h3 {
+    margin-top: 0;
+    font-size: 1.5rem;
+}
+
+.group-sidebar hr {
+    border-color: var(--border-light);
+    margin: 1rem 0;
+}
+
+.member-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1; /* Mengisi ruang yang tersedia */
+    overflow-y: auto;
+}
+
+.member-list li a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: background-color 0.2s ease;
+}
+
+.member-list li a:hover {
+    background-color: var(--primary-light);
+    color: var(--text-primary);
+}
+
+.member-list img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.sidebar-actions {
+    margin-top: 1rem;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.chat-window {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.chat-welcome {
+    text-align: center;
+    margin: auto;
+    color: var(--text-secondary);
+}
+
+.chat-input-area {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.chat-input-area .icon-btn {
+    font-size: 1.2rem;
+}
+
+#chat-input {
+    flex-grow: 1;
+    resize: none;
+    min-height: 42px;
+    max-height: 150px;
+}
