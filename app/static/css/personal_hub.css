@@ -257,7 +257,12 @@ STYLESHEET LENGKAP UNTUK PERSONAL HUB
 ::-webkit-scrollbar-thumb:hover { background: #666; }
 
 .button-primary {
-    width:100%;
+    min-width: 300px;
+    margin-top: 20px;
+}
+
+.button-secondary {
+    min-width: 300px;
     margin-top: 20px;
 }
 /* =================================================================

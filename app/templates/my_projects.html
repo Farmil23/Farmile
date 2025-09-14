@@ -2,7 +2,8 @@
 
 {% block styles %}
     {{ super() }}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/personal_hub.css') }}">
+   
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/my_projects.css') }}">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -13,7 +14,7 @@
         </div>
         <div class="header-actions">
             <a href="{{ url_for('routes.challenge_projects') }}" class="button-secondary">Ambil Challenge Project 🏆</a>
-            <a href="{{ url_for('routes.select_project') }}" class="button-primary">Ambil Project dari Roadmap</a>
+            <a href="{{ url_for('routes.select_project') }}" class="button-secondary" style="background-color: var(--accent-blue);"  >Ambil Project dari Roadmap</a>
         </div>
     </div>
     

@@ -699,8 +699,9 @@ def interview(submission_id):
                            title=f"Wawancara {submission.project.title}", 
                            submission=submission,
                            messages=messages) # Kirim messages ke template
-# app/routes.py -> Tambahkan ini di bagian RUTE API UNTUK AI
-# GANTI SELURUH FUNGSI interview_ai DENGAN INI
+    
+    
+    
 @bp.route('/interview-ai/<int:submission_id>', methods=['POST'])
 @login_required
 def interview_ai(submission_id):
@@ -723,14 +724,15 @@ def interview_ai(submission_id):
     Teknologi yang Digunakan: {submission.project.tech_stack}
     """
 
+    # --- PROMPT BARU YANG LEBIH KRITIS ---
     system_prompt = (
-        "Anda adalah seorang rekruter teknis senior dari sebuah perusahaan teknologi ternama. Anda kritis, tajam, namun tetap suportif. "
-        "Anda sedang mewawancarai seorang kandidat bernama {current_user.name} mengenai proyek portofolio mereka. "
-        "Tugas Anda adalah mengajukan pertanyaan-pertanyaan mendalam berdasarkan brief proyek di bawah untuk menguji pemahaman teknis dan proses berpikir kandidat. "
-        "JANGAN minta untuk melihat kode. Fokus pada 'mengapa' dan 'bagaimana' di balik keputusan teknis mereka. "
-        "Selalu ajukan pertanyaan lanjutan yang relevan dengan jawaban kandidat.\n\n"
+        f"Anda adalah seorang rekruter teknis senior dari sebuah perusahaan teknologi ternama. Anda kritis, tajam, namun tetap suportif. "
+        f"Anda sedang mewawancarai seorang kandidat bernama {current_user.name} mengenai proyek portofolio mereka. "
+        f"Tugas Anda adalah mengajukan pertanyaan-pertanyaan mendalam berdasarkan brief proyek di bawah untuk menguji pemahaman teknis dan proses berpikir kandidat. "
+        f"JANGAN minta untuk melihat kode. Fokus pada 'mengapa' dan 'bagaimana' di balik keputusan teknis mereka. "
+        f"Setelah kandidat menjawab, WAJIB ajukan pertanyaan lanjutan yang relevan untuk menggali lebih dalam sebelum berpindah ke topik lain.\n\n"
         f"--- BRIEF PROYEK KANDIDAT ---\n{project_context}\n\n"
-        "Jika ini adalah pesan pertama, mulailah dengan menyapa kandidat dan ajukan pertanyaan pembuka Anda."
+        f"Jika ini adalah pesan pertama, mulailah dengan menyapa kandidat dan ajukan pertanyaan pembuka Anda."
     )
     
     # Ambil seluruh riwayat pesan untuk menjaga konteks
@@ -759,6 +761,30 @@ def interview_ai(submission_id):
         current_app.logger.error(f"Interview AI Error: {e}")
         return jsonify({'error': 'Gagal menghubungi layanan AI.'}), 500
     
+# Di dalam file: app/routes.py
+# (Tambahkan di bagian RUTE PROYEK & WAWANCARA)
+
+@bp.route('/submission/<int:submission_id>/retry-interview', methods=['POST'])
+@login_required
+def retry_interview(submission_id):
+    submission = ProjectSubmission.query.get_or_404(submission_id)
+    if submission.author != current_user:
+        abort(403)
+
+    # 1. Hapus skor dan feedback yang lama
+    submission.interview_score = None
+    submission.interview_feedback = None
+
+    # 2. Hapus semua riwayat pesan wawancara yang terkait
+    InterviewMessage.query.filter_by(submission_id=submission.id).delete()
+
+    db.session.commit()
+    
+    flash('Riwayat wawancara telah direset. Anda bisa memulai wawancara baru.', 'success')
+    # Arahkan pengguna langsung ke halaman wawancara yang baru dan bersih
+    return redirect(url_for('routes.interview', submission_id=submission.id))
+
+
     
 @bp.route('/cancel-submission/<int:submission_id>', methods=['POST'])
 @login_required
@@ -1641,31 +1667,6 @@ def save_reflection(user_project_id):
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Refleksi berhasil disimpan.'})
-
-# Di dalam file: app/routes.py
-
-# TAMBAHKAN FUNGSI BARU INI
-@bp.route('/submission/<int:submission_id>/retry-interview', methods=['POST'])
-@login_required
-def retry_interview(submission_id):
-    submission = ProjectSubmission.query.get_or_404(submission_id)
-    if submission.author != current_user:
-        abort(403)
-
-    # 1. Hapus skor dan feedback yang lama
-    submission.interview_score = None
-    submission.interview_feedback = None
-
-    # 2. Hapus semua riwayat pesan wawancara yang terkait
-    InterviewMessage.query.filter_by(submission_id=submission.id).delete()
-
-    db.session.commit()
-    
-    flash('Riwayat wawancara telah direset. Anda bisa memulai wawancara baru.', 'success')
-    # Arahkan pengguna langsung ke halaman wawancara yang baru dan bersih
-    return redirect(url_for('routes.interview', submission_id=submission.id))
-
-
 
 
 
