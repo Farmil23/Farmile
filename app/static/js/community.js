@@ -1,13 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+    // --- FUNGSI UNTUK MENAMPILKAN NOTIFIKASI POP-UP (TOAST) ---
+    const toast = document.getElementById('toast-notification');
+    const toastMessage = document.getElementById('toast-message');
+    let toastTimeout;
+
+    /**
+     * Menampilkan notifikasi pop-up dari sudut kanan atas.
+     * @param {string} message - Pesan yang akan ditampilkan.
+     * @param {string} [type='success'] - Tipe notifikasi ('success' atau 'error').
+     */
+    function showToast(message, type = 'success') {
+        clearTimeout(toastTimeout); // Hapus timeout sebelumnya jika ada
+        toastMessage.textContent = message;
+        toast.className = 'toast'; // Reset class
+        toast.classList.add(type); // Tambahkan tipe notifikasi (success/error)
+        
+        toast.classList.add('show');
+        
+        // Sembunyikan notifikasi setelah 4 detik
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 4000);
+    }
+    
+    // --- LOGIKA UTAMA UNTUK HALAMAN KOMUNITAS ---
     const userGrid = document.querySelector('.user-grid');
 
     if (userGrid) {
         userGrid.addEventListener('click', async (e) => {
-            // Pastikan yang diklik adalah tombol dengan class 'action-btn'
             const button = e.target.closest('button.action-btn');
             if (!button) return;
 
-            // Ambil data dari elemen HTML
             const userCard = button.closest('.user-card');
             const userId = userCard.dataset.userId;
             const action = button.dataset.action;
@@ -19,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
             };
 
-            // Tentukan URL API berdasarkan aksi tombol
             switch (action) {
                 case 'send-request':
                     url = `/api/connect/request/${userId}`;
@@ -37,31 +60,53 @@ document.addEventListener('DOMContentLoaded', () => {
                     url = `/api/connect/remove/${userId}`;
                     break;
                 default:
-                    return; // Jika aksi tidak dikenali, hentikan
+                    return;
             }
             
-            // Nonaktifkan tombol untuk mencegah klik ganda
+            const originalButtonText = button.innerHTML;
             button.disabled = true;
-            button.textContent = 'Memproses...';
+            button.innerHTML = 'Memproses...';
 
             try {
                 const response = await fetch(url, options);
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Terjadi kesalahan pada server.');
+                    throw new Error(data.error || 'Terjadi kesalahan.');
                 }
                 
-                // Jika berhasil, muat ulang halaman untuk menampilkan status tombol yang baru
-                // Ini adalah pendekatan paling sederhana dan efektif untuk saat ini.
-                alert(data.message); // Tampilkan pesan sukses dari server
-                window.location.reload();
+                showToast(data.message);
+
+                // --- PERBAIKAN UTAMA: UPDATE UI SECARA DINAMIS ---
+                // Alih-alih me-refresh, kita ubah tombolnya langsung.
+                const actionsContainer = button.parentElement;
+                actionsContainer.innerHTML = getUpdatedButtons(action, userId);
+                // --- AKHIR PERBAIKAN ---
 
             } catch (error) {
-                alert(`Error: ${error.message}`);
-                // Muat ulang juga jika terjadi error agar state tombol kembali normal
-                window.location.reload();
+                showToast(`Error: ${error.message}`, 'error');
+                button.disabled = false;
+                button.innerHTML = originalButtonText; // Kembalikan tombol jika error
             }
         });
+    }
+
+    /**
+     * Fungsi helper untuk membuat HTML tombol yang baru setelah aksi berhasil.
+     */
+    function getUpdatedButtons(lastAction, userId) {
+        switch (lastAction) {
+            case 'send-request':
+                return `<button class="button-secondary action-btn" data-action="cancel-request" data-user-id="${userId}">Batalkan Permintaan</button>`;
+            case 'accept-request':
+                return `<a href="/messages/${userId}" class="button-primary"><i class="fas fa-comment-dots"></i> Kirim Pesan</a>
+                        <button class="button-secondary action-btn" data-action="remove-connection" data-user-id="${userId}">Hapus Koneksi</button>`;
+            case 'cancel-request':
+            case 'reject-request':
+            case 'remove-connection':
+                return `<button class="button-primary action-btn" data-action="send-request" data-user-id="${userId}">Tambah Koneksi</button>`;
+            default:
+                return '';
+        }
     }
 });

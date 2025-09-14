@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -2203,12 +2203,6 @@ def community_page():
     users = User.query.filter(User.id != current_user.id).all()
     return render_template('community.html', title="Komunitas", users=users)
 
-@bp.route('/community/groups')
-@login_required
-def community_groups():
-    """Menampilkan halaman direktori semua grup belajar."""
-    all_groups = StudyGroup.query.order_by(StudyGroup.created_at.desc()).all()
-    return render_template('community_groups.html', title="Grup Belajar", groups=all_groups)
 
 @bp.route('/u/<username>')
 @login_required # Tambahkan login_required agar hanya user terdaftar yang bisa melihat profil detail
@@ -2228,6 +2222,17 @@ def public_profile(username):
                            submissions=completed_submissions)
 
     # Di dalam app/routes.py
+@bp.route('/community/groups')
+@login_required
+def community_groups():
+    """Menampilkan halaman direktori semua grup belajar."""
+    all_groups = StudyGroup.query.order_by(StudyGroup.created_at.desc()).all()
+    
+    accessible_groups = StudyGroup.query.filter(
+        or_(StudyGroup.is_private == False, StudyGroup.members.any(id=current_user.id))
+    ).order_by(StudyGroup.created_at.desc()).all()
+    
+    return render_template('community_groups.html', title="Grup Belajar", groups=accessible_groups)
 
 # === GANTI SEMUA API KONEKSI ANDA DENGAN BLOK DI BAWAH INI ===
 
@@ -2246,6 +2251,16 @@ def send_connection_request(user_id):
 
     req = ConnectionRequest(sender_id=current_user.id, receiver_id=receiver.id)
     db.session.add(req)
+    
+    # --- TAMBAHKAN LOGIKA NOTIFIKASI DI SINI ---
+    notification = Notification(
+        user_id=receiver.id,
+        message=f"{current_user.name} ingin terhubung dengan Anda.",
+        link=url_for('routes.community_page') # Arahkan ke halaman komunitas
+    )
+    db.session.add(notification)
+    # --- AKHIR PENAMBAHAN ---
+    
     db.session.commit()
     return jsonify({'success': True, 'message': 'Permintaan koneksi terkirim.'})
 
@@ -2260,6 +2275,16 @@ def accept_connection_request(request_id):
     
     sender = req.sender
     current_user.add_connection(sender)
+    
+     # --- TAMBAHKAN LOGIKA NOTIFIKASI DI SINI ---
+    notification = Notification(
+        user_id=sender.id,
+        message=f"{current_user.name} menerima permintaan koneksi Anda.",
+        link=url_for('routes.public_profile', username=current_user.username)
+    )
+    db.session.add(notification)
+    # --- AKHIR PENAMBAHAN ---
+    
     
     db.session.delete(req)
     db.session.commit()
@@ -2369,6 +2394,124 @@ def handle_direct_messages(conversation_id):
         conversation.timestamp = datetime.utcnow()
         
         db.session.add(message)
+        # --- TAMBAHKAN LOGIKA NOTIFIKASI DI SINI ---
+        # Cari siapa penerima pesan
+        for participant in conversation.participants:
+            if participant.id != current_user.id:
+                receiver = participant
+                break
+        
+        if receiver:
+            notification = Notification(
+                user_id=receiver.id,
+                message=f"Anda menerima pesan baru dari {current_user.name}.",
+                # Arahkan langsung ke halaman chat yang relevan
+                link=url_for('routes.direct_message_page', user_id=current_user.id)
+            )
+            db.session.add(notification)
+        # --- AKHIR PENAMBAHAN ---
+        
         db.session.commit()
         
         return jsonify(message.to_dict()), 201
+    
+@bp.route('/api/groups/create', methods=['POST'])
+@login_required
+def create_group():
+    data = request.get_json()
+    group_name = data.get('name')
+    group_desc = data.get('description')
+    # Baris ini menerima nilai boolean (True/False) dari JavaScript
+    is_private = data.get('is_private', False)
+
+    if not group_name or not group_name.strip():
+        return jsonify({'error': 'Nama grup tidak boleh kosong.'}), 400
+
+    # Pastikan 'is_private' disimpan saat membuat objek baru
+    new_group = StudyGroup(name=group_name, description=group_desc, creator_id=current_user.id, is_private=is_private)
+    new_group.members.append(current_user)
+    
+    db.session.add(new_group)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True, 
+        'message': 'Grup berhasil dibuat!', 
+        'group_url': url_for('routes.group_page', group_id=new_group.id)
+    })
+
+@bp.route('/api/groups/<int:group_id>/join', methods=['POST'])
+@login_required
+def join_group(group_id):
+    """API untuk bergabung dengan grup."""
+    group = StudyGroup.query.get_or_404(group_id)
+    
+    if group.members.filter_by(id=current_user.id).first():
+        return jsonify({'error': 'Anda sudah menjadi anggota grup ini.'}), 400
+        
+    group.members.append(current_user)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Berhasil bergabung dengan grup.'})
+
+@bp.route('/api/groups/<int:group_id>', methods=['PUT'])
+@login_required
+def update_group(group_id):
+    """API untuk memperbarui detail grup."""
+    group = StudyGroup.query.get_or_404(group_id)
+    
+    # --- Pemeriksaan Kepemilikan yang Krusial ---
+    if group.creator_id != current_user.id:
+        abort(403) # Forbidden
+
+    data = request.get_json()
+    group.name = data.get('name', group.name)
+    group.description = data.get('description', group.description)
+    group.is_private = data.get('is_private', group.is_private)
+    
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Grup berhasil diperbarui.'})
+
+@bp.route('/api/groups/<int:group_id>', methods=['DELETE'])
+@login_required
+def delete_group(group_id):
+    """API untuk menghapus grup."""
+    group = StudyGroup.query.get_or_404(group_id)
+    
+    # --- Pemeriksaan Kepemilikan yang Krusial ---
+    if group.creator_id != current_user.id:
+        abort(403) # Forbidden
+        
+    db.session.delete(group)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Grup berhasil dihapus.'})
+
+
+@bp.route('/api/groups/<int:group_id>/leave', methods=['POST'])
+@login_required
+def leave_group(group_id):
+    """API untuk anggota keluar dari grup."""
+    group = StudyGroup.query.get_or_404(group_id)
+    
+    # Cari apakah pengguna adalah anggota
+    member = group.members.filter_by(id=current_user.id).first()
+    
+    if not member:
+        return jsonify({'error': 'Anda bukan anggota grup ini.'}), 400
+        
+    # Pembuat grup tidak bisa keluar, harus menghapus grup
+    if group.creator_id == current_user.id:
+        return jsonify({'error': 'Pembuat grup tidak bisa keluar.'}), 403
+
+    group.members.remove(member)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Anda telah keluar dari grup "{group.name}".'})
+
+# Kita juga tambahkan placeholder untuk halaman detail grup agar tidak error
+@bp.route('/groups/<int:group_id>')
+@login_required
+def group_page(group_id):
+    group = StudyGroup.query.get_or_404(group_id)
+    if not group.members.filter_by(id=current_user.id).first():
+        abort(403)
+    # Untuk sementara, kita tampilkan template sederhana
+    return f"<h1>Selamat datang di grup {group.name}!</h1><p>Fitur chat akan segera hadir di sini.</p>"

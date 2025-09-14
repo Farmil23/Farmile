@@ -175,5 +175,9 @@
         {% if current_user.is_authenticated %}
         <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
         {% endif %}
+
+        <div id="toast-notification" class="toast">
+          <div id="toast-message" class="toast-message"></div>
+      </div>
   </body>
 </html>

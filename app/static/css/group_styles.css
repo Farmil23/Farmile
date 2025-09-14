@@ -1,0 +1,239 @@
+/* =============================================== */
+/* ===     STYLE GRUP BELAJAR (VERSI FINAL)    === */
+/* =============================================== */
+
+.group-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.group-card {
+    display: flex;
+    flex-direction: column;
+    /* Gunakan variabel dari style.css agar konsisten */
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+}
+
+.group-card h4 {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.group-meta {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-light);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.group-card .card-actions {
+    margin-top: auto; /* Mendorong tombol ke bawah */
+    padding-top: 1rem;
+}
+
+/* =============================================== */
+/* ===         STYLE UNTUK MODAL GRUP          === */
+/* =============================================== */
+
+.modal-box h3 {
+    margin-top: 0;
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.modal-box .form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.modal-box .form-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.modal-box .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px; /* Tambahkan border-radius */
+    color: var(--text-primary);
+}
+
+.modal-box .modal-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* === STYLE BARU UNTUK TOMBOL 'X' PENUTUP MODAL === */
+.modal-box .modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-box .modal-close-btn:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+
+/* === PERBAIKAN DESAIN RADIO BUTTON PRIVASI === */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    padding-top: 0.5rem;
+}
+
+.radio-group input[type="radio"] {
+    /* Sembunyikan radio button asli */
+    opacity: 0;
+    position: fixed;
+    width: 0;
+}
+
+.radio-group label {
+    display: inline-block;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    background-color: var(--background-color);
+}
+
+.radio-group input[type="radio"]:checked + label {
+    /* Style saat radio button dipilih */
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.radio-group label:hover {
+    border-color: var(--primary-color);
+}
+
+/* === PERBAIKAN DESAIN RADIO BUTTON PRIVASI (V2) === */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    padding-top: 0.5rem;
+}
+
+.radio-group input[type="radio"] {
+    /* Sembunyikan radio button asli */
+    opacity: 0;
+    position: fixed;
+    width: 0;
+}
+
+.radio-group label {
+    display: flex; /* Gunakan flexbox untuk menata ikon dan teks */
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    background-color: var(--background-color);
+    flex-grow: 1; /* Biarkan kedua tombol memenuhi ruang */
+    justify-content: center; /* Pusatkan konten */
+}
+
+/* Style saat radio button DIPILIH */
+.radio-group input[type="radio"]:checked + label {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb), 0.3); /* Tambahkan efek glow */
+}
+
+/* Style saat kursor di atas label */
+.radio-group label:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Style untuk Header Kartu Grup dan Badge Privasi */
+.group-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.group-card-header h4 {
+    margin-bottom: 0; /* Hapus margin bawah dari judul */
+}
+
+.privacy-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.privacy-badge.public {
+    background-color: rgba(34, 197, 94, 0.1); /* Hijau */
+    color: #22c55e;
+}
+
+.privacy-badge.private {
+    background-color: rgba(245, 158, 11, 0.1); /* Kuning */
+    color: #f59e0b;
+}
+
+/* =============================================== */
+/* ===         STYLE UNTUK TOAST NOTIFIKASI    === */
+/* =============================================== */
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--success-color);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 9999;
+    transform: translateX(120%);
+    transition: transform 0.4s ease-in-out;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast.error {
+    background-color: var(--danger-color);
+}

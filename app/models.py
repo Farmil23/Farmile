@@ -492,6 +492,11 @@ conversation_participants = db.Table('conversation_participants',
     db.Column('conversation_id', db.Integer, db.ForeignKey('conversation.id'), primary_key=True)
 )
 
+study_group_members = db.Table('study_group_members',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('group_id', db.Integer, db.ForeignKey('study_group.id'), primary_key=True)
+)
+
 class DirectMessage(db.Model):
     """Model ini merepresentasikan satu pesan individual."""
     __tablename__ = 'direct_message'
@@ -514,3 +519,21 @@ class DirectMessage(db.Model):
             "content": self.content,
             "timestamp": self.timestamp.isoformat() + "Z"
         }
+        
+    # --- Tambahkan class baru ini di bawah class DirectMessage ---
+class StudyGroup(db.Model):
+    __tablename__ = 'study_group'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    is_private = db.Column(db.Boolean, default=False, nullable=False) # <-- TAMBAHKAN INI
+    
+    creator = db.relationship('User', backref='created_groups')
+    members = db.relationship('User', secondary=study_group_members, lazy='dynamic',
+                              backref=db.backref('study_groups', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<StudyGroup {self.name}>'

@@ -1,0 +1,145 @@
+{% extends "dashboard_base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    {# Muat kedua file CSS yang relevan #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/community.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/group_styles.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="page-header">
+    <div>
+        <h2>Grup Belajar</h2>
+        <p class="subtitle">Temukan grup, diskusikan materi, dan selesaikan masalah bersama.</p>
+    </div>
+    <div class="header-actions">
+        <button id="create-group-btn" class="button-primary">Buat Grup Baru</button>
+    </div>
+</div>
+
+<div class="community-nav">
+    <a href="{{ url_for('routes.community_page') }}" class="nav-tab">Pengguna</a>
+    <a href="{{ url_for('routes.community_groups') }}" class="nav-tab active">Grup Belajar</a>
+</div>
+
+<div class="group-grid">
+    {% for group in groups %}
+    <div class="card group-card">
+        <div class="group-card-header">
+            <h4>{{ group.name }}</h4>
+            {% if group.is_private %}
+                <span class="privacy-badge private"><i class="fas fa-lock"></i> Privat</span>
+            {% else %}
+                <span class="privacy-badge public"><i class="fas fa-globe-americas"></i> Publik</span>
+            {% endif %}
+        </div>
+
+        <p class="text-secondary">{{ group.description | truncate(100) if group.description else 'Tidak ada deskripsi.' }}</p>
+        
+        <div class="group-meta">
+            <span><i class="fas fa-user-friends"></i> {{ group.members.count() }} Anggota</span>
+            <span><i class="fas fa-user-tie"></i> Dibuat oleh {{ group.creator.name }}</span>
+        </div>
+
+        <div class="card-actions">
+            {% if current_user in group.members.all() %}
+                <a href="{{ url_for('routes.group_page', group_id=group.id) }}" class="button-secondary">Masuk Grup</a>
+                
+                {# --- TOMBOL KELUAR GRUP DITAMBAHKAN DI SINI --- #}
+                {% if current_user.id != group.creator_id %}
+                <button class="button-danger leave-group-btn" data-group-id="{{ group.id }}" data-group-name="{{ group.name }}">
+                    <i class="fas fa-sign-out-alt"></i> Keluar
+                </button>
+                {% endif %}
+        
+            {% elif not group.is_private %}
+                <button class="button-primary join-group-btn" data-group-id="{{ group.id }}">Gabung</button>
+            {% endif %}
+        
+            {% if current_user.id == group.creator_id %}
+            <button class="button-secondary manage-group-btn" 
+                    data-group-id="{{ group.id }}" 
+                    data-group-name="{{ group.name }}" 
+                    data-group-description="{{ group.description or '' }}"
+                    data-group-private="{{ group.is_private|string|lower }}">
+                <i class="fas fa-cog"></i> Kelola
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card empty-state" style="grid-column: 1 / -1; text-align: center;">
+        <h4>Belum Ada Grup</h4>
+        <p>Jadilah yang pertama membuat grup belajar di Farmile!</p>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="create-group-modal" class="modal-overlay">
+    <div class="modal-box card">
+        <h3>Buat Grup Belajar Baru</h3>
+        <button class="modal-close-btn">&times;</button>
+        <form id="create-group-form">
+            <div class="form-group">
+                <label for="group-name" class="form-label">Nama Grup</label>
+                <input type="text" id="group-name" class="form-input" required placeholder="Contoh: Belajar Python Dasar">
+            </div>
+            <div class="form-group">
+                <label for="group-description" class="form-label">Deskripsi Singkat</label>
+                <textarea id="group-description" class="form-input" rows="4" placeholder="Tujuan dan topik yang akan dibahas di grup ini..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tipe Grup</label>
+                <div class="radio-group">
+                    <input type="radio" name="group-privacy" value="public" id="privacy-public" checked>
+                    <label for="privacy-public"><i class="fas fa-globe-americas"></i> Publik</label>
+
+                    <input type="radio" name="group-privacy" value="private" id="privacy-private">
+                    <label for="privacy-private"><i class="fas fa-lock"></i> Privat</label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="button-primary">Buat Grup</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="manage-group-modal" class="modal-overlay">
+    <div class="modal-box card">
+        <h3>Kelola Grup</h3>
+        <button class="modal-close-btn">&times;</button>
+        <form id="manage-group-form">
+            <input type="hidden" id="manage-group-id">
+            <div class="form-group">
+                <label for="manage-group-name" class="form-label">Nama Grup</label>
+                <input type="text" id="manage-group-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="manage-group-description" class="form-label">Deskripsi Singkat</label>
+                <textarea id="manage-group-description" class="form-input" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tipe Grup</label>
+                <div class="radio-group">
+                    <input type="radio" name="manage-group-privacy" value="public" id="manage-privacy-public">
+                    <label for="manage-privacy-public"><i class="fas fa-globe-americas"></i> Publik</label>
+
+                    <input type="radio" name="manage-group-privacy" value="private" id="manage-privacy-private">
+                    <label for="manage-privacy-private"><i class="fas fa-lock"></i> Privat</label>
+                </div>
+            </div>
+            <div class="modal-actions" style="justify-content: space-between;">
+                <button type="button" id="delete-group-btn" class="button-danger">Hapus Grup</button>
+                <button type="submit" class="button-primary">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+    {# Pastikan file JavaScript yang relevan dimuat #}
+    <script src="{{ url_for('static', filename='js/community_groups.js') }}"></script>
+{% endblock %}
