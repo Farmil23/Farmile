@@ -1,7 +1,13 @@
+// GANTI SELURUH ISI FILE personal_hub.js DENGAN KODE LENGKAP DI BAWAH INI
+
 document.addEventListener('DOMContentLoaded', function() {
     // --- API ENDPOINTS & REFERENSI ELEMEN DOM ---
     const EVENTS_API_URL = window.APP_CONFIG.api.events;
     const TASKS_API_URL = window.APP_CONFIG.api.tasks;
+    // URL placeholder ini akan diganti dengan URL dari Jinja2 di template
+    const PROACTIVE_SUGGESTION_URL = "{{ url_for('routes.proactive_suggestion') }}";
+    const LEARNING_SUGGESTION_URL = "{{ url_for('routes.learning_suggestion') }}";
+
     let selectedDateForNewEvent = new Date();
 
     const calendarEl = document.getElementById('calendar');
@@ -197,12 +203,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(`${TASKS_API_URL}?filter=today_and_overdue`)
             ]);
             const allCalendarItems = await eventsResponse.json();
-            const tasks = await tasksResponse.json();
+            const tasksData = await tasksResponse.json(); 
             
             const events = allCalendarItems.filter(item => item.extendedProps.item_type === 'event');
             
             renderEvents(sidebarEventsList, events);
-            renderCategorizedTasks(sidebarTasksContainer, tasks);
+            renderCategorizedTasks(sidebarTasksContainer, tasksData); 
         } catch (error) {
             console.error("Gagal memuat data agenda:", error);
             sidebarEventsList.innerHTML = '<li class="empty-item error">Gagal memuat acara.</li>';
@@ -242,57 +248,59 @@ document.addEventListener('DOMContentLoaded', function() {
             listElement.appendChild(li);
         });
     }
-
-    function renderCategorizedTasks(container, tasks) {
+    
+    function renderCategorizedTasks(container, tasksData) {
         container.innerHTML = '';
-        const categories = {
-            urgent: { title: 'Mendesak', icon: '🔥', tasks: [] },
-            high: { title: 'Penting', icon: '📌', tasks: [] },
-            medium: { title: 'Biasa', icon: '🗓️', tasks: [] },
-            low: { title: 'Santai', icon: '☕', tasks: [] },
+        let hasAnyTask = false;
+    
+        const createTaskList = (tasks, title, icon) => {
+            if (!tasks || tasks.length === 0) return '';
+            hasAnyTask = true;
+            
+            let tasksHtml = `<div class="task-category">
+                                <div class="task-category-header">
+                                    <span class="icon">${icon}</span> ${title}
+                                </div>
+                                <ul class="item-list">`;
+            
+            tasks.forEach(task => {
+                const dueDateString = task.due_date 
+                    ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` 
+                    : 'Tanpa batas waktu';
+                
+                tasksHtml += `
+                    <li class="agenda-item" data-task-id="${task.id}">
+                        <div class="agenda-item-title">${task.title}</div>
+                        <p class="agenda-item-detail">${dueDateString} (Prioritas: ${task.priority})</p>
+                    </li>`;
+            });
+            tasksHtml += `</ul></div>`;
+            return tasksHtml;
         };
-        tasks.forEach(task => { (categories[task.priority] || categories.medium).tasks.push(task); });
-        let hasTasks = false;
-        for (const key in categories) {
-            const category = categories[key];
-            if (category.tasks.length > 0) {
-                hasTasks = true;
-                const categoryDiv = document.createElement('div');
-                categoryDiv.className = 'task-category';
-                
-                let tasksHtml = `<div class="task-category-header"><span class="icon">${category.icon}</span> ${category.title}</div><ul class="item-list">`;
-                
-                category.tasks.forEach(task => {
-                    const dueDateString = task.due_date ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'numeric', year: 'numeric'})}` : 'Tanpa batas waktu';
-                    let descriptionHtml = task.description ? `<p class="agenda-item-detail">${task.description}</p>` : '';
-
-                    tasksHtml += `
-                        <li class="agenda-item" data-task-id="${task.id}">
-                            <div class="agenda-item-title">${task.title}</div>
-                            ${descriptionHtml}
-                            <p class="agenda-item-detail">${dueDateString}</p>
-                        </li>`;
-                });
-                tasksHtml += `</ul>`;
-                categoryDiv.innerHTML = tasksHtml;
-                container.appendChild(categoryDiv);
-                categoryDiv.querySelectorAll('.agenda-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const taskId = item.dataset.taskId;
-                        const taskData = tasks.find(t => t.id == taskId);
-                        if(taskData) openTaskModal(taskData);
-                    });
-                });
-            }
+    
+        container.innerHTML += createTaskList(tasksData.overdue, 'Terlewat', '❗️');
+        container.innerHTML += createTaskList(tasksData.today, 'Hari Ini', '🎯');
+        container.innerHTML += createTaskList(tasksData.no_due_date, 'Tugas Lainnya', '📚');
+    
+        if (!hasAnyTask) {
+            container.innerHTML = `<p class="empty-item">Tidak ada tugas yang perlu ditampilkan.</p>`;
         }
-        if (!hasTasks) { container.innerHTML = `<p class="empty-item">Tidak ada tugas yang relevan hari ini.</p>`; }
+    
+        container.querySelectorAll('.agenda-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const taskId = item.dataset.taskId;
+                const allTasks = [...(tasksData.overdue || []), ...(tasksData.today || []), ...(tasksData.no_due_date || [])];
+                const taskData = allTasks.find(t => t.id == taskId);
+                if(taskData) openTaskModal(taskData);
+            });
+        });
     }
 
 
     function openEventModal(event) {
         eventForm.reset();
         document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-        if (event) { // Mode Edit
+        if (event) { 
             eventModalTitle.textContent = "Edit Acara";
             eventIdInput.value = event.id.replace('event-', '');
             document.getElementById('eventTitle').value = event.title;
@@ -310,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
             if (selectedColorEl) selectedColorEl.classList.add('selected');
             eventDeleteBtn.style.display = 'inline-block';
-        } else { // Mode Baru
+        } else { 
             eventModalTitle.textContent = "Acara Baru";
             eventIdInput.value = '';
             document.getElementById('eventReminder').value = '10';
@@ -480,11 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${dateStr} ${timeStr || '00:00:00'}`;
     }
     
-    /**
-     * Memeriksa URL fragment (#) saat halaman dimuat untuk membuka modal secara otomatis.
-     */
     function handleUrlFragment() {
-        // Beri sedikit jeda agar kalender selesai memuat data acara
         setTimeout(() => {
             const hash = window.location.hash;
 
@@ -505,14 +509,86 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // Hapus hash dari URL agar tidak memicu lagi saat refresh biasa
             if (hash) {
                 history.pushState("", document.title, window.location.pathname + window.location.search);
             }
-        }, 500); // Jeda 500ms
+        }, 500);
+    }
+    
+    // --- SISTEM ANTRIAN MODAL PROAKTIF (BARU) ---
+    let isModalShowing = false;
+    const modalQueue = [];
+
+    function processModalQueue() {
+        if (isModalShowing || modalQueue.length === 0) {
+            return;
+        }
+        isModalShowing = true;
+        const modalFunction = modalQueue.shift();
+        modalFunction();
     }
 
+    function showModal(modalElement) {
+        modalElement.style.display = 'flex';
+        setTimeout(() => modalElement.classList.add('visible'), 10);
+        
+        const closeModal = () => {
+            modalElement.classList.remove('visible');
+            setTimeout(() => {
+                modalElement.style.display = 'none';
+                isModalShowing = false;
+                processModalQueue();
+            }, 300);
+        };
+        
+        // Asumsi tombol kedua selalu 'Nanti saja' atau 'Oke'
+        modalElement.querySelector('.button-secondary').onclick = closeModal;
+        modalElement.onclick = (e) => { if(e.target === modalElement) closeModal(); };
+    }
+
+    async function queueProactiveSuggestion() {
+        try {
+            const response = await fetch(PROACTIVE_SUGGESTION_URL);
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (data.suggestion) {
+                modalQueue.push(() => {
+                    const modal = document.getElementById('ai-suggestion-modal');
+                    document.getElementById('ai-suggestion-text').textContent = data.suggestion;
+                    showModal(modal);
+                });
+                processModalQueue();
+            }
+        } catch (error) { console.error('Gagal mengambil saran jadwal:', error); }
+    }
+
+    async function queueLearningSuggestion() {
+        try {
+            // Hanya jalankan jika tidak ada modal lain yang sedang atau akan ditampilkan
+            if (isModalShowing || modalQueue.length > 0) {
+                return;
+            }
+            const response = await fetch(LEARNING_SUGGESTION_URL);
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (data.suggestion && data.lesson_url) {
+                modalQueue.push(() => {
+                    const modal = document.getElementById('learning-suggestion-modal');
+                    document.getElementById('learning-suggestion-text').innerHTML = data.suggestion;
+                    document.getElementById('learning-suggestion-start').href = data.lesson_url;
+                    showModal(modal);
+                });
+                processModalQueue();
+            }
+        } catch (error) { console.error('Gagal mengambil saran belajar:', error); }
+    }
+    
     // --- Inisialisasi ---
     loadTodaysAgenda();
     handleUrlFragment();
+
+    setTimeout(queueProactiveSuggestion, 1500);
+    setTimeout(queueLearningSuggestion, 2000);
 });

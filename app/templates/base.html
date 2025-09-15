@@ -176,6 +176,9 @@
         <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
         {% endif %}
 
+        {# --- BLOK BARU DAN TERPISAH UNTUK SKRIP HALAMAN TURUNAN --- #}
+        {% block page_scripts %}{% endblock %}
+
         <div id="toast-notification" class="toast">
           <div id="toast-message" class="toast-message"></div>
       </div>

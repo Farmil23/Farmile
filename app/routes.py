@@ -1410,31 +1410,46 @@ def delete_event(event_id):
     return jsonify({'status': 'success', 'message': 'Acara berhasil dihapus.'})
 
 
-# Di dalam app/routes.py
+# GANTI FUNGSI LAMA INI DI app/routes.py
 @bp.route('/api/hub/tasks', methods=['GET'])
 @login_required
 def get_tasks():
     filter_type = request.args.get('filter')
-    query = Task.query.filter_by(author=current_user)
-
+    
+    # Logika baru untuk sidebar agenda harian
     if filter_type == 'today_and_overdue':
-        today = datetime.utcnow().date()
-        # LOGIKA QUERY BARU YANG LEBIH ROBUST
-        query = query.filter(
-            Task.status != 'done',
-            or_(
-                db.func.date(Task.due_date) <= today, # Kondisi 1: Jatuh tempo hari ini atau terlewat
-                Task.due_date == None               # Kondisi 2: Tidak punya tanggal jatuh tempo
-            )
-        )
-    else:
-        # Logika lama untuk saat mengklik tanggal spesifik di kalender (ini sudah benar)
-        date_str = request.args.get('date')
-        if date_str:
-            try:
-                selected_date = datetime.fromisoformat(date_str).date()
-                query = query.filter(db.func.date(Task.due_date) == selected_date)
-            except (ValueError, TypeError): pass
+        today = datetime.now(pytz.timezone(current_user.timezone or 'Asia/Jakarta')).date()
+        
+        # Ambil 3 kategori tugas secara terpisah
+        overdue_tasks = Task.query.filter(
+            Task.user_id == current_user.id, Task.status != 'done',
+            db.func.date(Task.due_date) < today
+        ).order_by(Task.due_date.asc()).all()
+
+        today_tasks = Task.query.filter(
+            Task.user_id == current_user.id, Task.status != 'done',
+            db.func.date(Task.due_date) == today
+        ).order_by(Task.priority.desc()).all()
+
+        no_due_date_tasks = Task.query.filter(
+            Task.user_id == current_user.id, Task.status != 'done',
+            Task.due_date == None
+        ).order_by(Task.priority.desc()).all()
+
+        return jsonify({
+            'overdue': [task_to_dict(t) for t in overdue_tasks],
+            'today': [task_to_dict(t) for t in today_tasks],
+            'no_due_date': [task_to_dict(t) for t in no_due_date_tasks]
+        })
+
+    # Logika lama (yang sudah benar) untuk saat mengklik tanggal di kalender
+    date_str = request.args.get('date')
+    query = Task.query.filter_by(author=current_user)
+    if date_str:
+        try:
+            selected_date = datetime.fromisoformat(date_str).date()
+            query = query.filter(db.func.date(Task.due_date) == selected_date)
+        except (ValueError, TypeError): pass
             
     tasks = query.order_by(Task.due_date.asc()).all()
     return jsonify([task_to_dict(task) for task in tasks])
@@ -2520,3 +2535,5 @@ def group_page(group_id):
         abort(403)
     # Untuk sementara, kita tampilkan template sederhana
     return f"<h1>Selamat datang di grup {group.name}!</h1><p>Fitur chat akan segera hadir di sini.</p>"
+
+
