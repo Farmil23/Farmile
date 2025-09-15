@@ -311,6 +311,12 @@ def roadmap():
                            progress=progress_percentage)
 # app/routes.py
 
+# ... (import lainnya)
+import json # <-- Pastikan 'json' sudah diimpor di bagian atas
+
+# ...
+
+# Ganti fungsi lesson_detail yang lama dengan yang ini
 @bp.route('/lesson/<int:lesson_id>')
 @login_required
 def lesson_detail(lesson_id):
@@ -323,19 +329,21 @@ def lesson_detail(lesson_id):
     progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson.id).first()
     is_completed = True if progress else False
     
+    # --- PENAMBAHAN BARU UNTUK MEMPROSES KUIS ---
+    quiz_data = None
+    if lesson.quiz:
+        try:
+            # Muat string JSON dari database menjadi objek Python
+            quiz_data = json.loads(lesson.quiz)
+        except json.JSONDecodeError:
+            quiz_data = None # Jika JSON tidak valid, abaikan kuis
+    # --- AKHIR PENAMBAHAN ---
+
     return render_template('lesson_detail.html', 
                            title=lesson.title, 
                            lesson=lesson, 
-                           is_completed=is_completed)
-
-# app/routes.py -> Tambahkan ini di bagian RUTE PROYEK
-
-# app/routes.py
-
-# app/routes.py
-
-# app/routes.py
-# app/routes.py
+                           is_completed=is_completed,
+                           quiz_data=quiz_data) # <-- Kirim data kuis ke template
 
 @bp.route('/project/<int:project_id>')
 @login_required
@@ -2537,3 +2545,40 @@ def group_page(group_id):
     return f"<h1>Selamat datang di grup {group.name}!</h1><p>Fitur chat akan segera hadir di sini.</p>"
 
 
+
+
+
+
+
+# ... (import lainnya di atas)
+
+# TAMBAHKAN ROUTE BARU INI DI BAGIAN BAWAH FILE
+@bp.route('/api/lesson/<int:lesson_id>/quiz', methods=['POST'])
+@login_required
+def save_quiz_result(lesson_id):
+    data = request.get_json()
+    score = data.get('score')
+    attempts = data.get('attempts')
+
+    if score is None or attempts is None:
+        return jsonify({'error': 'Data tidak lengkap'}), 400
+
+    # Cari atau buat entri UserProgress untuk materi ini
+    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
+    
+    if not progress:
+        # Jika pengguna menyelesaikan kuis tanpa menyelesaikan materi, buat entri baru
+        lesson = Lesson.query.get_or_404(lesson_id)
+        progress = UserProgress(
+            user_id=current_user.id,
+            module_id=lesson.module_id,
+            lesson_id=lesson.id
+        )
+        db.session.add(progress)
+
+    progress.quiz_score = score
+    progress.quiz_attempts = attempts
+    
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Hasil kuis berhasil disimpan.'})

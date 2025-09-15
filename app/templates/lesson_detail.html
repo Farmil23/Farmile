@@ -16,10 +16,6 @@
     </div>
 
     <div class="card lesson-content">
-        <h3>Tentang Materi Ini</h3>
-        <p>{{ lesson.description or 'Deskripsi belum tersedia.' }}</p>
-    
-        <!-- KONTEN INTI DARI AI DITAMPILKAN DI SINI -->
         <div class="core-content">
             {% if lesson.content %}
                 {{ lesson.content | safe }}
@@ -29,22 +25,58 @@
             {% endif %}
         </div>
 
-        {% if lesson.video_url %}
-        <h3>Video Pembelajaran</h3>
-        <div class="video-container">
-            <iframe width="560" height="315" src="{{ lesson.video_url.replace('watch?v=', 'embed/') }}"
-                    title="YouTube video player"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen>
-            </iframe>
+        {# --- BAGIAN KUIS DENGAN SEMUA PERBAIKAN --- #}
+        {% if quiz_data and quiz_data.questions %}
+        <div class="quiz-container slider-mode">
+            <h3>Uji Pemahaman Anda</h3>
+            
+            <div id="quiz-meta-info" class="quiz-meta-info">
+                <span id="quiz-attempt-counter">Percobaan: 1 dari 3</span>
+                <span>•</span>
+                <span id="quiz-question-counter">Soal: 1 dari {{ quiz_data.questions|length }}</span>
+            </div>
+            
+            <div class="quiz-progress-container">
+                <div id="quiz-progress-bar" class="quiz-progress-bar"></div>
+            </div>
+
+            <div class="quiz-slider">
+                <div id="quiz-slides-wrapper" class="quiz-slides-wrapper">
+                    {% for question in quiz_data.questions %}
+                    {% set question_index = loop.index %}
+                    <div class="quiz-slide">
+                        <div class="quiz-question-card">
+                            <p class="quiz-question-text">{{ question_index }}. {{ question.question_text }}</p>
+                            <div class="quiz-options">
+                                {% for option in question.options %}
+                                <label class="quiz-option">
+                                    <input type="radio" name="question-{{ question_index }}" value="{{ option }}">
+                                    <span>{{ option }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="quiz-slide" id="quiz-result-slide" style="display: none;">
+                        <div class="quiz-question-card" id="quiz-result-card">
+                            <h4>Ringkasan Hasil Kuis</h4>
+                            <div id="quiz-attempts-container"></div> {# Kontainer untuk hasil setiap percobaan #}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-navigation">
+                <button id="quiz-prev-btn" class="button-secondary" style="display: none;">Sebelumnya</button>
+                <button id="quiz-next-btn" class="button-primary">Selanjutnya</button>
+                <button id="quiz-finish-btn" class="button-primary" style="display: none;">Selesaikan Kuis</button>
+                <button id="quiz-retry-btn" class="button-secondary" style="display: none;">Coba Lagi</button>
+            </div>
         </div>
         {% endif %}
-
-        {% if lesson.url %}
-        <h3>Wawasan Tambahan</h3>
-        <p>Untuk pemahaman lebih dalam, kunjungi artikel berikut:</p>
-        <a href="{{ lesson.url }}" target="_blank" rel="noopener noreferrer" class="button-secondary">Baca Artikel Eksternal ↗</a>
-        {% endif %}
+        {# --- AKHIR BAGIAN KUIS --- #}
     </div>
 
     <div class="lesson-actions">
@@ -54,18 +86,152 @@
                 <button type="submit" class="button-secondary">Batal Tandai Selesai</button>
             </form>
         {% else %}
-
-            <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST" style= " margin-right: 1rem;">
+            <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST" style="margin-right: 1rem;">
                 <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
             </form>
-
             <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST">
                 <input type="hidden" name="source" value="detail">
                 <button type="submit" class="button-primary">Tandai Sudah Selesai ✔</button>
             </form>
-
-            
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const quizContainer = document.querySelector('.quiz-container.slider-mode');
+    if (quizContainer) {
+        const quizData = {{ quiz_data | tojson | safe }};
+        const slidesWrapper = document.getElementById('quiz-slides-wrapper');
+        const nextBtn = document.getElementById('quiz-next-btn');
+        const prevBtn = document.getElementById('quiz-prev-btn');
+        const finishBtn = document.getElementById('quiz-finish-btn');
+        const retryBtn = document.getElementById('quiz-retry-btn');
+        const progressBar = document.getElementById('quiz-progress-bar');
+        const attemptCounterEl = document.getElementById('quiz-attempt-counter');
+        const questionCounterEl = document.getElementById('quiz-question-counter');
+        const resultSlide = document.getElementById('quiz-result-slide');
+        const attemptsContainer = document.getElementById('quiz-attempts-container');
+        
+        let currentSlide = 0;
+        let attemptCount = 1;
+        const maxAttempts = 3; // --- JUMLAH PERCOBAAN DIUBAH MENJADI 3 ---
+        const totalQuestions = quizData.questions.length;
+
+        const updateSlidePosition = () => {
+            slidesWrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+            
+            const progress = (currentSlide / totalQuestions) * 100;
+            progressBar.style.width = `${progress}%`;
+
+            if (currentSlide < totalQuestions) {
+                questionCounterEl.style.display = 'inline';
+                questionCounterEl.textContent = `Soal: ${currentSlide + 1} dari ${totalQuestions}`;
+            } else {
+                questionCounterEl.style.display = 'none';
+            }
+
+            prevBtn.style.display = currentSlide > 0 && currentSlide < totalQuestions ? 'inline-flex' : 'none';
+            nextBtn.style.display = currentSlide < totalQuestions - 1 ? 'inline-flex' : 'none';
+            finishBtn.style.display = currentSlide === totalQuestions - 1 ? 'inline-flex' : 'none';
+        };
+
+        const checkAnswers = () => {
+            let correctAnswers = 0;
+            
+            // --- PERBAIKAN DUPLIKASI ---
+            const existingResult = attemptsContainer.querySelector(`#attempt-${attemptCount}`);
+            if (existingResult) {
+                existingResult.remove();
+            }
+
+            const attemptResultWrapper = document.createElement('div');
+            attemptResultWrapper.className = 'attempt-result-wrapper';
+            attemptResultWrapper.id = `attempt-${attemptCount}`;
+
+            const summaryContent = document.createElement('div');
+            summaryContent.className = 'summary-content';
+            summaryContent.style.display = 'none';
+
+            quizData.questions.forEach((question, index) => {
+                const selectedOptionInput = document.querySelector(`input[name="question-${index + 1}"]:checked`);
+                const userAnswer = selectedOptionInput ? selectedOptionInput.value : "Tidak dijawab";
+                if (userAnswer === question.correct_answer) correctAnswers++;
+                
+                const summaryItem = document.createElement('div');
+                summaryItem.className = `summary-item ${userAnswer === question.correct_answer ? 'correct' : 'incorrect'}`;
+                summaryItem.innerHTML = `<p><strong>Soal ${index + 1}:</strong> ${question.question_text}</p><p>Jawaban Anda: ${userAnswer}</p>${userAnswer !== question.correct_answer ? `<p>Jawaban Benar: ${question.correct_answer}</p>` : ''}<p><em>Penjelasan: ${question.explanation}</em></p>`;
+                summaryContent.appendChild(summaryItem);
+            });
+
+            const finalScore = Math.round((correctAnswers / totalQuestions) * 100);
+            
+            attemptResultWrapper.innerHTML = `
+                <div class="attempt-header">
+                    <h4>Hasil Percobaan ${attemptCount} (Nilai: ${finalScore})</h4>
+                    <button class="button-secondary view-details-btn">Lihat Detail</button>
+                </div>
+            `;
+            attemptResultWrapper.appendChild(summaryContent);
+            attemptsContainer.appendChild(attemptResultWrapper);
+            
+            attemptResultWrapper.querySelector('.view-details-btn').addEventListener('click', (e) => {
+                const btn = e.currentTarget;
+                const content = btn.parentElement.nextElementSibling;
+                const isVisible = content.style.display === 'block';
+                content.style.display = isVisible ? 'none' : 'block';
+                btn.textContent = isVisible ? 'Lihat Detail' : 'Sembunyikan Detail';
+            });
+
+            resultSlide.style.display = 'block';
+            currentSlide = totalQuestions;
+            updateSlidePosition();
+            
+            if (attemptCount < maxAttempts) {
+                retryBtn.style.display = 'inline-flex';
+            } else {
+                retryBtn.style.display = 'none';
+                const finalMessage = document.createElement('p');
+                finalMessage.textContent = "Anda telah menggunakan semua kesempatan.";
+                attemptsContainer.appendChild(finalMessage);
+                document.querySelectorAll('input[type="radio"]').forEach(input => input.disabled = true);
+            }
+        };
+
+        const resetQuiz = () => {
+            attemptCount++;
+            attemptCounterEl.textContent = `Percobaan: ${attemptCount} dari ${maxAttempts}`;
+            
+            quizData.questions.forEach((q, index) => {
+                const radioInputs = document.querySelectorAll(`input[name="question-${index + 1}"]`);
+                radioInputs.forEach(input => {
+                    input.checked = false;
+                    input.disabled = false;
+                });
+            });
+            
+            retryBtn.style.display = 'none';
+            currentSlide = 0;
+            updateSlidePosition();
+        };
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < totalQuestions - 1) currentSlide++;
+            updateSlidePosition();
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 0) currentSlide--;
+            updateSlidePosition();
+        });
+
+        finishBtn.addEventListener('click', checkAnswers);
+        retryBtn.addEventListener('click', resetQuiz);
+
+        updateSlidePosition();
+    }
+});
+</script>
 {% endblock %}

@@ -136,6 +136,9 @@ class Lesson(db.Model):
     url = db.Column(db.String(500))
     estimated_time = db.Column(db.Integer)
     
+    quiz = db.Column(db.Text, nullable=True) # <-- TAMBAHKAN BARIS INI
+    
+    
     content = db.Column(db.Text, nullable=True) # <-- BARIS INI DITAMBAHKAN
     
     
@@ -283,6 +286,8 @@ class UserProgress(db.Model):
     module_id = db.Column(db.Integer, db.ForeignKey('module.id'), nullable=False)
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
     completed_at = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    
+    
     
 class ChatSession(db.Model):
     # ... (Model ini tidak perlu diubah)

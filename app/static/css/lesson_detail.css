@@ -481,3 +481,196 @@ li::marker {
 body {
     margin: 0;
 }
+
+
+/* ... (CSS yang sudah ada di file Anda) ... */
+
+/* === GAYA BARU UNTUK KUIS SLIDER === */
+
+.quiz-container.slider-mode {
+    overflow: hidden; /* Sembunyikan slide yang tidak aktif */
+}
+
+.quiz-progress-container {
+    height: 8px;
+    background-color: var(--border-light);
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.quiz-progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 4px;
+    transition: width 0.4s ease-in-out;
+}
+
+.quiz-slider {
+    width: 100%;
+}
+
+.quiz-slides-wrapper {
+    display: flex;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.quiz-slide {
+    flex: 0 0 100%; /* Setiap slide mengambil 100% lebar container */
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 0.5rem; /* Memberi sedikit jarak jika ada rounding error */
+}
+
+.quiz-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+#quiz-result-card {
+    text-align: center;
+}
+
+.summary-item {
+    text-align: left;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border-left-width: 5px;
+    border-left-style: solid;
+}
+
+.summary-item.correct {
+    background-color: rgba(34, 197, 94, 0.1);
+    border-color: var(--success-color);
+}
+
+.summary-item.incorrect {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: var(--danger-color);
+}
+
+.summary-item p {
+    margin: 0 0 0.5rem 0;
+}
+
+/* ... (CSS yang sudah ada di file Anda) ... */
+
+/* === PERBAIKAN DESAIN OPSI KUIS (BARU) === */
+
+.quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.quiz-option {
+    display: flex; /* Menggunakan flexbox untuk mensejajarkan radio button dan teks */
+    align-items: center; /* Menjaga semuanya sejajar secara vertikal */
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--card-bg-color);
+}
+
+.quiz-option:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-light);
+}
+
+.quiz-option input[type="radio"] {
+    margin-right: 0.75rem;
+    accent-color: var(--primary-color);
+    /* Sedikit memperbesar ukuran radio button agar mudah diklik */
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0; /* Mencegah radio button menyusut */
+}
+
+.quiz-option span {
+    flex-grow: 1; /* Memastikan teks mengambil sisa ruang */
+}
+
+/* ... (CSS yang sudah ada) ... */
+
+/* === TAMBAHAN CSS UNTUK INFO PERCOBAAN === */
+.quiz-meta-info {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* ... (CSS yang sudah ada) ... */
+
+/* === TAMBAHAN CSS UNTUK MENAMPILKAN HASIL SETIAP PERCOBAAN === */
+.attempt-result-wrapper {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+#quiz-attempts-container .attempt-result-wrapper:last-of-type {
+    border-bottom: none; /* Hapus garis untuk hasil terakhir */
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+#quiz-attempts-container h4 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+}
+
+/* ... (CSS yang sudah ada) ... */
+
+/* === TAMBAHAN CSS UNTUK DETAIL HASIL PERCOBAAN === */
+.attempt-result-wrapper {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+#quiz-attempts-container .attempt-result-wrapper:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.attempt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.attempt-header h4 , h2, .em{
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+}
+
+.view-details-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+/* ... (CSS yang sudah ada) ... */
+
+/* === PERBAIKAN UKURAN FONT PENJELASAN KUIS === */
+.summary-item em {
+    font-size: 0.9rem; /* Atur ukuran font agar sesuai dengan teks lainnya */
+    color: var(--text-secondary); /* Beri warna yang sedikit lebih lembut */
+}
