@@ -100,138 +100,185 @@
 
 {% block page_scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const quizContainer = document.querySelector('.quiz-container.slider-mode');
-    if (quizContainer) {
-        const quizData = {{ quiz_data | tojson | safe }};
-        const slidesWrapper = document.getElementById('quiz-slides-wrapper');
-        const nextBtn = document.getElementById('quiz-next-btn');
-        const prevBtn = document.getElementById('quiz-prev-btn');
-        const finishBtn = document.getElementById('quiz-finish-btn');
-        const retryBtn = document.getElementById('quiz-retry-btn');
-        const progressBar = document.getElementById('quiz-progress-bar');
-        const attemptCounterEl = document.getElementById('quiz-attempt-counter');
-        const questionCounterEl = document.getElementById('quiz-question-counter');
-        const resultSlide = document.getElementById('quiz-result-slide');
-        const attemptsContainer = document.getElementById('quiz-attempts-container');
-        
-        let currentSlide = 0;
-        let attemptCount = 1;
-        const maxAttempts = 3; // --- JUMLAH PERCOBAAN DIUBAH MENJADI 3 ---
-        const totalQuestions = quizData.questions.length;
-
-        const updateSlidePosition = () => {
-            slidesWrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+    document.addEventListener('DOMContentLoaded', () => {
+        const quizContainer = document.querySelector('.quiz-container.slider-mode');
+        if (quizContainer) {
+            const quizData = {{ quiz_data | tojson | safe }};
+            const slidesWrapper = document.getElementById('quiz-slides-wrapper');
+            const nextBtn = document.getElementById('quiz-next-btn');
+            const prevBtn = document.getElementById('quiz-prev-btn');
+            const finishBtn = document.getElementById('quiz-finish-btn');
+            const retryBtn = document.getElementById('quiz-retry-btn');
+            const progressBar = document.getElementById('quiz-progress-bar');
+            const attemptCounterEl = document.getElementById('quiz-attempt-counter');
+            const questionCounterEl = document.getElementById('quiz-question-counter');
+            const resultSlide = document.getElementById('quiz-result-slide');
+            const attemptsContainer = document.getElementById('quiz-attempts-container');
             
-            const progress = (currentSlide / totalQuestions) * 100;
-            progressBar.style.width = `${progress}%`;
-
-            if (currentSlide < totalQuestions) {
-                questionCounterEl.style.display = 'inline';
-                questionCounterEl.textContent = `Soal: ${currentSlide + 1} dari ${totalQuestions}`;
-            } else {
-                questionCounterEl.style.display = 'none';
-            }
-
-            prevBtn.style.display = currentSlide > 0 && currentSlide < totalQuestions ? 'inline-flex' : 'none';
-            nextBtn.style.display = currentSlide < totalQuestions - 1 ? 'inline-flex' : 'none';
-            finishBtn.style.display = currentSlide === totalQuestions - 1 ? 'inline-flex' : 'none';
-        };
-
-        const checkAnswers = () => {
-            let correctAnswers = 0;
-            
-            // --- PERBAIKAN DUPLIKASI ---
-            const existingResult = attemptsContainer.querySelector(`#attempt-${attemptCount}`);
-            if (existingResult) {
-                existingResult.remove();
-            }
-
-            const attemptResultWrapper = document.createElement('div');
-            attemptResultWrapper.className = 'attempt-result-wrapper';
-            attemptResultWrapper.id = `attempt-${attemptCount}`;
-
-            const summaryContent = document.createElement('div');
-            summaryContent.className = 'summary-content';
-            summaryContent.style.display = 'none';
-
-            quizData.questions.forEach((question, index) => {
-                const selectedOptionInput = document.querySelector(`input[name="question-${index + 1}"]:checked`);
-                const userAnswer = selectedOptionInput ? selectedOptionInput.value : "Tidak dijawab";
-                if (userAnswer === question.correct_answer) correctAnswers++;
+            // --- PERUBAHAN LOGIKA DIMULAI DI SINI ---
+    
+            let currentSlide = 0;
+            let attemptCount = 1;
+            const instantRetries = 2; // Izinkan 2 kali percobaan ulang instan
+            const cooldownSeconds = 60; // Jeda waktu 60 detik
+            const totalQuestions = quizData.questions.length;
+            let countdownInterval;
+    
+            // Fungsi baru untuk memulai cooldown
+            const startCooldown = () => {
+                let timeLeft = cooldownSeconds;
+                retryBtn.disabled = true;
+    
+                // Buat elemen baru untuk pesan cooldown jika belum ada
+                let cooldownMessage = document.getElementById('cooldown-message');
+                if (!cooldownMessage) {
+                    cooldownMessage = document.createElement('p');
+                    cooldownMessage.id = 'cooldown-message';
+                    cooldownMessage.className = 'text-secondary';
+                    cooldownMessage.style.textAlign = 'center';
+                    retryBtn.parentNode.insertBefore(cooldownMessage, retryBtn.nextSibling);
+                }
                 
-                const summaryItem = document.createElement('div');
-                summaryItem.className = `summary-item ${userAnswer === question.correct_answer ? 'correct' : 'incorrect'}`;
-                summaryItem.innerHTML = `<p><strong>Soal ${index + 1}:</strong> ${question.question_text}</p><p>Jawaban Anda: ${userAnswer}</p>${userAnswer !== question.correct_answer ? `<p>Jawaban Benar: ${question.correct_answer}</p>` : ''}<p><em>Penjelasan: ${question.explanation}</em></p>`;
-                summaryContent.appendChild(summaryItem);
-            });
-
-            const finalScore = Math.round((correctAnswers / totalQuestions) * 100);
+                cooldownMessage.style.display = 'block';
+    
+                countdownInterval = setInterval(() => {
+                    if (timeLeft <= 0) {
+                        clearInterval(countdownInterval);
+                        retryBtn.disabled = false;
+                        retryBtn.textContent = 'Coba Lagi';
+                        cooldownMessage.style.display = 'none';
+                    } else {
+                        retryBtn.textContent = `Coba Lagi (${timeLeft})`;
+                        cooldownMessage.innerHTML = `Silakan review materi atau <strong>Tanya AI</strong>. Anda bisa mencoba lagi.`;
+                        timeLeft--;
+                    }
+                }, 1000);
+            };
             
-            attemptResultWrapper.innerHTML = `
-                <div class="attempt-header">
-                    <h4>Hasil Percobaan ${attemptCount} (Nilai: ${finalScore})</h4>
-                    <button class="button-secondary view-details-btn">Lihat Detail</button>
-                </div>
-            `;
-            attemptResultWrapper.appendChild(summaryContent);
-            attemptsContainer.appendChild(attemptResultWrapper);
-            
-            attemptResultWrapper.querySelector('.view-details-btn').addEventListener('click', (e) => {
-                const btn = e.currentTarget;
-                const content = btn.parentElement.nextElementSibling;
-                const isVisible = content.style.display === 'block';
-                content.style.display = isVisible ? 'none' : 'block';
-                btn.textContent = isVisible ? 'Lihat Detail' : 'Sembunyikan Detail';
-            });
-
-            resultSlide.style.display = 'block';
-            currentSlide = totalQuestions;
-            updateSlidePosition();
-            
-            if (attemptCount < maxAttempts) {
-                retryBtn.style.display = 'inline-flex';
-            } else {
-                retryBtn.style.display = 'none';
-                const finalMessage = document.createElement('p');
-                finalMessage.textContent = "Anda telah menggunakan semua kesempatan.";
-                attemptsContainer.appendChild(finalMessage);
-                document.querySelectorAll('input[type="radio"]').forEach(input => input.disabled = true);
-            }
-        };
-
-        const resetQuiz = () => {
-            attemptCount++;
-            attemptCounterEl.textContent = `Percobaan: ${attemptCount} dari ${maxAttempts}`;
-            
-            quizData.questions.forEach((q, index) => {
-                const radioInputs = document.querySelectorAll(`input[name="question-${index + 1}"]`);
-                radioInputs.forEach(input => {
-                    input.checked = false;
-                    input.disabled = false;
+            const updateSlidePosition = () => {
+                slidesWrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
+                
+                const progress = (currentSlide / totalQuestions) * 100;
+                progressBar.style.width = `${progress}%`;
+    
+                if (currentSlide < totalQuestions) {
+                    questionCounterEl.style.display = 'inline';
+                    questionCounterEl.textContent = `Soal: ${currentSlide + 1} dari ${totalQuestions}`;
+                } else {
+                    questionCounterEl.style.display = 'none';
+                }
+    
+                prevBtn.style.display = currentSlide > 0 && currentSlide < totalQuestions ? 'inline-flex' : 'none';
+                nextBtn.style.display = currentSlide < totalQuestions - 1 ? 'inline-flex' : 'none';
+                finishBtn.style.display = currentSlide === totalQuestions - 1 ? 'inline-flex' : 'none';
+            };
+    
+            const checkAnswers = () => {
+                let correctAnswers = 0;
+                
+                const existingResult = attemptsContainer.querySelector(`#attempt-${attemptCount}`);
+                if (existingResult) {
+                    existingResult.remove();
+                }
+    
+                const attemptResultWrapper = document.createElement('div');
+                attemptResultWrapper.className = 'attempt-result-wrapper';
+                attemptResultWrapper.id = `attempt-${attemptCount}`;
+    
+                const summaryContent = document.createElement('div');
+                summaryContent.className = 'summary-content';
+                summaryContent.style.display = 'none';
+    
+                quizData.questions.forEach((question, index) => {
+                    const selectedOptionInput = document.querySelector(`input[name="question-${index + 1}"]:checked`);
+                    const userAnswer = selectedOptionInput ? selectedOptionInput.value : "Tidak dijawab";
+                    if (userAnswer === question.correct_answer) correctAnswers++;
+                    
+                    const summaryItem = document.createElement('div');
+                    summaryItem.className = `summary-item ${userAnswer === question.correct_answer ? 'correct' : 'incorrect'}`;
+                    summaryItem.innerHTML = `<p><strong>Soal ${index + 1}:</strong> ${question.question_text}</p><p>Jawaban Anda: ${userAnswer}</p>${userAnswer !== question.correct_answer ? `<p>Jawaban Benar: ${question.correct_answer}</p>` : ''}<p><em>Penjelasan: ${question.explanation}</em></p>`;
+                    summaryContent.appendChild(summaryItem);
                 });
+    
+                const finalScore = Math.round((correctAnswers / totalQuestions) * 100);
+                
+                attemptResultWrapper.innerHTML = `
+                    <div class="attempt-header">
+                        <h4>Hasil Percobaan ${attemptCount} (Nilai: ${finalScore})</h4>
+                        <button class="button-secondary view-details-btn">Lihat Detail</button>
+                    </div>
+                `;
+                attemptResultWrapper.appendChild(summaryContent);
+                attemptsContainer.appendChild(attemptResultWrapper);
+                
+                attemptResultWrapper.querySelector('.view-details-btn').addEventListener('click', (e) => {
+                    const btn = e.currentTarget;
+                    const content = btn.parentElement.nextElementSibling;
+                    const isVisible = content.style.display === 'block';
+                    content.style.display = isVisible ? 'none' : 'block';
+                    btn.textContent = isVisible ? 'Lihat Detail' : 'Sembunyikan Detail';
+                });
+    
+                resultSlide.style.display = 'block';
+                currentSlide = totalQuestions;
+                updateSlidePosition();
+                
+                // Logika baru untuk tombol "Coba Lagi"
+                retryBtn.style.display = 'inline-flex';
+                if (attemptCount >= instantRetries) {
+                    startCooldown(); // Mulai cooldown jika sudah melewati batas percobaan instan
+                }
+            };
+    
+            const resetQuiz = () => {
+                clearInterval(countdownInterval); 
+                
+                attemptCount++;
+                attemptCounterEl.textContent = `Percobaan: ${attemptCount}`;
+                
+                quizData.questions.forEach((q, index) => {
+                    const radioInputs = document.querySelectorAll(`input[name="question-${index + 1}"]`);
+                    radioInputs.forEach(input => {
+                        input.checked = false;
+                        input.disabled = false;
+                    });
+                });
+                
+                retryBtn.style.display = 'none';
+                const cooldownMessage = document.getElementById('cooldown-message');
+                if (cooldownMessage) cooldownMessage.style.display = 'none';
+    
+                // --- PERBAIKAN DESAIN DITAMBAHKAN DI SINI ---
+                // 1. Cari semua kontainer detail dan sembunyikan
+                document.querySelectorAll('.summary-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+    
+                // 2. Kembalikan teks semua tombol detail ke semula
+                document.querySelectorAll('.view-details-btn').forEach(btn => {
+                    btn.textContent = 'Lihat Detail';
+                });
+                // --- AKHIR DARI PERBAIKAN ---
+    
+                currentSlide = 0;
+                updateSlidePosition();
+            };
+    
+            nextBtn.addEventListener('click', () => {
+                if (currentSlide < totalQuestions - 1) currentSlide++;
+                updateSlidePosition();
             });
-            
-            retryBtn.style.display = 'none';
-            currentSlide = 0;
+    
+            prevBtn.addEventListener('click', () => {
+                if (currentSlide > 0) currentSlide--;
+                updateSlidePosition();
+            });
+    
+            finishBtn.addEventListener('click', checkAnswers);
+            retryBtn.addEventListener('click', resetQuiz);
+    
             updateSlidePosition();
-        };
-
-        nextBtn.addEventListener('click', () => {
-            if (currentSlide < totalQuestions - 1) currentSlide++;
-            updateSlidePosition();
-        });
-
-        prevBtn.addEventListener('click', () => {
-            if (currentSlide > 0) currentSlide--;
-            updateSlidePosition();
-        });
-
-        finishBtn.addEventListener('click', checkAnswers);
-        retryBtn.addEventListener('click', resetQuiz);
-
-        updateSlidePosition();
-    }
-});
-</script>
+        }
+    });
+    </script>
 {% endblock %}
