@@ -24,6 +24,9 @@ def upgrade():
     sa.Column('lesson_id', sa.Integer(), nullable=False),
     sa.Column('score', sa.Integer(), nullable=False),
     sa.Column('attempt_number', sa.Integer(), nullable=False),
+    # ---> BARIS INI YANG SAYA TAMBAHKAN <---
+    sa.Column('answers_data', sa.Text(), nullable=True),
+    # ------------------------------------
     sa.Column('timestamp', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['lesson_id'], ['lesson.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),

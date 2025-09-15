@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup, QuizHistory) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -314,36 +314,68 @@ def roadmap():
 # ... (import lainnya)
 import json # <-- Pastikan 'json' sudah diimpor di bagian atas
 
-# ...
-
-# Ganti fungsi lesson_detail yang lama dengan yang ini
+# --- Perbarui fungsi lesson_detail ---
 @bp.route('/lesson/<int:lesson_id>')
 @login_required
 def lesson_detail(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
-    # Pastikan lesson ini bagian dari roadmap user
     if lesson.module.career_path != current_user.career_path and (lesson.module.user_id != current_user.id and lesson.module.user_id is not None):
         abort(403)
         
-    # Cek apakah lesson ini sudah diselesaikan oleh user
     progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson.id).first()
     is_completed = True if progress else False
     
-    # --- PENAMBAHAN BARU UNTUK MEMPROSES KUIS ---
     quiz_data = None
     if lesson.quiz:
         try:
-            # Muat string JSON dari database menjadi objek Python
             quiz_data = json.loads(lesson.quiz)
         except json.JSONDecodeError:
-            quiz_data = None # Jika JSON tidak valid, abaikan kuis
-    # --- AKHIR PENAMBAHAN ---
+            quiz_data = None
+            
+    # ---> TAMBAHAN BARU: Ambil riwayat kuis <---
+    quiz_history = QuizHistory.query.filter_by(
+        user_id=current_user.id, 
+        lesson_id=lesson.id
+    ).order_by(QuizHistory.attempt_number.asc()).all()
 
     return render_template('lesson_detail.html', 
                            title=lesson.title, 
                            lesson=lesson, 
                            is_completed=is_completed,
-                           quiz_data=quiz_data) # <-- Kirim data kuis ke template
+                           quiz_data=quiz_data,
+                           # Kirim riwayat ke template
+                           quiz_history=[h.to_dict() for h in quiz_history])
+
+# ---> TAMBAHAN BARU: Endpoint API untuk menyimpan hasil percobaan <---
+@bp.route('/api/lesson/<int:lesson_id>/quiz/save_attempt', methods=['POST'])
+@login_required
+def save_quiz_attempt(lesson_id):
+    data = request.get_json()
+    score = data.get('score')
+    attempt_number = data.get('attempt_number')
+    answers_data = data.get('answers_data')
+
+    if score is None or attempt_number is None:
+        return jsonify({'error': 'Data tidak lengkap'}), 400
+
+    # Hapus percobaan lama dengan nomor yang sama jika ada (untuk kasus coba-coba)
+    QuizHistory.query.filter_by(
+        user_id=current_user.id,
+        lesson_id=lesson_id,
+        attempt_number=attempt_number
+    ).delete()
+
+    new_attempt = QuizHistory(
+        user_id=current_user.id,
+        lesson_id=lesson_id,
+        score=score,
+        attempt_number=attempt_number,
+        answers_data=json.dumps(answers_data) # Simpan jawaban sebagai string JSON
+    )
+    db.session.add(new_attempt)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Percobaan kuis berhasil disimpan.'})
 
 @bp.route('/project/<int:project_id>')
 @login_required

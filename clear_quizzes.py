@@ -5,7 +5,6 @@ from app.models import Lesson
 lessons_to_clear_quiz = [
     "Cara Kerja Web & Internet",
     "HTML Fundamental: Struktur & Elemen Dasar",
-    # Tambahkan judul-judul pelajaran lain di sini jika diperlukan
 ]
 
 app = create_app()

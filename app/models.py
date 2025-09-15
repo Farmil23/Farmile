@@ -2,7 +2,7 @@ from app import db
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import or_
-
+import json
 
 
 connections = db.Table('connections',
@@ -542,3 +542,29 @@ class StudyGroup(db.Model):
 
     def __repr__(self):
         return f'<StudyGroup {self.name}>'
+    
+    
+# Di dalam app/models.py, tambahkan Class baru ini di bagian bawah file
+
+class QuizHistory(db.Model):
+    __tablename__ = 'quiz_history'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    attempt_number = db.Column(db.Integer, nullable=False)
+    # Menyimpan jawaban pengguna dalam format JSON untuk review detail
+    answers_data = db.Column(db.Text, nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('quiz_history', cascade="all, delete-orphan"))
+    lesson = db.relationship('Lesson', backref=db.backref('quiz_history', cascade="all, delete-orphan"))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'score': self.score,
+            'attempt_number': self.attempt_number,
+            'answers_data': json.loads(self.answers_data) if self.answers_data else None,
+            'timestamp': self.timestamp.isoformat()
+        }

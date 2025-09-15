@@ -2,10 +2,9 @@ from app import create_app, db
 from app.models import Lesson
 
 # Daftar judul lesson yang kontennya ingin Anda hapus
+
 lessons_to_clear = [
-    "Utility-First Styling dengan Tailwind CSS",
-    "Pengenalan Rendering Sisi Server (SSR)",
-    "Membangun Portofolio yang Menjual"
+    "Dasar Perintah Linux & Manajemen Sistem"
 ]
 
 app = create_app()
