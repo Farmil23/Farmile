@@ -33,6 +33,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=True)
     timezone = db.Column(db.String(50), nullable=False, server_default='Asia/Jakarta')
     
+    activity_logs = db.relationship('UserActivityLog', backref=db.backref('user', lazy=True), cascade="all, delete-orphan")
+    
     submissions = db.relationship("ProjectSubmission", backref="author", lazy="dynamic", cascade="all, delete-orphan")
     chat_sessions = db.relationship("ChatSession", backref="author", lazy="dynamic", cascade="all, delete-orphan")
     modules = db.relationship("Module", backref="user", lazy='dynamic', cascade="all, delete-orphan")
@@ -430,7 +432,7 @@ class UserActivityLog(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     details = db.Column(db.JSON, nullable=True)
 
-    user = db.relationship('User', backref=db.backref('activity_logs', lazy='dynamic'))
+    # user = db.relationship('User', backref=db.backref('activity_logs', lazy='dynamic'))
 
     def __repr__(self):
         return f'<UserActivityLog {self.user.name} - {self.action}>'

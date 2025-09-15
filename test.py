@@ -548,6 +548,7 @@ lessons_to_clear = [
     "Menulis Laporan Penetration Testing"
 ]
 
+## belum 
 network engineer
 lessons_to_clear = [
     "Pengenalan Jaringan Komputer",

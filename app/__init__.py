@@ -12,9 +12,10 @@ from flask_admin import Admin, BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from apscheduler.schedulers.background import BackgroundScheduler
 from markupsafe import Markup, escape
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from sqlalchemy import func, cast, String
+import json
 
 # Inisialisasi Ekstensi di luar factory
 db = SQLAlchemy()
@@ -43,7 +44,7 @@ class SecureModelView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('routes.login', next=request.url))
 
-# ======================= KELAS-KELAS VIEW UNTUK ADMIN (VERSI BARU) =======================
+# ======================= KELAS-KELAS VIEW UNTUK ADMIN =======================
 
 class UserView(SecureModelView):
     column_list = ('id', 'name', 'email', 'semester', 'career_path', 'is_admin')
@@ -114,33 +115,45 @@ class UserProjectView(SecureModelView):
         'project': { 'fields': ['title'], 'page_size': 10 }
     }
 
+# ---> CLASS INI DIPERBARUI SECARA SIGNIFIKAN <---
 class AnalyticsView(BaseView):
     @expose('/')
     def index(self):
-        from .models import User, UserActivityLog, Lesson
-        feature_usage = db.session.query(
-            UserActivityLog.action, 
-            func.count(UserActivityLog.action)
-        ).group_by(UserActivityLog.action).all()
-        top_users = db.session.query(
-            User.name, 
-            func.count(UserActivityLog.id).label('total_activities')
-        ).join(UserActivityLog).group_by(User.name).order_by(db.desc('total_activities')).limit(10).all()
+        from .models import User, UserActivityLog, Lesson, Project, ProjectSubmission, UserResume, JobApplication, JobCoachMessage
 
-        # ---> PERBAIKAN UTAMA ADA DI SINI <---
-        # Mengganti .astext dengan func.json_extract yang didukung SQLite
-        top_lessons = db.session.query(
-            Lesson.title,
-            func.count(UserActivityLog.id).label('view_count')
-        ).join(UserActivityLog, func.json_extract(UserActivityLog.details, '$.lesson_id') == cast(Lesson.id, String)) \
-         .filter(UserActivityLog.action == 'viewed_lesson') \
-         .group_by(Lesson.title).order_by(db.desc('view_count')).limit(10).all()
-        # ---> AKHIR DARI PERBAIKAN <---
+        # Metrik Pembelajaran
+        feature_usage_query = db.session.query(UserActivityLog.action, func.count(UserActivityLog.action)).group_by(UserActivityLog.action).all()
+        feature_usage_chart_data = json.dumps({"labels": [row[0] for row in feature_usage_query], "data": [row[1] for row in feature_usage_query]})
+        
+        top_users = db.session.query(User.name, func.count(UserActivityLog.id).label('total_activities')).join(UserActivityLog).group_by(User.name).order_by(db.desc('total_activities')).limit(5).all()
+        top_lessons = db.session.query(Lesson.title, func.count(UserActivityLog.id).label('view_count')).join(UserActivityLog, func.json_extract(UserActivityLog.details, '$.lesson_id') == cast(Lesson.id, String)).filter(UserActivityLog.action == 'viewed_lesson').group_by(Lesson.title).order_by(db.desc('view_count')).limit(5).all()
+        top_projects = db.session.query(Project.title, func.count(ProjectSubmission.id).label('submission_count')).join(ProjectSubmission).group_by(Project.title).order_by(db.desc('submission_count')).limit(5).all()
+        
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        daily_activity_query = db.session.query(func.date(UserActivityLog.timestamp), func.count(UserActivityLog.id)).filter(UserActivityLog.timestamp >= seven_days_ago).group_by(func.date(UserActivityLog.timestamp)).order_by(func.date(UserActivityLog.timestamp)).all()
+        daily_activity_chart_data = json.dumps({"labels": [datetime.strptime(row[0], '%Y-%m-%d').strftime('%d %b') for row in daily_activity_query], "data": [row[1] for row in daily_activity_query]})
+
+        # ---> METRIK BARU UNTUK KARIER <---
+        total_resumes_analyzed = db.session.query(func.count(UserResume.id)).scalar()
+        total_jobs_tracked = db.session.query(func.count(JobApplication.id)).scalar()
+        total_coach_sessions = db.session.query(func.count(func.distinct(JobCoachMessage.application_id))).scalar()
+        
+        job_status_distribution_query = db.session.query(JobApplication.status, func.count(JobApplication.status)).group_by(JobApplication.status).all()
+        job_status_chart_data = json.dumps({
+            "labels": [row[0] for row in job_status_distribution_query],
+            "data": [row[1] for row in job_status_distribution_query]
+        })
 
         return self.render('admin/analytics_index.html', 
-                           feature_usage=feature_usage,
+                           feature_usage_chart_data=feature_usage_chart_data,
+                           daily_activity_chart_data=daily_activity_chart_data,
                            top_users=top_users,
-                           top_lessons=top_lessons)
+                           top_lessons=top_lessons,
+                           top_projects=top_projects,
+                           total_resumes_analyzed=total_resumes_analyzed,
+                           total_jobs_tracked=total_jobs_tracked,
+                           total_coach_sessions=total_coach_sessions,
+                           job_status_chart_data=job_status_chart_data)
 
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin
@@ -148,7 +161,7 @@ class AnalyticsView(BaseView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('routes.login', next=request.url))
 
-# ======================= AKHIR DARI KELAS VIEW =======================
+# ======================= FACTORY APLIKASI =======================
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -174,13 +187,7 @@ def create_app(config_class=Config):
     app.jinja_env.filters['localdatetime'] = localdatetime_filter
     app.jinja_env.filters['nl2br'] = nl2br_filter
 
-    oauth.register(
-        name='google',
-        client_id=app.config.get('GOOGLE_CLIENT_ID'),
-        client_secret=app.config.get('GOOGLE_CLIENT_SECRET'),
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
+    oauth.register(name='google', client_id=app.config.get('GOOGLE_CLIENT_ID'), client_secret=app.config.get('GOOGLE_CLIENT_SECRET'), server_metadata_url='https://accounts.google.com/.well-known/openid-configuration', client_kwargs={'scope': 'openid email profile'})
     
     global ark_client
     try:
@@ -194,8 +201,7 @@ def create_app(config_class=Config):
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")
         ark_client = None
 
-    from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, 
-                            Task, Event, Notification, UserProject, UserActivityLog)
+    from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject, UserActivityLog, UserResume, JobApplication, JobCoachMessage)
     
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 

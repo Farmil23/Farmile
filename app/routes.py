@@ -586,6 +586,7 @@ def cancel_project(user_project_id):
 @bp.route('/my-projects')
 @login_required
 def my_projects():
+    log_activity(current_user, 'viewed_my_projects')
     # Ambil semua proyek yang sedang aktif dikerjakan oleh pengguna
     user_projects = UserProject.query.filter_by(user_id=current_user.id).order_by(UserProject.started_at.desc()).all()
     
@@ -764,6 +765,8 @@ def interview(submission_id):
     submission = ProjectSubmission.query.get_or_404(submission_id)
     if submission.author != current_user: 
         abort(403)
+    
+    log_activity(current_user, 'started_interview', {'submission_id': submission.id, 'project_title': submission.project.title})
     
     # Ambil semua riwayat pesan untuk submission ini
     messages = submission.interview_messages.order_by(InterviewMessage.timestamp.asc()).all()
@@ -1778,6 +1781,8 @@ import io
 @login_required
 def ai_resume_pro():
     """Menampilkan halaman AI Resume versi baru yang lebih fokus."""
+    log_activity(current_user, 'viewed_ai_resume_pro')
+    
     saved_resumes = UserResume.query.filter_by(user_id=current_user.id).order_by(UserResume.created_at.desc()).all()
     return render_template('ai_resume_pro.html', title="AI Resume Pro", saved_resumes=saved_resumes)
 
@@ -1858,6 +1863,7 @@ def review_resume_pdf_api():
         )
         db.session.add(new_resume)
         db.session.commit()
+        log_activity(current_user, 'analyzed_resume')
 
         return jsonify({
             'resume_id': new_resume.id,
@@ -1967,6 +1973,8 @@ def generate_formatted_resume():
 @login_required
 def job_tracker():
     """Menampilkan halaman utama Job Application Tracker."""
+    log_activity(current_user, 'viewed_job_tracker')
+
     return render_template('job_tracker.html', title="Job Application Tracker")
 
 @bp.route('/api/applications', methods=['GET', 'POST'])
@@ -2060,7 +2068,7 @@ def delete_application(app_id):
 def job_coach_chatbot(app_id):
     """Menampilkan halaman chatbot khusus UNTUK SATU LAMARAN KERJA."""
     application = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
-    
+    log_activity(current_user, 'started_ai_coach', {'application_id': app_id})
     # Kunci utama: Hanya mengambil riwayat untuk 'application_id' yang spesifik
     history = JobCoachMessage.query.filter_by(application_id=app_id).order_by(JobCoachMessage.timestamp.asc()).all()
     
@@ -2088,6 +2096,8 @@ def chat_with_job_coach(app_id):
     user_message = JobCoachMessage(application_id=app_id, role='user', content=user_message_content)
     db.session.add(user_message)
     db.session.commit() # Commit di sini agar riwayat langsung tercatat
+    
+    
 
     # 2. Ambil seluruh riwayat percakapan untuk konteks AI
     history = JobCoachMessage.query.filter_by(application_id=app_id).order_by(JobCoachMessage.timestamp.asc()).all()
@@ -2234,6 +2244,7 @@ def match_job_description_api():
         )
         db.session.add(new_analysis)
         db.session.commit()
+        log_activity(current_user, 'used_ats_checker', {'resume_id': resume.id})
         
         return jsonify({'match_result': match_result_html})
     except Exception as e:
