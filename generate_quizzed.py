@@ -33,7 +33,7 @@ def generate_and_save_quizzes():
                 # Prompt yang dirancang khusus untuk membuat soal dalam format JSON
                 prompt = f"""
                 Anda adalah seorang Ahli Desain Kurikulum yang bertugas membuat soal evaluasi.
-                Berdasarkan KONTEN MATERI di bawah ini, buatlah 3 hingga 5 pertanyaan pilihan ganda yang relevan untuk menguji pemahaman pembaca.
+                Berdasarkan KONTEN MATERI di bawah ini, buatlah 3 hingga 7 pertanyaan pilihan ganda yang relevan untuk menguji pemahaman pembaca.
 
                 **ATURAN PENTING:**
                 1.  **Format Output:** Jawaban Anda HARUS dan HANYA berupa format JSON yang valid, tanpa teks tambahan atau penjelasan di luar JSON.

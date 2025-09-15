@@ -31,7 +31,7 @@
             <h3>Uji Pemahaman Anda</h3>
             
             <div id="quiz-meta-info" class="quiz-meta-info">
-                <span id="quiz-attempt-counter">Percobaan: 1 dari 3</span>
+                <span id="quiz-attempt-counter">Percobaan: 1</span>
                 <span>•</span>
                 <span id="quiz-question-counter">Soal: 1 dari {{ quiz_data.questions|length }}</span>
             </div>
@@ -100,24 +100,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const historyContainer = document.getElementById('quiz-history-container');
         const metaInfo = document.getElementById('quiz-meta-info');
         const progressContainer = document.querySelector('.quiz-progress-container');
+        const quizNavigation = document.querySelector('.quiz-navigation');
 
-        // --- State & Konfigurasi ---
         let currentSlide = 0;
         let attemptCount = initialHistory.length + 1;
         const totalQuestions = quizData.questions.length;
         let userAnswers = {};
         
-        // ---> KONFIGURASI BARU UNTUK DELAY <---
-        const instantRetries = 2; // Izinkan total 2 percobaan (awal + 1 retry) tanpa delay
-        const cooldownSeconds = 60; // Delay 1 menit
+        const instantRetries = 2; 
         let countdownInterval;
 
-        // --- Fungsi-Fungsi ---
-
-        const startCooldown = () => {
-            let timeLeft = cooldownSeconds;
-            retryBtn.disabled = true;
-
+        const startCooldown = (cooldownEndTime) => {
+            clearInterval(countdownInterval); 
+            
+            const endTime = new Date(cooldownEndTime).getTime();
+            
             let cooldownMessage = document.getElementById('cooldown-message');
             if (!cooldownMessage) {
                 cooldownMessage = document.createElement('p');
@@ -129,18 +126,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             cooldownMessage.style.display = 'block';
 
-            countdownInterval = setInterval(() => {
-                if (timeLeft <= 0) {
+            const updateTimer = () => {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+                const secondsLeft = Math.ceil(distance / 1000);
+
+                if (secondsLeft <= 0) {
                     clearInterval(countdownInterval);
                     retryBtn.disabled = false;
                     retryBtn.textContent = 'Coba Lagi';
                     cooldownMessage.style.display = 'none';
                 } else {
-                    retryBtn.textContent = `Coba Lagi (${timeLeft}s)`;
-                    cooldownMessage.innerHTML = `Anda bisa mencoba lagi dalam <strong>${timeLeft}</strong> detik. Manfaatkan waktu ini untuk me-review materi.`;
-                    timeLeft--;
+                    retryBtn.disabled = true;
+                    retryBtn.textContent = `Coba Lagi (${secondsLeft}s)`;
+                    cooldownMessage.innerHTML = `Anda bisa mencoba lagi dalam <strong>${secondsLeft}</strong> detik. Manfaatkan waktu ini untuk me-review materi.`;
                 }
-            }, 1000);
+            };
+            
+            updateTimer(); 
+            countdownInterval = setInterval(updateTimer, 1000);
         };
 
         const buildQuizSlides = () => {
@@ -209,9 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
-        const updateUI = () => {
+        const updateUIForActiveQuiz = () => {
             slidesWrapper.style.transform = `translateX(-${currentSlide * 100}%)`;
-            const progress = totalQuestions > 1 ? (currentSlide / (totalQuestions - 1)) * 100 : 100;
+            const progress = totalQuestions > 1 ? (currentSlide / (totalQuestions - 1)) * 100 : (currentSlide === 0 ? 0 : 100);
             progressBar.style.width = `${progress}%`;
             questionCounterEl.textContent = `Soal: ${currentSlide + 1} dari ${totalQuestions}`;
             attemptCounterEl.textContent = `Percobaan: ${attemptCount}`;
@@ -255,16 +259,19 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSlide = 0;
             userAnswers = {};
             attemptCount++;
-            historyContainer.style.display = 'none';
+            historyContainer.style.display = 'block'; // Pastikan history tetap terlihat
             slidesWrapper.style.display = 'flex';
             metaInfo.style.display = 'block';
             progressContainer.style.display = 'block';
+            
+            let cooldownMessage = document.getElementById('cooldown-message');
+            if (cooldownMessage) cooldownMessage.style.display = 'none';
+            
             buildQuizSlides();
-            updateUI();
+            updateUIForActiveQuiz();
         };
-
-        // --- Inisialisasi Kuis ---
         
+        // --- Inisialisasi Kuis ---
         buildQuizSlides();
         renderHistory();
 
@@ -272,31 +279,33 @@ document.addEventListener('DOMContentLoaded', () => {
             slidesWrapper.style.display = 'none';
             metaInfo.style.display = 'none';
             progressContainer.style.display = 'none';
+            quizNavigation.style.display = 'flex'; // PERBAIKAN UTAMA DI SINI
+            
             prevBtn.style.display = 'none';
             nextBtn.style.display = 'none';
             finishBtn.style.display = 'none';
             retryBtn.style.display = 'inline-flex';
             retryBtn.addEventListener('click', resetQuizForNewAttempt);
             
-            // ---> LOGIKA COOLDOWN DIPANGGIL DI SINI <---
-            if (initialHistory.length >= instantRetries) {
-                startCooldown();
+            const lastAttempt = initialHistory[initialHistory.length - 1];
+            if (lastAttempt && lastAttempt.cooldown_until) {
+                const now = new Date().getTime();
+                const endTime = new Date(lastAttempt.cooldown_until).getTime();
+                if (now < endTime) {
+                    startCooldown(lastAttempt.cooldown_until);
+                }
             }
         } else {
-            updateUI();
+            updateUIForActiveQuiz();
         }
 
         nextBtn.addEventListener('click', () => {
-            if (currentSlide < totalQuestions - 1) {
-                currentSlide++;
-                updateUI();
-            }
+            if (currentSlide < totalQuestions - 1) currentSlide++;
+            updateUIForActiveQuiz();
         });
         prevBtn.addEventListener('click', () => {
-            if (currentSlide > 0) {
-                currentSlide--;
-                updateUI();
-            }
+            if (currentSlide > 0) currentSlide--;
+            updateUIForActiveQuiz();
         });
         finishBtn.addEventListener('click', checkAnswersAndSave);
     }

@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup, QuizHistory) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup, QuizHistory, UserActivityLog) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -21,6 +21,18 @@ bp = Blueprint('routes', __name__)
 
 from typing import Optional
 
+
+# ---> FUNGSI HELPER UNTUK MENCATAT AKTIVITAS <---
+def log_activity(user, action, details=None):
+    """Mencatat aktivitas pengguna ke database."""
+    if user.is_authenticated:
+        try:
+            log = UserActivityLog(user_id=user.id, action=action, details=details)
+            db.session.add(log)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to log activity: {e}")
 
 # --- Helper Function untuk Generate Roadmap ---
 def _generate_roadmap_for_user(user):
@@ -200,6 +212,8 @@ def index():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
+    log_activity(current_user, 'viewed_dashboard')
+    
     # --- LOGIKA PERHITUNGAN STATISTIK (DIPERBAIKI) ---
     completed_lessons_count = current_user.user_progress.count()
     
@@ -267,6 +281,9 @@ def complete_onboarding():
     current_user.name = data.get('user_name', current_user.name)
     current_user.semester = int(data.get('semester', 1))
     current_user.career_path = data.get('career_focus')
+    
+    log_activity(current_user, 'completed_onboarding', {'career_path': current_user.career_path})
+    
     current_user.has_completed_onboarding = True
     db.session.commit()
     return jsonify({'status': 'success', 'redirect_url': url_for('routes.dashboard')})
@@ -283,6 +300,9 @@ def roadmap():
     if not current_user.career_path:
         flash('Selesaikan onboarding untuk menentukan jalur karier Anda.', 'warning')
         return redirect(url_for('routes.onboarding'))
+    
+    log_activity(current_user, 'viewed_roadmap', {'career_path': current_user.career_path})
+
 
     all_modules = Module.query.filter(
         ((Module.user_id == current_user.id) | (Module.user_id == None)),
@@ -322,6 +342,9 @@ def lesson_detail(lesson_id):
     if lesson.module.career_path != current_user.career_path and (lesson.module.user_id != current_user.id and lesson.module.user_id is not None):
         abort(403)
         
+    log_activity(current_user, 'viewed_lesson', {'lesson_id': lesson.id, 'lesson_title': lesson.title})
+    
+    
     progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson.id).first()
     is_completed = True if progress else False
     
@@ -346,7 +369,8 @@ def lesson_detail(lesson_id):
                            # Kirim riwayat ke template
                            quiz_history=[h.to_dict() for h in quiz_history])
 
-# ---> TAMBAHAN BARU: Endpoint API untuk menyimpan hasil percobaan <---
+# Di dalam app/routes.py
+
 @bp.route('/api/lesson/<int:lesson_id>/quiz/save_attempt', methods=['POST'])
 @login_required
 def save_quiz_attempt(lesson_id):
@@ -354,23 +378,30 @@ def save_quiz_attempt(lesson_id):
     score = data.get('score')
     attempt_number = data.get('attempt_number')
     answers_data = data.get('answers_data')
+    instant_retries = 2  # Batas percobaan tanpa cooldown
+    cooldown_seconds = 60 # Durasi cooldown
 
     if score is None or attempt_number is None:
         return jsonify({'error': 'Data tidak lengkap'}), 400
 
-    # Hapus percobaan lama dengan nomor yang sama jika ada (untuk kasus coba-coba)
     QuizHistory.query.filter_by(
         user_id=current_user.id,
         lesson_id=lesson_id,
         attempt_number=attempt_number
     ).delete()
 
+    cooldown_end_time = None
+    # ---> LOGIKA BARU UNTUK MENENTUKAN COOLDOWN <---
+    if attempt_number >= instant_retries:
+        cooldown_end_time = datetime.utcnow() + timedelta(seconds=cooldown_seconds)
+
     new_attempt = QuizHistory(
         user_id=current_user.id,
         lesson_id=lesson_id,
         score=score,
         attempt_number=attempt_number,
-        answers_data=json.dumps(answers_data) # Simpan jawaban sebagai string JSON
+        answers_data=json.dumps(answers_data),
+        cooldown_until=cooldown_end_time # Simpan waktu cooldown berakhir
     )
     db.session.add(new_attempt)
     db.session.commit()
@@ -412,6 +443,7 @@ def complete_lesson(lesson_id):
         new_progress = UserProgress(user_id=current_user.id, module_id=lesson.module_id, lesson_id=lesson.id)
         db.session.add(new_progress)
         db.session.commit()
+        log_activity(current_user, 'completed_lesson', {'lesson_id': lesson.id})
         flash('Materi berhasil ditandai selesai!', 'success')
     
     # --- LOGIKA REDIRECT BARU ---
@@ -671,6 +703,7 @@ def submit_project(project_id):
     user_project.status = 'submitted'
     
     db.session.commit()
+    log_activity(current_user, 'submitted_project', {'project_id': project.id, 'project_title': project.title})
     flash(f"Proyek '{project.title}' berhasil disubmit!", 'success')
     return redirect(url_for('routes.my_projects'))
 
@@ -925,6 +958,8 @@ from datetime import datetime
 @login_required
 def chatbot():
     # --- Skenario 1: Pengguna datang dari Personal Hub (Logika ini tetap sama) ---
+    log_activity(current_user, 'opened_chatbot')
+    
     if 'hub_context_prompt' in session:
         context = session.pop('hub_context_prompt')
         events = context.get('events', [])

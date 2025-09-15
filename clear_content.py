@@ -4,7 +4,10 @@ from app.models import Lesson
 # Daftar judul lesson yang kontennya ingin Anda hapus
 
 lessons_to_clear = [
-    "Dasar Perintah Linux & Manajemen Sistem"
+    "Dasar Perintah Linux & Manajemen Sistem",
+    "Deployment Otomatis ke Server dengan GitHub Actions & SSH",
+    "Tiga Pilar Observability (Metrics, Logs, Traces)",
+    "Infrastructure as Code Security (tfsec, checkov)",
 ]
 
 app = create_app()
