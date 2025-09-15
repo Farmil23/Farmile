@@ -6,7 +6,8 @@
 {% endblock %}
 
 {% block dashboard_content %}
-<div class="content-layout">
+
+<div class="content-layout" style= "margin: 20px 30px;">
     <div class="page-header">
         <div>
             <a href="{{ url_for('routes.roadmap') }}" class="back-link button-secondary">‹ Kembali ke Roadmap</a>
@@ -96,6 +97,7 @@
         {% endif %}
     </div>
 </div>
+
 {% endblock %}
 
 {% block page_scripts %}

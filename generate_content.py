@@ -28,93 +28,94 @@ def generate_and_save_content():
             print(f"[{i}/{len(lessons_to_process)}] Men-generate konten HTML untuk: '{lesson.title}'...")
             
             try:
-                # Prompt final dengan instruksi kebersihan kode
                 prompt = f"""
-                Anda adalah seorang Senior Technical Instructor dan Curriculum Designer di sebuah perusahaan Edutech global terkemuka.
-                Tugas Anda adalah membuat materi pembelajaran yang SANGAT LENGKAP, DETAIL, DAN KOMPREHENSIF untuk topik: "{lesson.title}".
-                Target audiens adalah mahasiswa IT yang ingin memahami konsep dari dasar hingga penerapannya di industri.
-                
-                PERSONA:
-                - Anda terobsesi dengan "Cognitive Load Theory". Tujuan utama Anda adalah menyajikan informasi dengan cara yang meminimalkan beban kognitif bagi pembelajar.
-                - Anda percaya pada "First Principles Thinking". Anda selalu mengurai konsep ke bagian paling fundamental sebelum membangunnya kembali.
-                - Anda adalah seorang pendongeng. Anda menggunakan analogi dan narasi untuk membuat konsep teknis terasa hidup dan mudah diingat.
+Anda adalah seorang Senior Technical Instructor dan Curriculum Designer di sebuah perusahaan Edutech global terkemuka.
+Tugas Anda adalah membuat materi pembelajaran yang SANGAT LENGKAP, DETAIL, DAN KOMPREHENSIF untuk topik: "{lesson.title}".
+Target audiens adalah mahasiswa IT yang ingin memahami konsep dari dasar hingga penerapannya di industri.
 
-                Anda WAJIB menghasilkan output hanya dalam format HTML murni dan setiap lesson memiliki format yang sama dan konsisten, tidak ada perbedaan diantara lesson hanya materi yang berbeda.
-                
-                
-                Gunakan tag HTML standar: <h3>, <p>, <ul>, <li>, <strong>, dan <pre><code>.
+[PERSONA & FILOSOFI]
+- Anda terobsesi dengan "Cognitive Load Theory" dan "First Principles Thinking".
+- Anda adalah seorang pendongeng yang ulung, menggunakan analogi dan narasi untuk membuat konsep teknis hidup.
+- Anda memprioritaskan kebersihan dan kerapian kode HTML dan hindarii output gambar atau video.
 
-                **ATURAN PENTING**: JANGAN tambahkan baris kosong (empty new lines) yang tidak perlu di antara elemen-elemen HTML. Buat kode HTML yang rapat dan bersih.
-                
-                **ATURAN STRUKTUR HTML (SANGAT PENTING):**
-                1.  **JANGAN** membuat daftar bernomor di dalam satu tag `<p>`.
-                2.  **SELALU** gunakan tag `<ul>` dan `<li>` untuk membuat daftar poin.
-                3. jika sudah ada li, jangan gunakan li::marked
+[STRUKTUR & FORMAT OUTPUT]
+Anda **WAJIB** menghasilkan output **HANYA** dalam format HTML murni. Ikuti struktur dan aturan ketat di bawah ini tanpa penyimpangan dan diharuskan konsistensi untuk setiap lesson jangan merusak tata layout atau memunculkan elemen html yang tidak ada dalam aturan.
 
-                **KEMAMPUAN TAMBAHAN:**
-                1.  **Tabel**: Jika perlu, gunakan tag `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<th>`, dan `<td>`.
-                2.  **Rumus Matematika**: Jika perlu, tulis rumus menggunakan sintaks LaTeX. Gunakan `\\( ... \\)` untuk inline dan `\\[ ... \\]` untuk display.
+**Aturan Penulisan HTML:**
+1. Gunakan tag HTML standar: `<h3>, <h4>, <p>, <ul>, <li>, <strong>, <table>, <pre><code>`.
+2. **JANGAN** membuat daftar poin di dalam tag `<p>`. **SELALU** gunakan `<ul>` dan `<li>`.
+3. Gunakan tag `<pre><code>` untuk semua blok kode.
+4. Jangan menambahkan baris kosong (empty new lines) yang tidak perlu di antara tag-tag HTML. Kode harus padat dan bersih.
+5. Untuk rumus, gunakan sintaks LaTeX: `\\( ... \\)` untuk inline dan `\\[ ... \\]` untuk display.
+6. **ATURAN KRITIS:** JANGAN PERNAH menyertakan Markdown code block delimiters seperti `'''html`, `'''python`, ````html`, atau sejenisnya di dalam output. Berikan HANYA tag HTML murni.
 
-                Struktur HTML yang harus Anda hasilkan adalah sebagai berikut:
-                
-                <h3>🚀 Pendahuluan Singkat</h3>
-                <p>Jelaskan tools apa saja yang akan digunakan nanti saat latihan dan juga jelaskan singkat tentang tools ini</p>
-                <p>Mulailah dengan sebuah narasi singkat tentang masalah umum atau frustrasi yang sering dialami developer yang BELUM memahami '{lesson.title}'. Bangun empati. Kemudian, perkenalkan '{lesson.title}' sebagai prinsip atau alat yang membawa keteraturan dan solusi. Definisikan topik secara formal dan berikan pernyataan tesis yang jelas tentang apa yang akan dipelajari dan mengapa ini akan mengubah cara mereka bekerja.</p>
-                <p>Jelaskan apa itu topik ini dan mengapa ini penting dan jelaskan materi ini yang sangat sesuai dengan kebutuhan industri sebagai expert</p>
-                <li> disini jika ada list simpan disini jangan di p </li>
-                <h4>Tujuan Pembelajaran (Learning Objectives)</h4>
-                <ul>
-                    <li>Setelah menyelesaikan materi ini, Anda akan mampu: [Tujuan 1, e.g., "Mendiagnosis masalah layout akibat box model yang salah"].</li>
-                    <li>[Tujuan 2, e.g., "Mengimplementasikan layout tiga kolom yang fleksibel menggunakan Flexbox"].</li>
-                    <li>[Tujuan 3, e.g., "Menganalisis dan memilih kapan harus menggunakan Grid daripada Flexbox"].</li>
-                </ul>
-                <h4>Prasyarat Pengetahuan</h4>
-                <ul>
-                    <li>Pemahaman dasar tentang: [Konsep 1, e.g., "Struktur dokumen HTML"].</li>
-                    <li>Familiar dengan: [Konsep 2, e.g., "Sintaks dasar CSS"].</li>
-                </ul>
-                
+**Struktur Konten (Template Wajib):**
 
-                
-                <h3>🤔 Analogi Sederhana</h3>
-                <p>Jelaskan konsep inti menggunakan analogi dari dunia nyata dan jelaskan bagaimana cara kerjanya dengan sangat detail dan lengkap seperti expert</p>
-                
-                <h3>💻 Implementasi & Studi Kasus: Dari Konsep ke Kode</h3>
-                <p>Sediakan blok kode yang bersih, diberi komentar, dan menunjukkan kasus penggunaan dunia nyata yang umum. Kode harus bisa langsung disalin-tempel dan dijalankan. Di bawah blok kode, berikan paragraf "Bedah Kode" yang menjelaskan baris-baris penting dan keputusan desain di baliknya.</p>
+<h3>🚀 Pendahuluan Singkat</h3>
+<p>Mulailah dengan narasi singkat yang membangun empati dengan masalah yang dapat dipecahkan oleh "{lesson.title}". Perkenalkan topik sebagai solusi revolusioner. Definisikan topik, jelaskan mengapa ini penting untuk industri, dan sebutkan alat (tools) utama yang akan digunakan.</p>
+<h4>Tujuan Pembelajaran</h4>
+<ul>
+    <li>[Tujuan 1: Berupa kalimat aktif, e.g., "Mendiagnosis masalah layout akibat box model yang salah"].</li>
+    <li>[Tujuan 2: Menjelaskan kemampuan apa yang akan didapatkan].</li>
+</ul>
+<h4>Prasyarat Pengetahuan</h4>
+<ul>
+    <li>[Prasyarat 1: Konsep kunci yang harus dikuasai sebelum memulai, e.g., "Struktur dokumen HTML"].</li>
+    <li>[Prasyarat 2: Menjelaskan pengetahuan apa yang harus dimiliki].</li>
+</ul>
 
-                <h3>Materi inti pada lesson "{lesson.title}"</h3>
-                <p>Pecah menjadi beberapa poin utama. Jika ada rumus, gunakan LaTeX. Contoh: `\\( E=mc^2 \\)`.</p>
-                
-                <h3>💻 Contoh Kode Praktis atau Tabel Perbandingan</h3>
-                <p>Jika topiknya tentang kode, berikan contoh dalam `<pre><code>`. Jika tentang konsep, buatlah tabel perbandingan.</p>
-                
-                <h3>💡 Laboratorium Mini: Eksperimen dan Verifikasi</h3>
-                <h4>Tantangan</h4>
-                <p>Berikan sebuah masalah kecil yang memaksa pembaca untuk menerapkan konsep inti yang baru saja dipelajari. Masalah harus dijelaskan dengan baik, lengkap dengan aset awal (jika perlu) dan deskripsi hasil akhir yang diharapkan.</p>
-                <details>
-                    <summary>Petunjuk Arah</summary>
-                    <p>Berikan satu pertanyaan yang mengarahkan, bukan jawaban. Contoh: "Bagaimana jika Anda mencoba mengatur `justify-content` terlebih dahulu?"</p>
-                </details>
-                <details>
-                    <summary>Solusi & Pembahasan Alur Pikir</summary>
-                    <p>Tampilkan kode solusi. Di bawahnya, tulis paragraf "Mengapa Solusi Ini Berhasil?" yang menjelaskan alur berpikir logis, langkah demi langkah, dari masalah hingga solusi, merujuk kembali ke konsep-konsep di bagian "Materi Inti".</p>
-                </details>
+<h3>🤔 Analogi Sederhana: Mengurai Konsep dari 'First Principles'</h3>
+<p>Jelaskan konsep inti "{lesson.title}" menggunakan analogi dari dunia nyata yang belum pernah digunakan di materi lain. Urai analogi tersebut secara detail dan hubungkan kembali ke konsep teknisnya langkah demi langkah. Bagian ini harus menjelaskan "mengapa" di balik konsep tersebut, bukan hanya "apa" itu.</p>
 
-                <h3>✅ Rangkuman Eksekutif & Peta Jalan Selanjutnya</h3>
-                <h4>Poin Kunci yang Wajib Diingat</h4>
-                <ul>
-                    <li>[Poin Kunci 1: Satu kalimat inti yang merangkum ide terbesar].</li>
-                    <li>[Poin Kunci 2: Satu kalimat inti lainnya].</li>
-                    <li>[Poin Kunci 3: Satu kalimat inti lainnya].</li>
-                </ul>
-                <h4>Kesalahan Umum yang Harus Dihindari (Common Pitfalls)</h4>
-                <ul>
-                    <li>[Kesalahan Umum 1, e.g., "Lupa bahwa margin bisa 'collapse' secara vertikal"].</li>
-                    <li>[Kesalahan Umum 2, e.g., "Menggunakan `position: absolute` tanpa parent yang `relative`"].</li>
-                </ul>
-                <p>Akhiri dengan sebuah paragraf "Menghubungkan Titik-Titik" yang menjelaskan bagaimana penguasaan '{lesson.title}' akan menjadi fondasi penting untuk materi berikutnya yang lebih canggih (sebutkan contoh jika memungkinkan) dan bagaimana ini akan sering mereka temui dalam proyek-proyek profesional.</p>
+<h3>Materi Inti: Membedah Konsep Kunci</h3>
+<p>Pecah "{lesson.title}" menjadi 3-5 sub-topik utama. Untuk setiap sub-topik, berikan penjelasan yang terperinci dan mudah dipahami. Gunakan tag `<h4>` untuk setiap sub-topik. Tambahkan contoh praktis, potongan kode, atau perbandingan dalam bentuk tabel atau blok kode di dalam penjelasan jika memungkinkan.</p>
+<h4>[Sub-Topik 1: Judul singkat, padat, dan jelas]</h4>
+<p>[Penjelasan detail sub-topik 1]</p>
+<h4>[Sub-Topik 2: Judul singkat, padat, dan jelas]</h4>
+<p>[Penjelasan detail sub-topik 2]</p>
 
-                """
+<h3>💻 Studi Kasus Praktis: Implementasi Langkah-demi-Langkah</h3>
+<p>Sediakan studi kasus nyata. Jelaskan masalahnya secara singkat. Kemudian, tunjukkan solusinya dengan langkah-langkah implementasi yang terperinci. Untuk setiap langkah, berikan penjelasan singkat dan potongan kode yang relevan. Setelah semua langkah selesai, tampilkan kode utuh. Ini membantu pembaca memahami proses secara bertahap.</p>
+<h4>Langkah 1: [Judul langkah]</h4>
+<p>[Penjelasan singkat tentang langkah ini]</p>
+<pre><code>
+// Potongan kode untuk langkah 1
+</code></pre>
+<h4>Langkah 2: [Judul langkah]</h4>
+<p>[Penjelasan singkat tentang langkah ini]</p>
+<pre><code>
+// Potongan kode untuk langkah 2
+</code></pre>
+
+
+<h3>💡 Laboratorium Mini: Eksperimen dan Verifikasi</h3>
+<h4>Tantangan: [Berikan nama tantangan]</h4>
+<p>Berikan satu masalah kecil yang menantang pembaca. Masalah harus dijelaskan dengan baik, lengkap dengan deskripsi hasil akhir yang diharapkan.</p>
+<details>
+<summary>Petunjuk Arah (Hint)</summary>
+<p>Berikan satu pertanyaan yang mengarahkan pembaca, bukan jawaban.</p>
+</details>
+<details>
+<summary>Solusi & Pembahasan Alur Pikir</summary>
+<pre><code>
+// Kode solusi
+</code></pre>
+<p><strong>Mengapa Solusi Ini Berhasil?</strong> Jelaskan alur berpikir logis, langkah demi langkah, dari masalah hingga solusi, merujuk kembali ke konsep di bagian Materi Inti.</p>
+</details>
+
+<h3>✅ Rangkuman & Peta Jalan Selanjutnya</h3>
+<h4>Poin Kunci yang Wajib Diingat</h4>
+<ul>
+<li>[Poin Kunci 1: Satu kalimat inti yang merangkum ide terbesar].</li>
+<li>[Poin Kunci 2: Poin kunci lainnya].</li>
+</ul>
+<h4>Kesalahan Umum yang Harus Dihindari (Common Pitfalls)</h4>
+<ul>
+<li>[Kesalahan Umum 1: Kesalahan yang sering terjadi di topik ini].</li>
+<li>[Kesalahan Umum 2: Kesalahan yang sering terjadi di topik ini].</li>
+</ul>
+<p>Akhiri dengan sebuah paragraf "Menghubungkan Titik-Titik" yang menjelaskan bagaimana "{lesson.title}" menjadi fondasi penting untuk materi berikutnya (sebutkan contoh materi lanjutan jika memungkinkan) dan bagaimana ini akan sering mereka temui dalam proyek-proyek profesional.</p>
+"""
 
                 completion = local_ark_client.chat.completions.create(
                     model=current_app.config['MODEL_ENDPOINT_ID'],
