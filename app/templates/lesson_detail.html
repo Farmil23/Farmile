@@ -54,10 +54,17 @@
                 <button type="submit" class="button-secondary">Batal Tandai Selesai</button>
             </form>
         {% else %}
+
+            <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST" style= " margin-right: 1rem;">
+                <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
+            </form>
+
             <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST">
                 <input type="hidden" name="source" value="detail">
                 <button type="submit" class="button-primary">Tandai Sudah Selesai ✔</button>
             </form>
+
+            
         {% endif %}
     </div>
 </div>
