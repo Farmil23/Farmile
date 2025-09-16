@@ -2066,7 +2066,7 @@ def handle_applications():
             user_id=current_user.id,
             company_name=data['company_name'],
             position=data['position'],
-            status=data.get('status', 'applied'),
+            status=data.get('status', 'applied'), # Default status saat membuat
             job_link=data.get('job_link'),
             notes=data.get('notes'),
             resume_id=data.get('resume_id')
@@ -2075,26 +2075,6 @@ def handle_applications():
         db.session.commit()
         return jsonify(new_app.to_dict()), 201
 
-@bp.route('/api/applications', methods=['POST'])
-@login_required
-def add_application():
-    """API untuk menambah lamaran baru."""
-    data = request.get_json()
-    if not data or not data.get('company_name') or not data.get('position'):
-        return jsonify({'error': 'Nama perusahaan dan posisi wajib diisi.'}), 400
-
-    new_app = JobApplication(
-        user_id=current_user.id,
-        company_name=data['company_name'],
-        position=data['position'],
-        status=data.get('status', 'applied'),
-        job_link=data.get('job_link'),
-        notes=data.get('notes'),
-        resume_id=data.get('resume_id')
-    )
-    db.session.add(new_app)
-    db.session.commit()
-    return jsonify(new_app.to_dict()), 201
 
 
 
@@ -2121,18 +2101,6 @@ def handle_single_application(app_id):
         db.session.delete(app)
         db.session.commit()
         return jsonify({'success': True, 'message': 'Lamaran berhasil dihapus.'})
-
-@bp.route('/api/applications/<int:app_id>', methods=['DELETE'])
-@login_required
-def delete_application(app_id):
-    """API untuk menghapus lamaran."""
-    app = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
-    db.session.delete(app)
-    db.session.commit()
-    return jsonify({'success': True, 'message': 'Lamaran berhasil dihapus.'})
-
-
-
 
 # AI JOBS
 @bp.route('/job-tracker/coach/<int:app_id>')
