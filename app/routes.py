@@ -278,14 +278,26 @@ def dashboard():
     # --- LOGIKA PERHITUNGAN STATISTIK (DIPERBAIKI) ---
     completed_lessons_count = current_user.user_progress.count()
     
-    # Menghitung total materi dengan cara yang benar
-    modules_for_path = Module.query.join(User).filter(User.id==current_user.id, User.career_path==current_user.career_path).all()
-
-    total_lessons = db.session.query(Lesson).join(Module).filter(Module.id.in_([m.id for m in modules_for_path])).count()
+    # 1. Dapatkan semua modul untuk career_path pengguna saat ini
+    modules_for_path = Module.query.filter_by(career_path=current_user.career_path).all()
     
+    # 2. Dapatkan SEMUA materi dan proyek dari modul-modul tersebut
+    all_lesson_ids = {lesson.id for module in modules_for_path for lesson in module.lessons}
+    all_project_ids = {project.id for module in modules_for_path for project in module.projects}
+    
+    # 3. Hitung total item sebagai pembagi
+    total_items = len(all_lesson_ids) + len(all_project_ids)
+    
+    # 4. Dapatkan item yang sudah diselesaikan (materi selesai & proyek disubmit)
+    completed_lesson_ids = {p.lesson_id for p in current_user.user_progress if p.lesson.module.career_path == current_user.career_path}
+    submitted_project_ids = {s.project_id for s in current_user.submissions if s.project.module.career_path == current_user.career_path}
+    
+    completed_items = len(completed_lesson_ids) + len(submitted_project_ids)
+
     progress_percentage = 0
-    if total_lessons > 0:
-        progress_percentage = int((completed_lessons_count / total_lessons) * 100)
+    if total_items > 0:
+        # Dibatasi maksimal 100% untuk menghindari angka aneh
+        progress_percentage = min(100, int((completed_items / total_items) * 100))
 
     # Mengambil data untuk kartu "Aktivitas Terbaru"
     recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(1).all()
@@ -353,8 +365,6 @@ def complete_onboarding():
 # ===============================================
 # RUTE ROADMAP BELAJAR (VERSI DIPERBAIKI)
 # ===============================================
-# Di dalam app/routes.py
-
 @bp.route('/roadmap')
 @login_required
 def roadmap():
@@ -364,52 +374,46 @@ def roadmap():
 
     log_activity(current_user, 'viewed_roadmap', {'career_path': current_user.career_path})
 
-    # Mengambil semua modul, materi, dan proyek yang relevan untuk jalur karier pengguna
     all_modules = Module.query.filter_by(career_path=current_user.career_path)\
         .options(subqueryload(Module.lessons), subqueryload(Module.projects))\
         .order_by(Module.order).all()
     
-    # ---> PERBAIKAN LOGIKA DIMULAI DI SINI <---
+    # --- PERBAIKAN LOGIKA PERHITUNGAN PROGRES YANG SAMA SEPERTI DASHBOARD ---
 
-    # 1. Dapatkan ID dari SEMUA item yang dibutuhkan (materi dan proyek)
-    all_lesson_ids = {lesson.id for module in all_modules for lesson in module.lessons}
-    all_project_ids = {project.id for module in all_modules for project in module.projects}
+    # 1. Dapatkan ID dari SEMUA item yang dibutuhkan (materi dan proyek) untuk path ini
+    all_lesson_ids_in_path = {lesson.id for module in all_modules for lesson in module.lessons}
+    all_project_ids_in_path = {project.id for module in all_modules for project in module.projects}
 
-    # 2. Dapatkan ID dari item yang SUDAH diselesaikan pengguna
-    completed_lesson_ids = {p.lesson_id for p in current_user.user_progress}
-    
-    # Penting: Kita cek dari tabel ProjectSubmission, bukan UserProject
-    submitted_project_ids = {s.project_id for s in current_user.submissions}
+    # 2. Dapatkan ID dari item yang SUDAH diselesaikan pengguna HANYA untuk path ini
+    completed_lesson_ids = {p.lesson_id for p in current_user.user_progress if p.lesson.module.career_path == current_user.career_path}
+    submitted_project_ids = {s.project_id for s in current_user.submissions if s.project.module.career_path == current_user.career_path}
 
     # 3. Hitung total item dan progresnya dengan benar
-    total_items = len(all_lesson_ids) + len(all_project_ids)
+    total_items = len(all_lesson_ids_in_path) + len(all_project_ids_in_path)
     completed_items = len(completed_lesson_ids) + len(submitted_project_ids)
     
     progress_percentage = 0
     if total_items > 0:
-        # Dibatasi maksimal 100% untuk menghindari angka aneh
         progress_percentage = min(100, int((completed_items / total_items) * 100))
 
     # 4. Tentukan status penyelesaian akhir (Tombol Sertifikat)
-    # Kondisinya harus: semua materi SELESAI DAN semua proyek di-SUBMIT
-    is_fully_completed = all_lesson_ids.issubset(completed_lesson_ids) and \
-                         all_project_ids.issubset(submitted_project_ids)
+    is_fully_completed = all_lesson_ids_in_path.issubset(completed_lesson_ids) and \
+                         all_project_ids_in_path.issubset(submitted_project_ids)
     
     # Cek apakah sertifikat sudah ada
     roadmap_obj = Roadmap.query.first()
     certificate = Certificate.query.filter_by(user_id=current_user.id, roadmap_id=roadmap_obj.id).first() if roadmap_obj else None
     
-    # ---> AKHIR DARI PERBAIKAN <---
-    
     return render_template('roadmap.html', 
                            title="Roadmap Belajar", 
                            modules=all_modules,
                            completed_lesson_ids=completed_lesson_ids,
+                           submitted_project_ids=submitted_project_ids,
                            progress=progress_percentage,
                            is_fully_completed=is_fully_completed,
                            certificate=certificate)
     
-import json # <-- Pastikan 'json' sudah diimpor di bagian atas
+
 
 # --- Perbarui fungsi lesson_detail ---
 @bp.route('/lesson/<int:lesson_id>')

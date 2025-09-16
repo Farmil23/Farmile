@@ -25,19 +25,16 @@
               <option value="devops-engineer" {% if current_user.career_path == 'devops-engineer' %}selected{% endif %}>
                   DevOps Engineer
               </option>
-
               <option value="cyber-security" {% if current_user.career_path == 'cyber-security' %}selected{% endif %}>
                 Cyber Security
-                </option>
-
-                <option value="network-engineer" {% if current_user.career_path == 'network-engineer' %}selected{% endif %}>
-                    Network Engineer
-                    </option>
+              </option>
+              <option value="network-engineer" {% if current_user.career_path == 'network-engineer' %}selected{% endif %}>
+                  Network Engineer
+              </option>
           </select>
           <button type="submit" class="button-primary">Ganti</button>
       </form>
 
-      {# ---> TAMBAHKAN BLOK KODE INI <--- #}
   <div class="card" style="margin-bottom: 2rem; padding: 1.5rem; text-align: center;">
     <h4>Sertifikat Kelulusan Roadmap</h4>
     {% if certificate %}
@@ -55,7 +52,6 @@
         </div>
     {% endif %}
   </div>
-  {# ---> AKHIR DARI BLOK TAMBAHAN <--- #}
 
   <h4 id="progress-text">Progres Keseluruhan: {{ progress }}%</h4>
   <div class="progress-bar" style="margin-bottom: 30px;">
@@ -111,7 +107,12 @@
               <li class="lesson-item project-item">
                   <div class="lesson-top">
                      <div class="lesson-status">
-                          <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                          {# --- PERBAIKAN DI SINI --- #}
+                          {% if project.id in submitted_project_ids %}
+                              <svg class="icon-completed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                          {% else %}
+                              <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                          {% endif %}
                      </div>
                      <div class="project-card-header">
                         <h4>{{ project.title }}</h4>
@@ -131,7 +132,6 @@
   </div>
 {% endblock %}
 
-
 {% block page_scripts %}
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -139,15 +139,6 @@
         const progressBar = document.querySelector('.progress-bar-inner');
         const progressText = document.getElementById('progress-text');
     
-        const updateProgressBar = () => {
-            const totalLessons = lessonCheckboxes.length;
-            if (totalLessons === 0) return;
-            const completedLessons = document.querySelectorAll('.lesson-list input[type="checkbox"]:checked').length;
-            const percentage = Math.round((completedLessons / totalLessons) * 100);
-            
-            if (progressBar) progressBar.style.width = `${percentage}%`;
-            if (progressText) progressText.textContent = `Progres Keseluruhan: ${percentage}%`;
-        };
     
         lessonCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', async (e) => {

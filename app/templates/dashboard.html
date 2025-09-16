@@ -59,7 +59,7 @@
     <div class="stat-card">
       <div class="stat-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
         </svg>
       </div>
       <div class="stat-content">
@@ -94,31 +94,14 @@
           </div>
         </div>
         <div class="card-progress">
-          <span class="progress-text">
-            {% if current_user.modules.count() > 0 %}
-              {% set total_lessons = current_user.modules.join(Lesson).count() %}
-              {% if total_lessons > 0 %}
-                {% set progress_percentage = ((current_user.user_progress.count() / total_lessons) * 100)|round|int %}
-                {{ progress_percentage }}% Selesai
-              {% else %}
-                0% Selesai
-              {% endif %}
-            {% else %}
-              0% Selesai
-            {% endif %}
-          </span>
+            <span class="progress-text">{{ progress_percentage }}% Selesai</span>
         </div>
       </div>
       <div class="card-content">
       {% if current_user.career_path %}
         <p class="card-description">
           Lanjutkan perjalanan belajar Anda di jalur <strong>{{ current_user.career_path|replace('-', ' ')|title }}</strong>. 
-          {% if current_user.modules.count() > 0 %}
-            {% set total_lessons = current_user.modules.join(Lesson).count() %}
-            Anda telah menyelesaikan {{ current_user.user_progress.count() }} dari {{ total_lessons }} materi yang tersedia.
-          {% else %}
-            Mulai dengan membuat roadmap belajar Anda.
-          {% endif %}
+          Anda telah menyelesaikan {{ current_user.user_progress.count() }} materi.
         </p>
         
         <div class="card-actions">

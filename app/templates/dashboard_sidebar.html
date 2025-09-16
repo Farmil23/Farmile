@@ -97,7 +97,7 @@
           <span class="nav-text">Sertifikat Saya</span>
         </a>
         {# ---> AKHIR DARI BLOK TAMBAHAN <--- #}
-        
+
         {# Tambahkan ini di dalam <div class="nav-links"> di dashboard_sidebar.html #}
 
         <a href="{{ url_for('routes.ai_resume_pro') }}" class="nav-link {% if request.endpoint == 'routes.ai_resume_pro' %}active{% endif %}">
@@ -206,10 +206,7 @@
         <span class="stat-label">Proyek</span>
       </div>
       <div class="quick-stat">
-        <span class="stat-value"
-          >{{ ((current_user.user_progress.count() / 50) * 100)|round|int
-          }}%</span
-        >
+        <span class="stat-value">{{ progress }}%</span>
         <span class="stat-label">Progress</span>
       </div>
     </div>
