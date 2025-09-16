@@ -311,6 +311,7 @@ class JobApplication(db.Model):
     company_name = db.Column(db.String(150), nullable=False)
     position = db.Column(db.String(150), nullable=False)
     status = db.Column(db.String(50), default='applied', nullable=False)
+    work_model = db.Column(db.String(50), nullable=True) # <-- BARIS BARU
     application_date = db.Column(db.DateTime, default=datetime.utcnow)
     job_link = db.Column(db.String(500), nullable=True)
     notes = db.Column(db.Text, nullable=True)
@@ -326,6 +327,7 @@ class JobApplication(db.Model):
             'position': self.position,
             'status': self.status,
             'application_date': self.application_date.isoformat(),
+            'work_model': self.work_model, # <-- BARIS BARU
             'job_link': self.job_link,
             'notes': self.notes,
             'resume_filename': self.resume_used.original_filename if self.resume_used else None

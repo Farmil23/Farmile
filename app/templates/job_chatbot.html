@@ -1,19 +1,39 @@
 {% extends "base.html" %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/job_tracker.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="chat-page-layout">
-    <main class="chat-page-container">
-        <div class="chat-header">
-            <div class="chat-header-left">
-                <h2 id="session-title">AI Coach: {{ application.position }} at {{ application.company_name }}</h2>
-            </div>
-            <a href="{{ url_for('routes.job_tracker') }}" class="button-secondary">Kembali ke Job Tracker</a>
+<div class="job-chatbot-layout">
+    <aside class="job-chatbot-sidebar">
+        <div class="sidebar-header">
+            <h3>Detail Lamaran</h3>
+            <a href="{{ url_for('routes.job_tracker') }}" class="back-link button-secondary" style="padding: 0.5rem 0.8rem; " >
+                &larr; Kembali
+            </a>
         </div>
-        
+        <div class="sidebar-content">
+            <h4>{{ application.position }}</h4>
+            <p class="company-name">{{ application.company_name }}</p>
+            <hr>
+            <h5>Deskripsi Pekerjaan:</h5>
+            <p class="job-description">
+                {{ application.job_link | truncate(100) if application.job_link else 'Tidak ada deskripsi pekerjaan.' }}
+            </p>
+            <h5>Catatan Anda:</h5>
+            <p class="user-notes">
+                {{ application.notes | truncate(100) if application.notes else 'Tidak ada catatan.' }}
+            </p>
+        </div>
+        <div class="sidebar-footer">
+            <button id="proactive-tip-btn" class="button-secondary full-width">
+                Minta 1 Tips Cepat dari AI
+            </button>
+        </div>
+    </aside>
+
+    <main class="job-chatbot-main">
         <div id="chat-window" class="chat-window">
             </div>
 
@@ -32,6 +52,7 @@
         applicationId: {{ application.id }},
         userProfilePic: '{{ current_user.profile_pic }}',
         chatApiUrl: "{{ url_for('routes.chat_with_job_coach', app_id=application.id) }}",
+        proactiveTipApiUrl: "{{ url_for('routes.get_proactive_tip', app_id=application.id) }}",
         initialMessages: {{ history | tojson | safe }}
     };
 </script>

@@ -16,8 +16,17 @@
     </div>
 </div>
 
-<div id="kanban-board" class="kanban-board">
+<div id="kanban-board-wrapper">
+    <div id="kanban-board" class="kanban-board">
+        </div>
+
+    <div id="empty-state" class="empty-state card" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        <h3>Mulai Lacak Lamaran Pertamamu!</h3>
+        <p>Klik tombol "Lacak Lamaran Baru" untuk menambahkan pekerjaan impianmu dan pantau progresnya di sini.</p>
     </div>
+</div>
+
 
 <div id="application-modal" class="modal-overlay">
     <div class="modal-box card">
@@ -25,22 +34,53 @@
         <button class="modal-close-btn">&times;</button>
         <form id="application-form">
             <input type="hidden" id="application-id">
-            <div class="form-group">
-                <label for="company-name">Nama Perusahaan</label>
-                <input type="text" id="company-name" class="form-input" required>
+            
+            <div class.form-grid">
+                <div class="form-group">
+                    <label for="company-name">Nama Perusahaan</label>
+                    <input type="text" id="company-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="position">Posisi yang Dilamar</label>
+                    <input type="text" id="position" class="form-input" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="position">Posisi yang Dilamar</label>
-                <input type="text" id="position" class="form-input" required>
+
+            <div class.form-grid">
+                <div class="form-group">
+                    <label for="application-date">Tanggal Melamar</label>
+                    <input type="date" id="application-date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="work-model">Model Kerja</label>
+                    <select id="work-model" class="form-input">
+                        <option value="onsite">On-site</option>
+                        <option value="remote">Remote</option>
+                        <option value="hybrid">Hybrid</option>
+                    </select>
+                </div>
             </div>
+
             <div class="form-group">
                 <label for="job-link">Link Lowongan (Opsional)</label>
                 <input type="url" id="job-link" class="form-input">
             </div>
+
+            <div class="form-group">
+                <label for="resume-select">Lampirkan CV (Opsional)</label>
+                <select id="resume-select" class="form-input">
+                    <option value="">Pilih CV yang sudah dianalisis...</option>
+                    {% for resume in saved_resumes %}
+                        <option value="{{ resume.id }}">{{ resume.original_filename }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <div class="form-group">
                 <label for="notes">Catatan (Opsional)</label>
                 <textarea id="notes" class="form-input" rows="4"></textarea>
             </div>
+
             <div class="modal-actions">
                 <button type="submit" class="button-primary">Simpan</button>
             </div>

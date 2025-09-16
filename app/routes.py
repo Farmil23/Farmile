@@ -2046,9 +2046,13 @@ def generate_formatted_resume():
 def job_tracker():
     """Menampilkan halaman utama Job Application Tracker."""
     log_activity(current_user, 'viewed_job_tracker')
+    # Mengambil data resume untuk ditampilkan di dropdown form
+    saved_resumes = UserResume.query.filter_by(user_id=current_user.id).order_by(UserResume.created_at.desc()).all()
+    return render_template('job_tracker.html', title="Job Application Tracker", saved_resumes=saved_resumes)
 
-    return render_template('job_tracker.html', title="Job Application Tracker")
 
+
+# --- GANTI FUNGSI INI SECARA KESELURUHAN ---
 @bp.route('/api/applications', methods=['GET', 'POST'])
 @login_required
 def handle_applications():
@@ -2062,18 +2066,39 @@ def handle_applications():
         if not data or not data.get('company_name') or not data.get('position'):
             return jsonify({'error': 'Nama perusahaan dan posisi wajib diisi.'}), 400
 
+        # --- PERBAIKAN FINAL & ANTI-GAGAL UNTUK MENCEGAH DUPLIKASI ---
+        # Cek apakah sudah ada entri yang identik untuk pengguna ini.
+        existing_app = JobApplication.query.filter_by(
+            user_id=current_user.id,
+            company_name=data['company_name'],
+            position=data['position']
+        ).first()
+
+        if existing_app:
+            # Jika sudah ada, jangan buat yang baru. Kembalikan data yang sudah ada.
+            # Ini akan mencegah duplikasi bahkan jika ada double-click atau masalah jaringan.
+            return jsonify(existing_app.to_dict()), 200
+        # --- AKHIR DARI PERBAIKAN ---
+
+        application_date = datetime.fromisoformat(data['application_date']) if data.get('application_date') else datetime.utcnow()
+        
+        resume_id = data.get('resume_id')
+        if not resume_id or resume_id == "":
+            resume_id = None
+
         new_app = JobApplication(
             user_id=current_user.id,
             company_name=data['company_name'],
             position=data['position'],
-            status=data.get('status', 'applied'), # Default status saat membuat
+            status=data.get('status', 'wishlist'),
+            application_date=application_date,
+            work_model=data.get('work_model'),
             job_link=data.get('job_link'),
             notes=data.get('notes'),
-            resume_id=data.get('resume_id')
+            resume_id=resume_id
         )
         db.session.add(new_app)
         db.session.commit()
-        return jsonify(new_app.to_dict()), 201
 
 
 
@@ -2089,11 +2114,20 @@ def handle_single_application(app_id):
 
     if request.method == 'PUT':
         data = request.get_json()
+        
+        # Menangani resume_id yang mungkin kosong
+        resume_id = data.get('resume_id')
+        if not resume_id or resume_id == "":
+            resume_id = None
+            
         app.company_name = data.get('company_name', app.company_name)
         app.position = data.get('position', app.position)
         app.status = data.get('status', app.status)
+        app.application_date = datetime.fromisoformat(data['application_date']) if data.get('application_date') else app.application_date
+        app.work_model = data.get('work_model', app.work_model)
         app.job_link = data.get('job_link', app.job_link)
         app.notes = data.get('notes', app.notes)
+        app.resume_id = resume_id
         db.session.commit()
         return jsonify(app.to_dict())
 
@@ -2109,7 +2143,6 @@ def job_coach_chatbot(app_id):
     """Menampilkan halaman chatbot khusus UNTUK SATU LAMARAN KERJA."""
     application = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
     log_activity(current_user, 'started_ai_coach', {'application_id': app_id})
-    # Kunci utama: Hanya mengambil riwayat untuk 'application_id' yang spesifik
     history = JobCoachMessage.query.filter_by(application_id=app_id).order_by(JobCoachMessage.timestamp.asc()).all()
     
     history_as_dicts = [msg.to_dict() for msg in history]
@@ -2120,8 +2153,6 @@ def job_coach_chatbot(app_id):
         application=application,
         history=history_as_dicts
     )
-
-# GANTI FUNGSI chat_with_job_coach YANG LAMA DENGAN INI
 @bp.route('/api/job-coach/<int:app_id>/chat', methods=['POST'])
 @login_required
 def chat_with_job_coach(app_id):
@@ -2132,19 +2163,14 @@ def chat_with_job_coach(app_id):
     if not user_message_content:
         return jsonify({'error': 'Pesan tidak boleh kosong.'}), 400
 
-    # 1. Simpan pesan pengguna ke database
     user_message = JobCoachMessage(application_id=app_id, role='user', content=user_message_content)
     db.session.add(user_message)
-    db.session.commit() # Commit di sini agar riwayat langsung tercatat
+    db.session.commit()
     
-    
-
-    # 2. Ambil seluruh riwayat percakapan untuk konteks AI
     history = JobCoachMessage.query.filter_by(application_id=app_id).order_by(JobCoachMessage.timestamp.asc()).all()
     conversation_history = "\n".join([f"{msg.role}: {msg.content}" for msg in history])
 
-    # Kumpulkan konteks pekerjaan
-    job_context = f"- Nama Perusahaan: {application.company_name}\n- Posisi yang Dilamar: {application.position}"
+    job_context = f"- Nama Perusahaan: {application.company_name}\n- Posisi yang Dilamar: {application.position}\n- Deskripsi Pekerjaan: {application.job_link or 'Tidak ada'}\n- Catatan Pengguna: {application.notes or 'Tidak ada'}"
     latest_resume = UserResume.query.filter_by(user_id=current_user.id).order_by(UserResume.created_at.desc()).first()
     resume_context = latest_resume.resume_content if latest_resume else "CV pengguna tidak tersedia."
 
@@ -2182,7 +2208,6 @@ def chat_with_job_coach(app_id):
         )
         ai_response_content = completion.choices[0].message.content
 
-        # 3. Simpan balasan AI ke database
         ai_message = JobCoachMessage(application_id=app_id, role='assistant', content=ai_response_content)
         db.session.add(ai_message)
         db.session.commit()
@@ -2192,6 +2217,29 @@ def chat_with_job_coach(app_id):
         db.session.rollback()
         current_app.logger.error(f"AI Job Coach Error: {e}")
         return jsonify({'error': 'Gagal menghubungi AI Coach.'}), 500
+    
+
+@bp.route('/api/job-coach/<int:app_id>/proactive-tip', methods=['GET'])
+@login_required
+def get_proactive_tip(app_id):
+    application = JobApplication.query.filter_by(id=app_id, user_id=current_user.id).first_or_404()
+
+    job_context = f"- Nama Perusahaan: {application.company_name}\n- Posisi yang Dilamar: {application.position}\n- Deskripsi Pekerjaan: {application.job_link or 'Tidak ada'}"
+    
+    prompt = f"""
+    Berikan satu tips singkat, padat, dan sangat praktis (maksimal 2 kalimat) untuk wawancara kerja berdasarkan detail berikut. Fokus pada sesuatu yang tidak biasa namun berdampak besar.
+
+    {job_context}
+    """
+    try:
+        completion = ark_client.chat.completions.create(
+            model=current_app.config['MODEL_ENDPOINT_ID'],
+            messages=[{"role": "user", "content": prompt}]
+        )
+        tip = completion.choices[0].message.content
+        return jsonify({'tip': tip})
+    except Exception as e:
+        return jsonify({'error': 'Gagal mendapatkan tips dari AI.'}), 500
 
 
 

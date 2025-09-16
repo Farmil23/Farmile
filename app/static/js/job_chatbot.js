@@ -1,17 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Pastikan CONFIG ada sebelum melanjutkan
     if (typeof window.JOB_CHAT_CONFIG === 'undefined') {
         console.error('Job Chatbot configuration is missing!');
         return;
     }
     const CONFIG = window.JOB_CHAT_CONFIG;
 
-    // Referensi ke elemen DOM
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-chat-btn');
     const chatWindow = document.getElementById('chat-window');
+    const proactiveTipBtn = document.getElementById('proactive-tip-btn');
 
-    // Fungsi untuk menambahkan satu pesan ke tampilan
     const appendMessage = (role, content, isLoading = false) => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}`;
@@ -27,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoading) {
             bubbleDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
         } else {
-            // Gunakan library 'marked' jika tersedia, jika tidak tampilkan teks biasa
             bubbleDiv.innerHTML = window.marked ? window.marked.parse(content) : content.replace(/\n/g, '<br>');
         }
         
@@ -36,17 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
 
-    // Fungsi untuk menghapus indikator loading
     const removeLoadingIndicator = () => {
         document.getElementById('loading-indicator')?.remove();
     };
     
-    // Fungsi untuk mengirim pesan ke backend
     const sendChatMessage = async (messageToSend) => {
         const message = messageToSend || chatInput.value.trim();
         if (!message) return;
 
-        // Tampilkan pesan pengguna jika ini bukan pesan otomatis pertama
         if (!messageToSend) {
             appendMessage('user', message);
         }
@@ -54,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatInput.value = '';
         chatInput.disabled = true;
         sendBtn.disabled = true;
-        appendMessage('assistant', '', true); // Tampilkan loading
+        appendMessage('assistant', '', true);
 
         try {
             const response = await fetch(CONFIG.chatApiUrl, {
@@ -79,24 +73,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- FUNGSI UTAMA SAAT HALAMAN DIBUKA ---
+    const fetchProactiveTip = async () => {
+        proactiveTipBtn.disabled = true;
+        proactiveTipBtn.textContent = 'Meminta...';
+        appendMessage('assistant', '', true); // Tampilkan loading
+
+        try {
+            const response = await fetch(CONFIG.proactiveTipApiUrl);
+            removeLoadingIndicator();
+            if (!response.ok) throw new Error('Gagal mendapatkan tips.');
+
+            const data = await response.json();
+            appendMessage('assistant', `**Tips Cepat ⚡:** ${data.tip}`);
+        } catch (error) {
+            removeLoadingIndicator();
+            appendMessage('assistant', 'Gagal mendapatkan tips saat ini.');
+        } finally {
+            proactiveTipBtn.disabled = false;
+            proactiveTipBtn.textContent = 'Minta 1 Tips Cepat dari AI';
+        }
+    };
+
     const initializeChat = () => {
-        // 1. Bersihkan jendela chat
         chatWindow.innerHTML = ''; 
         
-        // 2. Tampilkan semua riwayat pesan yang sudah ada
         if (CONFIG.initialMessages && CONFIG.initialMessages.length > 0) {
             CONFIG.initialMessages.forEach(msg => {
                 appendMessage(msg.role, msg.content);
             });
             chatWindow.scrollTop = chatWindow.scrollHeight;
         } else {
-            // 3. Jika ini pertama kalinya chat dibuka, kirim sapaan awal
             sendChatMessage("Halo, bisa bantu aku persiapan untuk wawancara ini?");
         }
     };
 
-    // Event Listeners
     sendBtn.addEventListener('click', () => sendChatMessage());
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -104,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sendChatMessage();
         }
     });
+    proactiveTipBtn.addEventListener('click', fetchProactiveTip);
 
-    // Jalankan fungsi utama
     initializeChat();
 });

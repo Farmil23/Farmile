@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', () => {
         addApp: (data) => fetch('/api/applications', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        }).then(res => res.json()),
+        }).then(res => res.ok ? res.json() : Promise.reject(res.json())),
         updateApp: (id, data) => fetch(`/api/applications/${id}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        }).then(res => res.json()),
+        }).then(res => res.ok ? res.json() : Promise.reject(res.json())),
         deleteApp: (id) => fetch(`/api/applications/${id}`, { method: 'DELETE' })
     };
     
@@ -69,6 +69,17 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const renderCards = (apps) => {
         applications = apps;
+        const emptyState = document.getElementById('empty-state');
+        const board = document.getElementById('kanban-board');
+
+        if (apps.length === 0) {
+            board.style.display = 'none';
+            emptyState.style.display = 'block';
+        } else {
+            board.style.display = 'grid';
+            emptyState.style.display = 'none';
+        }
+
         document.querySelectorAll('.kanban-cards').forEach(col => col.innerHTML = '');
         apps.forEach(app => {
             const column = document.querySelector(`.kanban-column[data-status='${app.status}'] .kanban-cards`);
@@ -77,16 +88,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.className = 'kanban-card';
                 card.draggable = true;
                 card.dataset.id = app.id;
+
+                const appDate = new Date(app.application_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                const workModelBadge = app.work_model ? `<span class="work-model-badge">${app.work_model}</span>` : '';
+                const resumeBadge = app.resume_filename ? `<span class="resume-badge">CV</span>` : '';
+
                 card.innerHTML = `
                     <button class="delete-card-btn" title="Hapus">&times;</button>
                     <div class="card-content">
-                        <h4>${app.position}</h4>
+                        <div class="card-header">
+                            <h4>${app.position}</h4>
+                            <span class="date">${appDate}</span>
+                        </div>
                         <p>${app.company_name}</p>
+                        <div class="card-badges">
+                            ${workModelBadge}
+                            ${resumeBadge}
+                        </div>
                     </div>
                     <div class="card-footer">
                         <a href="/job-tracker/coach/${app.id}" class="ai-coach-btn">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                            Ngobrol Sama AI
+                            AI Coach
                         </a>
                     </div>`;
                 column.appendChild(card);
@@ -121,7 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const confirmed = await showConfirmModal('Konfirmasi Hapus', `Anda yakin ingin menghapus lamaran "${app.position}"?`);
                     if (confirmed) {
                         await api.deleteApp(id);
-                        loadApplications();
+                        // Hapus dari array lokal dan render ulang
+                        applications = applications.filter(a => a.id != id);
+                        renderCards(applications);
                     }
                 });
             }
@@ -149,9 +174,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 column.classList.remove('drag-over');
                 if (draggedCard) {
-                    column.querySelector('.kanban-cards').appendChild(draggedCard);
                     const appId = draggedCard.dataset.id;
                     const newStatus = column.dataset.status;
+                    
+                    // Update status di array lokal
+                    const appIndex = applications.findIndex(a => a.id == appId);
+                    if (appIndex > -1) {
+                        applications[appIndex].status = newStatus;
+                    }
+                    
+                    // Render ulang dari data lokal (sangat cepat)
+                    renderCards(applications);
+                    
+                    // Kirim pembaruan ke server di latar belakang
                     await api.updateApp(appId, { status: newStatus });
                 }
             });
@@ -162,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appForm.reset();
         document.getElementById('application-id').value = '';
         appModalTitle.textContent = 'Lacak Lamaran Baru';
+        document.getElementById('application-date').valueAsDate = new Date();
         appModal.classList.add('visible');
     };
 
@@ -172,8 +208,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('application-id').value = app.id;
         document.getElementById('company-name').value = app.company_name;
         document.getElementById('position').value = app.position;
+        document.getElementById('application-date').value = app.application_date.split('T')[0];
+        document.getElementById('work-model').value = app.work_model || 'onsite';
         document.getElementById('job-link').value = app.job_link || '';
         document.getElementById('notes').value = app.notes || '';
+        
+        const resumeSelect = document.getElementById('resume-select');
+        const resumeIdFromServer = app.resume_id;
+        resumeSelect.value = resumeIdFromServer || "";
+
         appModalTitle.textContent = `Detail: ${app.position}`;
         appModal.classList.add('visible');
     };
@@ -185,27 +228,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- LOGIKA SUBMIT FORM YANG SUDAH DIPERBAIKI ---
     appForm.addEventListener('submit', async e => {
         e.preventDefault();
         const id = document.getElementById('application-id').value;
+        const resumeSelect = document.getElementById('resume-select');
         const data = {
             company_name: document.getElementById('company-name').value,
             position: document.getElementById('position').value,
+            application_date: document.getElementById('application-date').value,
+            work_model: document.getElementById('work-model').value,
             job_link: document.getElementById('job-link').value,
-            notes: document.getElementById('notes').value
+            notes: document.getElementById('notes').value,
+            resume_id: resumeSelect.value || null
         };
+
         try {
             if (id) {
-                await api.updateApp(id, data);
+                // --- LOGIKA UPDATE BARU ---
+                const currentApp = applications.find(a => a.id == id);
+                data.status = currentApp.status; // Pastikan status tidak berubah saat edit
+                const updatedApp = await api.updateApp(id, data);
+                
+                const index = applications.findIndex(a => a.id == id);
+                if (index !== -1) {
+                    applications[index] = updatedApp;
+                }
             } else {
-                await api.addApp(data);
+                // --- LOGIKA ADD BARU ---
+                data.status = 'wishlist'; // Selalu mulai dari Wishlist
+                const newApp = await api.addApp(data);
+                applications.unshift(newApp); // Tambahkan ke awal array
             }
+            
+            // Render ulang dari data lokal yang sudah diupdate
+            renderCards(applications);
+            
+            // Tutup modal setelah selesai
             appForm.reset();
             appModal.classList.remove('visible');
-            loadApplications();
+
         } catch (error) {
-            console.error("Gagal menyimpan:", error);
-            alert("Gagal menyimpan lamaran. Silakan coba lagi.");
+            console.error("Gagal menyimpan:", await error);
+            alert("Gagal menyimpan lamaran. Periksa kembali isian Anda.");
         }
     });
 
