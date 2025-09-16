@@ -1,3 +1,5 @@
+# File: app/__init__.py
+
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -103,6 +105,32 @@ class CertificateView(SecureModelView):
         'user': {'fields': ['name', 'email'], 'page_size': 10},
         'roadmap': {'fields': ['title'], 'page_size': 10}
     }
+
+# === KELAS BARU UNTUK MELIHAT JOB APPLICATION DI ADMIN ===
+class JobApplicationView(SecureModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
+    
+    column_list = ('id', 'author', 'company_name', 'position', 'status', 'application_date', 'resume_used')
+    column_searchable_list = ('author.name', 'company_name', 'position')
+    column_filters = ('status', 'application_date', 'author.name')
+    
+    # Kolom yang akan muncul saat membuat/mengedit
+    form_columns = ('author', 'company_name', 'position', 'status', 'application_date', 'work_model', 'job_link', 'notes', 'resume_used')
+    
+    # Untuk dropdown pencarian yang lebih baik
+    form_ajax_refs = {
+        'author': {
+            'fields': ['name', 'email'],
+            'page_size': 10
+        },
+        'resume_used': {
+            'fields': ['original_filename'],
+            'page_size': 10
+        }
+    }
+# === AKHIR DARI BLOK BARU ===
 
 class AnalyticsView(BaseView):
     @expose('/')
@@ -230,9 +258,12 @@ def create_app(config_class=Config):
     admin.add_view(UserProjectView(UserProject, db.session))
     admin.add_view(SecureModelView(Roadmap, db.session))
     admin.add_view(SecureModelView(Notification, db.session))
-    # --- MENDAFTARKAN CERTIFICATE VIEW ---
+    
+    # === TAMBAHKAN BARIS INI UNTUK MEREGISTRASIKAN VIEW BARU ===
+    admin.add_view(JobApplicationView(JobApplication, db.session, name="Job Applications"))
+    # === AKHIR DARI BLOK TAMBAHAN ===
+    
     admin.add_view(CertificateView(Certificate, db.session))
-    # -----------------------------------
     admin.add_view(AnalyticsView(name='Analytics', endpoint='analytics'))
     
     try:

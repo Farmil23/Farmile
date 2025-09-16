@@ -19,7 +19,7 @@ import io
 from sqlalchemy import or_
 from sqlalchemy import func, cast, String
 from sqlalchemy.orm import subqueryload
-
+from sqlalchemy.exc import IntegrityError 
 
 bp = Blueprint('routes', __name__)
 
@@ -2066,8 +2066,7 @@ def handle_applications():
         if not data or not data.get('company_name') or not data.get('position'):
             return jsonify({'error': 'Nama perusahaan dan posisi wajib diisi.'}), 400
 
-        # --- PERBAIKAN FINAL & ANTI-GAGAL UNTUK MENCEGAH DUPLIKASI ---
-        # Cek apakah sudah ada entri yang identik untuk pengguna ini.
+        # Pengecekan awal tetap dilakukan untuk efisiensi
         existing_app = JobApplication.query.filter_by(
             user_id=current_user.id,
             company_name=data['company_name'],
@@ -2075,16 +2074,11 @@ def handle_applications():
         ).first()
 
         if existing_app:
-            # Jika sudah ada, jangan buat yang baru. Kembalikan data yang sudah ada.
-            # Ini akan mencegah duplikasi bahkan jika ada double-click atau masalah jaringan.
             return jsonify(existing_app.to_dict()), 200
-        # --- AKHIR DARI PERBAIKAN ---
 
+        # Jika tidak ada, coba buat yang baru
         application_date = datetime.fromisoformat(data['application_date']) if data.get('application_date') else datetime.utcnow()
-        
-        resume_id = data.get('resume_id')
-        if not resume_id or resume_id == "":
-            resume_id = None
+        resume_id = data.get('resume_id') if data.get('resume_id') else None
 
         new_app = JobApplication(
             user_id=current_user.id,
@@ -2098,7 +2092,23 @@ def handle_applications():
             resume_id=resume_id
         )
         db.session.add(new_app)
-        db.session.commit()
+
+        try:
+            # Coba untuk commit ke database
+            db.session.commit()
+            return jsonify(new_app.to_dict()), 201
+        except IntegrityError:
+            # JIKA GAGAL (karena race condition dan data sudah ada),
+            # batalkan sesi dan kembalikan data yang sudah ada.
+            db.session.rollback()
+            app_yang_sudah_ada = JobApplication.query.filter_by(
+                user_id=current_user.id,
+                company_name=data['company_name'],
+                position=data['position']
+            ).first()
+            return jsonify(app_yang_sudah_ada.to_dict()), 200
+
+# ... (sisa kode lainnya tetap sama) ...
 
 
 

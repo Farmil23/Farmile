@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', () => {
         addApp: (data) => fetch('/api/applications', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        }).then(res => res.ok ? res.json() : Promise.reject(res.json())),
+        }).then(res => res.ok ? res.json() : Promise.reject(res)),
         updateApp: (id, data) => fetch(`/api/applications/${id}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        }).then(res => res.ok ? res.json() : Promise.reject(res.json())),
+        }).then(res => res.ok ? res.json() : Promise.reject(res)),
         deleteApp: (id) => fetch(`/api/applications/${id}`, { method: 'DELETE' })
     };
     
@@ -144,9 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const confirmed = await showConfirmModal('Konfirmasi Hapus', `Anda yakin ingin menghapus lamaran "${app.position}"?`);
                     if (confirmed) {
                         await api.deleteApp(id);
-                        // Hapus dari array lokal dan render ulang
-                        applications = applications.filter(a => a.id != id);
-                        renderCards(applications);
+                        loadApplications(); // Muat ulang dari server
                     }
                 });
             }
@@ -177,17 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const appId = draggedCard.dataset.id;
                     const newStatus = column.dataset.status;
                     
-                    // Update status di array lokal
-                    const appIndex = applications.findIndex(a => a.id == appId);
-                    if (appIndex > -1) {
-                        applications[appIndex].status = newStatus;
-                    }
-                    
-                    // Render ulang dari data lokal (sangat cepat)
-                    renderCards(applications);
-                    
-                    // Kirim pembaruan ke server di latar belakang
                     await api.updateApp(appId, { status: newStatus });
+                    loadApplications(); // Muat ulang dari server
                 }
             });
         });
@@ -228,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- LOGIKA SUBMIT FORM YANG SUDAH DIPERBAIKI ---
+    // === FUNGSI SUBMIT DENGAN LOGIKA BARU YANG LEBIH TANGGUH DAN SEDERHANA ===
     appForm.addEventListener('submit', async e => {
         e.preventDefault();
         const id = document.getElementById('application-id').value;
@@ -245,32 +234,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (id) {
-                // --- LOGIKA UPDATE BARU ---
-                const currentApp = applications.find(a => a.id == id);
-                data.status = currentApp.status; // Pastikan status tidak berubah saat edit
-                const updatedApp = await api.updateApp(id, data);
-                
-                const index = applications.findIndex(a => a.id == id);
-                if (index !== -1) {
-                    applications[index] = updatedApp;
-                }
+                // Untuk update, kita panggil API update
+                await api.updateApp(id, data);
             } else {
-                // --- LOGIKA ADD BARU ---
-                data.status = 'wishlist'; // Selalu mulai dari Wishlist
-                const newApp = await api.addApp(data);
-                applications.unshift(newApp); // Tambahkan ke awal array
+                // Untuk penambahan baru, kita panggil API add
+                await api.addApp(data);
             }
+
+            // **BAGIAN KUNCI DARI SOLUSI INI**
+            // Setelah aksi (add/update) berhasil, panggil `loadApplications()`
+            // untuk mengambil ulang SEMUA data dari server. Ini memastikan
+            // tampilan selalu sinkron dengan database dan menghilangkan duplikasi.
+            loadApplications();
             
-            // Render ulang dari data lokal yang sudah diupdate
-            renderCards(applications);
-            
-            // Tutup modal setelah selesai
             appForm.reset();
             appModal.classList.remove('visible');
 
         } catch (error) {
-            console.error("Gagal menyimpan:", await error);
-            alert("Gagal menyimpan lamaran. Periksa kembali isian Anda.");
+            console.error("Gagal menyimpan:", error);
+            const errorData = await error.json(); // Coba dapatkan detail error dari server
+            alert(`Gagal menyimpan lamaran: ${errorData.error || 'Periksa kembali isian Anda.'}`);
         }
     });
 

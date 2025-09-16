@@ -304,6 +304,10 @@ class UserResume(db.Model):
     def __repr__(self):
         return f'<UserResume {self.original_filename}>'
 
+# File: app/models.py
+
+# ... (kode model lain tetap sama) ...
+
 class JobApplication(db.Model):
     __tablename__ = 'job_application'
     id = db.Column(db.Integer, primary_key=True)
@@ -311,7 +315,7 @@ class JobApplication(db.Model):
     company_name = db.Column(db.String(150), nullable=False)
     position = db.Column(db.String(150), nullable=False)
     status = db.Column(db.String(50), default='applied', nullable=False)
-    work_model = db.Column(db.String(50), nullable=True) # <-- BARIS BARU
+    work_model = db.Column(db.String(50), nullable=True)
     application_date = db.Column(db.DateTime, default=datetime.utcnow)
     job_link = db.Column(db.String(500), nullable=True)
     notes = db.Column(db.Text, nullable=True)
@@ -320,6 +324,12 @@ class JobApplication(db.Model):
     author = db.relationship('User', backref=db.backref('job_applications', cascade="all, delete-orphan"))
     resume_used = db.relationship('UserResume')
 
+    # --- TAMBAHKAN BLOK INI ---
+    # Aturan ini akan memberitahu database untuk menolak entri duplikat
+    # berdasarkan kombinasi dari tiga kolom ini.
+    __table_args__ = (db.UniqueConstraint('user_id', 'company_name', 'position', name='_user_company_position_uc'),)
+    # --- AKHIR DARI BLOK TAMBAHAN ---
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -327,7 +337,7 @@ class JobApplication(db.Model):
             'position': self.position,
             'status': self.status,
             'application_date': self.application_date.isoformat(),
-            'work_model': self.work_model, # <-- BARIS BARU
+            'work_model': self.work_model,
             'job_link': self.job_link,
             'notes': self.notes,
             'resume_filename': self.resume_used.original_filename if self.resume_used else None
