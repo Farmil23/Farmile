@@ -4,7 +4,8 @@ from app.models import Lesson
 # Daftar judul lesson yang kontennya ingin Anda hapus
 
 lessons_to_clear = [
-    "Menulis Laporan Penetration Testing"
+    "Menulis Laporan Penetration Testing",
+    "Menggunakan Alat Diagnostik Jaringan (ping, traceroute, nslookup"
     
 ]
 

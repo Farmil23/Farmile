@@ -199,7 +199,7 @@
 
 .lesson-actions .button-primary,
 .lesson-actions .button-secondary {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     padding: 0.8rem 1.8rem;
 }
 
@@ -449,12 +449,14 @@
         margin: 1rem auto;
     }
 
+
+
     .page-header h1 {
         font-size: 2rem;
     }
 
     .lesson-content {
-        padding: 1.5rem;
+        padding: 0.7rem;
     }
 
     .core-content h3 {
@@ -463,6 +465,23 @@
 
     .core-content pre, .core-content table {
         font-size: 0.85rem;
+    }
+
+    .lesson-content {
+        max-width: 450px;
+        min-width: 520px;
+    }
+
+    .lesson-actions {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        font-size: 12px;
+        min-width: 400px;
+        max-width: 500px;
+    }
+
+    .button-secondary {
+        font-size: 0.9rem;
     }
 }
 
