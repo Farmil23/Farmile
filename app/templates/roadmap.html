@@ -1,166 +1,199 @@
 {% extends "dashboard_base.html" %}
 
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/roadmap.css') }}">
+{% endblock %}
+
 {% block dashboard_content %}
-  <div class="page-header">
-      <div>
-          <h2>Roadmap: {{ current_user.career_path|replace('-', ' ')|title }}</h2>
-          <p class="subtitle">Ikuti alur belajar ini untuk menguasai skill yang dibutuhkan.</p>
-      </div>
-      
-      <form action="{{ url_for('routes.change_career_path') }}" method="POST" class="career-path-selector" >
-          <label for="career_path_select">Ganti Jalur:</label>
-          <select name="new_path" id="career_path_select" class="form-select" >
-              <option value="frontend" {% if current_user.career_path == 'frontend' %}selected{% endif %}>
-                  Frontend Developer
-              </option>
-              <option value="backend" {% if current_user.career_path == 'backend' %}selected{% endif %}>
-                  Backend Developer
-              </option>
-              <option value="data-analyst" {% if current_user.career_path == 'data-analyst' %}selected{% endif %}>
-                  Data Analyst
-              </option>
-              <option value="ai-ml-engineer" {% if current_user.career_path == 'ai-ml-engineer' %}selected{% endif %}>
-                  AI/ML Engineer
-              </option>
-              <option value="devops-engineer" {% if current_user.career_path == 'devops-engineer' %}selected{% endif %}>
-                  DevOps Engineer
-              </option>
-              <option value="cyber-security" {% if current_user.career_path == 'cyber-security' %}selected{% endif %}>
-                Cyber Security
-              </option>
-              <option value="network-engineer" {% if current_user.career_path == 'network-engineer' %}selected{% endif %}>
-                  Network Engineer
-              </option>
-          </select>
-          <button type="submit" class="button-primary">Ganti</button>
-      </form>
-
-  <div class="card" style="margin: 2rem 0; padding: 1.5rem; text-align: center;">
-    <h4>Sertifikat Kelulusan Roadmap</h4>
-    {% if certificate %}
-        <p class="text-secondary">Selamat! Anda telah menyelesaikan roadmap ini.</p>
-        <a href="{{ url_for('routes.view_credential', credential_id=certificate.credential_id) }}" class="button-primary" target="_blank" style="margin-top: 1rem;">
-            <i class="fas fa-certificate"></i> Lihat Sertifikat Anda
-        </a>
-    {% elif is_fully_completed %}
-        <p class="text-secondary">Luar biasa! Semua materi dan proyek telah selesai. Sertifikat Anda sedang dibuat.</p>
-        <p class="text-secondary">Silakan muat ulang halaman dalam beberapa saat.</p>
-    {% else %}
-        <p class="text-secondary">Selesaikan semua materi dan proyek dalam roadmap ini untuk membuka sertifikat kelulusan Anda.</p>
-        <div class="button-disabled" title="Selesaikan semua progres untuk membuka" style="margin-top: 1rem;">
-            <i class="fas fa-lock"></i> Buka Sertifikat
+<div class="roadmap-container">
+    
+    <div class="roadmap-header">
+        <p class="roadmap-supertitle">Roadmap Belajar</p>
+        
+        {# Logika pemetaan nama jalur karier #}
+        {% set career_map = {
+            'frontend': 'Frontend Developer',
+            'backend': 'Backend Developer',
+            'data-analyst': 'Data Analyst',
+            'ai-ml-engineer': 'AI/ML Engineer',
+            'devops-engineer': 'DevOps Engineer',
+            'cyber-security': 'Cyber Security',
+            'network-engineer': 'Network Engineer'
+        } %}
+        <h2>{{ career_map.get(current_user.career_path, current_user.career_path|replace('-', ' ')|title) }}</h2>
+        
+        <p class="subtitle">Ikuti alur belajar ini langkah demi langkah untuk menguasai skill yang dibutuhkan industri.</p>
+        
+        <div class="header-actions">
+            <button id="open-change-path-modal" class="button-secondary">
+                <i class="fas fa-exchange-alt"></i> Ganti Jalur Karier
+            </button>
         </div>
-    {% endif %}
-  </div>
+    </div>
+    <div class="card certificate-card">
+        <h4>Sertifikat Kelulusan Roadmap</h4>
+        {% if certificate %}
+            <p>Selamat! Anda telah menyelesaikan semua materi dan proyek di roadmap ini.</p>
+            <a href="{{ url_for('routes.view_credential', credential_id=certificate.credential_id) }}" class="button-primary" target="_blank">
+                <i class="fas fa-certificate"></i> Lihat Sertifikat Anda
+            </a>
+        {% elif is_fully_completed %}
+            <p>Luar biasa! Sertifikat Anda sedang dibuat. Silakan muat ulang halaman dalam beberapa saat.</p>
+        {% else %}
+            <p>Selesaikan semua materi dan proyek untuk membuka sertifikat kelulusan Anda.</p>
+            <div class="button-disabled" title="Selesaikan semua progres untuk membuka">
+                <i class="fas fa-lock"></i> Buka Sertifikat
+            </div>
+        {% endif %}
+    </div>
 
-  <h4 id="progress-text">Progres Keseluruhan: {{ progress }}%</h4>
-  <div class="progress-bar" style="margin-bottom: 30px;">
-      <div class="progress-bar-inner" style="width: {{ progress }}%;"></div>
-  </div>
+    <div class="module-accordion">
+        {% for module in modules %}
+        <details class="module-item" {% if loop.first %}open{% endif %}>
+            <summary class="module-summary">
+                <div class="module-order">{{ module.order }}</div>
+                <div class="module-title">{{ module.title }}</div>
+            </summary>
+            <div class="module-content">
+                <ul class="lesson-list">
+                    {% for lesson in module.lessons %}
+                    <li class="lesson-item">
+                        <div class="lesson-details">
+                            <div class="lesson-status">
+                                {% if lesson.id in completed_lesson_ids %}
+                                    <svg class="icon-completed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                {% else %}
+                                    <svg class="icon-pending" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                                {% endif %}
+                            </div>
+                            <div class="lesson-info">
+                                <strong>{{ lesson.title }}</strong>
+                                <span>Estimasi: {{ lesson.estimated_time or '30' }} menit</span>
+                            </div>
+                        </div>
+                        <div class="lesson-actions">
+                            <a href="{{ url_for('routes.lesson_detail', lesson_id=lesson.id) }}" class="button-primary">Mulai Belajar</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                
+                    {% for project in module.projects %}
+                    <li class="lesson-item project-item">
+                        <div class="lesson-details">
+                            <div class="lesson-status">
+                                {% if project.id in submitted_project_ids %}
+                                    <svg class="icon-completed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                {% else %}
+                                    <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                                {% endif %}
+                            </div>
+                            <div class="lesson-info">
+                                <strong>Proyek: {{ project.title }}</strong>
+                                <span><span class="difficulty-badge difficulty-{{ project.difficulty.lower() }}">{{ project.difficulty }}</span></span>
+                            </div>
+                        </div>
+                         <div class="lesson-actions">
+                            <a href="{{ url_for('routes.project_detail', project_id=project.id) }}" class="button-primary">Lihat Proyek</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+</div>
 
-  <div class="module-accordion">
-      {% for module in modules %}
-      <details class="module-item card" {% if loop.first %}open{% endif %}>
-          <summary>
-              <div class="summary-title">
-                  <span class="module-order">Bagian {{ module.order }}</span>
-                  {{ module.title }}
-              </div>
-          </summary>
-          <ul class="lesson-list">
-              {% for lesson in module.lessons %}
-              <li class="lesson-item">
-                  <div class="lesson-top">
-                      <div class="lesson-status">
-                          {% if lesson.id in completed_lesson_ids %}
-                              <svg class="icon-completed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                          {% else %}
-                              <svg class="icon-pending" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
-                          {% endif %}
-                      </div>
-                      <div class="lesson-info">
-                          <strong>{{ lesson.title }}</strong>
-                          <span>Estimasi: {{ lesson.estimated_time or '30' }} menit</span>
-                      </div>
-                  </div>
-                  <div class="lesson-bottom">
-                      <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST">
-                          <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
-                      </form>
-                      {% if lesson.id in completed_lesson_ids %}
-                          <form action="{{ url_for('routes.uncomplete_lesson', lesson_id=lesson.id) }}" method="POST" class="complete-form">
-                              <input type="hidden" name="source" value="roadmap">
-                              <button type="submit" class="button-secondary">Batal Selesai</button>
-                          </form>
-                      {% else %}
-                          <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST" class="complete-form">
-                              <input type="hidden" name="source" value="roadmap">
-                              <button type="submit" class="button-secondary">Tandai Selesai</button>
-                          </form>
-                      {% endif %}
-                      <a href="{{ url_for('routes.lesson_detail', lesson_id=lesson.id) }}" class="learn-link button-primary">Mulai Belajar</a>
-                  </div>
-              </li>
-              {% endfor %}
-          
-              {% for project in module.projects %}
-              <li class="lesson-item project-item">
-                  <div class="lesson-top">
-                     <div class="lesson-status">
-                          {# --- PERBAIKAN DI SINI --- #}
-                          {% if project.id in submitted_project_ids %}
-                              <svg class="icon-completed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                          {% else %}
-                              <svg class="icon-project" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                          {% endif %}
-                     </div>
-                     <div class="project-card-header">
-                        <h4>{{ project.title }}</h4>
-                        {% if project.difficulty %}
-                            <span class="difficulty-badge difficulty-{{ project.difficulty.lower() }}">{{ project.difficulty }}</span>
-                        {% endif %}
+<div id="change-path-modal" class="modal-overlay">
+    <div class="modal-box card change-path-modal">
+        <div class="modal-header">
+            <h3>Pilih Jalur Karier Baru</h3>
+            <button class="modal-close-btn">&times;</button>
+        </div>
+        <form action="{{ url_for('routes.change_career_path') }}" method="POST">
+            <div class="modal-body">
+                <div class="career-path-grid">
                     </div>
-                  </div>
-                  <div class="lesson-bottom">
-                      <a href="{{ url_for('routes.project_detail', project_id=project.id) }}" class="button-primary">Lihat Proyek</a>
-                  </div>
-              </li>
-              {% endfor %}
-          </ul>
-      </details>
-      {% endfor %}
-  </div>
+                <div class="career-description-panel">
+                    <h4 id="career-desc-title">Frontend Developer</h4>
+                    <p id="career-desc-text">Membangun antarmuka pengguna yang visual, interaktif, dan responsif untuk aplikasi web. Fokus pada pengalaman pengguna (UX) dan desain (UI).</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <input type="hidden" name="new_path" id="selected-career-path" value="frontend">
+                <button type="submit" class="button-primary">Ganti & Mulai Belajar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block page_scripts %}
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const lessonCheckboxes = document.querySelectorAll('.lesson-list input[type="checkbox"]');
-        const progressBar = document.querySelector('.progress-bar-inner');
-        const progressText = document.getElementById('progress-text');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Logika untuk Modal Ganti Jalur Karier ---
+    const modal = document.getElementById('change-path-modal');
+    const openBtn = document.getElementById('open-change-path-modal');
+    const closeBtn = modal.querySelector('.modal-close-btn');
+
+    const careerData = {
+        'frontend': { title: 'Frontend Developer', icon: '💻', desc: 'Membangun antarmuka pengguna yang visual, interaktif, dan responsif untuk aplikasi web. Fokus pada pengalaman pengguna (UX) dan desain (UI).' },
+        'backend': { title: 'Backend Developer', icon: '⚙️', desc: 'Merancang logika, database, dan API yang menjadi otak di balik aplikasi. Fokus pada performa, keamanan, dan skalabilitas.' },
+        'data-analyst': { title: 'Data Analyst', icon: '📊', desc: 'Menganalisis data untuk menemukan wawasan bisnis, membuat visualisasi, dan membantu pengambilan keputusan berbasis data.' },
+        'ai-ml-engineer': { title: 'AI/ML Engineer', icon: '🤖', desc: 'Membangun dan mendeploy model machine learning untuk membuat aplikasi cerdas, mulai dari prediksi hingga pengenalan gambar.' },
+        'devops-engineer': { title: 'DevOps Engineer', icon: '🚀', desc: 'Mengotomatiskan dan mengoptimalkan proses pengembangan dan deployment software, dari kode hingga ke pengguna.' },
+        'cyber-security': { title: 'Cyber Security', icon: '🛡️', desc: 'Melindungi sistem, jaringan, dan data dari ancaman digital. Fokus pada pertahanan, deteksi, dan respons insiden.' },
+        'network-engineer': { title: 'Network Engineer', icon: '🌐', desc: 'Merancang, membangun, dan mengelola jaringan komputer yang menjadi tulang punggung komunikasi digital.' }
+    };
+
+    const grid = modal.querySelector('.career-path-grid');
+    const descTitle = modal.querySelector('#career-desc-title');
+    const descText = modal.querySelector('#career-desc-text');
+    const hiddenInput = modal.querySelector('#selected-career-path');
     
-    
-        lessonCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', async (e) => {
-                const lessonId = e.target.dataset.lessonId;
-                const endpoint = e.target.checked ? `/complete-lesson/${lessonId}` : `/uncomplete-lesson/${lessonId}`;
-                
-                try {
-                    const response = await fetch(endpoint, { method: 'POST' });
-                    if (!response.ok) {
-                        e.target.checked = !e.target.checked;
-                    }
-                } catch (error) {
-                    e.target.checked = !e.target.checked;
-                } finally {
-                    updateProgressBar();
-                }
-            });
-        });
-    
-        // Panggil saat halaman dimuat untuk inisialisasi
-        // Fungsi ini tidak lagi dibutuhkan karena progress bar di-render dari server
-        // updateProgressBar(); 
+    grid.innerHTML = ''; 
+
+    // Buat kartu untuk setiap jalur karier
+    Object.keys(careerData).forEach(key => {
+        const data = careerData[key];
+        const card = document.createElement('div');
+        card.className = 'career-card-option';
+        card.dataset.path = key;
+        card.innerHTML = `<span class="icon">${data.icon}</span><span class="title">${data.title}</span>`;
+        if (key === '{{ current_user.career_path }}') {
+            card.classList.add('selected');
+            hiddenInput.value = key;
+            descTitle.textContent = data.title;
+            descText.textContent = data.desc;
+        }
+        grid.appendChild(card);
     });
-  </script>
+
+    const careerCards = grid.querySelectorAll('.career-card-option');
+
+    // Tambahkan event listener untuk setiap kartu
+    careerCards.forEach(card => {
+        card.addEventListener('mouseover', () => {
+            const path = card.dataset.path;
+            descTitle.textContent = careerData[path].title;
+            descText.textContent = careerData[path].desc;
+        });
+        card.addEventListener('click', () => {
+            careerCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            hiddenInput.value = card.dataset.path;
+        });
+    });
+
+    openBtn.addEventListener('click', () => modal.classList.add('visible'));
+    closeBtn.addEventListener('click', () => modal.classList.remove('visible'));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('visible');
+        }
+    });
+});
+</script>
 {% endblock %}
