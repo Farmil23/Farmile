@@ -36,7 +36,26 @@
           </select>
           <button type="submit" class="button-primary">Ganti</button>
       </form>
+
+      {# ---> TAMBAHKAN BLOK KODE INI <--- #}
+  <div class="card" style="margin-bottom: 2rem; padding: 1.5rem; text-align: center;">
+    <h4>Sertifikat Kelulusan Roadmap</h4>
+    {% if certificate %}
+        <p class="text-secondary">Selamat! Anda telah menyelesaikan roadmap ini.</p>
+        <a href="{{ url_for('routes.view_credential', credential_id=certificate.credential_id) }}" class="button-primary" target="_blank" style="margin-top: 1rem;">
+            <i class="fas fa-certificate"></i> Lihat Sertifikat Anda
+        </a>
+    {% elif is_fully_completed %}
+        <p class="text-secondary">Luar biasa! Semua materi dan proyek telah selesai. Sertifikat Anda sedang dibuat.</p>
+        <p class="text-secondary">Silakan muat ulang halaman dalam beberapa saat.</p>
+    {% else %}
+        <p class="text-secondary">Selesaikan semua materi dan proyek dalam roadmap ini untuk membuka sertifikat kelulusan Anda.</p>
+        <div class="button-disabled" title="Selesaikan semua progres untuk membuka" style="margin-top: 1rem;">
+            <i class="fas fa-lock"></i> Buka Sertifikat
+        </div>
+    {% endif %}
   </div>
+  {# ---> AKHIR DARI BLOK TAMBAHAN <--- #}
 
   <h4 id="progress-text">Progres Keseluruhan: {{ progress }}%</h4>
   <div class="progress-bar" style="margin-bottom: 30px;">

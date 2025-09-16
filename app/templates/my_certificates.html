@@ -1,0 +1,25 @@
+{% extends "dashboard_base.html" %}
+{% block dashboard_content %}
+<div class="page-header">
+    <h2>Sertifikat Saya</h2>
+    <p class="subtitle">Sertifikat yang Anda peroleh setelah menyelesaikan roadmap.</p>
+</div>
+{% if certificates %}
+    <div class="certificates-grid">
+        {% for cert in certificates %}
+        <div class="card certificate-card">
+            <h4>{{ cert.roadmap.title }}</h4>
+            <p class="text-secondary">Diterbitkan pada: {{ cert.issued_at.strftime('%d %B %Y') }}</p>
+            <div class="card-actions" style="margin-top: 1.5rem;">
+                <a href="{{ url_for('routes.view_credential', credential_id=cert.credential_id) }}" class="button-primary" target="_blank">Lihat Kredensial</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card empty-state" style="text-align: center;">
+        <h4>Belum Ada Sertifikat</h4>
+        <p>Selesaikan semua materi dan proyek di sebuah roadmap untuk mendapatkan sertifikat.</p>
+    </div>
+{% endif %}
+{% endblock %}

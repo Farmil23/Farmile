@@ -84,6 +84,20 @@
           </svg>
           <span class="nav-text">Proyek Saya</span>
         </a>
+
+        {# ---> TAMBAHKAN BLOK KODE INI <--- #}
+        <a 
+          href="{{ url_for('routes.certificates_page') }}" 
+          class="nav-link {% if request.endpoint == 'routes.certificates_page' %}active{% endif %}"
+        >
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15l-3-3l3-3l3 3l-3 3z"/>
+            <path d="M9 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18z"/>
+          </svg>
+          <span class="nav-text">Sertifikat Saya</span>
+        </a>
+        {# ---> AKHIR DARI BLOK TAMBAHAN <--- #}
+        
         {# Tambahkan ini di dalam <div class="nav-links"> di dashboard_sidebar.html #}
 
         <a href="{{ url_for('routes.ai_resume_pro') }}" class="nav-link {% if request.endpoint == 'routes.ai_resume_pro' %}active{% endif %}">

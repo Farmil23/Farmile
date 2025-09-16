@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup, QuizHistory, UserActivityLog, AnalyticsSnapshot) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup, QuizHistory, UserActivityLog, AnalyticsSnapshot, Certificate, Roadmap) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -23,6 +23,64 @@ bp = Blueprint('routes', __name__)
 
 from typing import Optional
 
+def check_and_issue_certificate(user, completed_lesson):
+    """
+    Memeriksa apakah pengguna berhak mendapatkan sertifikat setelah menyelesaikan sebuah materi.
+    """
+    career_path = user.career_path
+    
+    # 1. Cek apakah roadmap untuk career_path ini ada
+    roadmap = Roadmap.query.first() # Kita asumsikan ada satu roadmap umum untuk sekarang
+    if not roadmap:
+        return
+
+    # 2. Cek apakah sertifikat untuk roadmap ini sudah pernah diterbitkan untuk user
+    existing_certificate = Certificate.query.filter_by(user_id=user.id, roadmap_id=roadmap.id).first()
+    if existing_certificate:
+        return # Sudah punya, tidak perlu dicek lagi
+
+    # 3. Dapatkan SEMUA materi dan proyek untuk career_path ini
+    all_modules = Module.query.filter_by(career_path=career_path).all()
+    all_lessons_in_path = {lesson.id for module in all_modules for lesson in module.lessons}
+    all_projects_in_path = {project for module in all_modules for project in module.projects}
+
+    # 4. Dapatkan SEMUA progres materi dan proyek yang sudah diselesaikan user
+    completed_lesson_ids = {progress.lesson_id for progress in user.user_progress}
+    submitted_project_ids = {submission.project_id for submission in user.submissions}
+
+    # 5. Kondisi Kelulusan: Apakah semua materi & proyek sudah selesai?
+    if all_lessons_in_path.issubset(completed_lesson_ids) and \
+       {p.id for p in all_projects_in_path}.issubset(submitted_project_ids):
+        
+        # 6. Jika lulus, hitung total jam belajar
+        total_minutes = db.session.query(func.sum(Lesson.estimated_time)).join(Module).filter(Module.career_path == career_path).scalar()
+        total_hours = round((total_minutes or 0) / 60)
+
+        # 7. Siapkan daftar proyek untuk ditampilkan di sertifikat
+        completed_projects_info = [
+            {"title": proj.title, "link": url_for('routes.project_detail', project_id=proj.id, _external=True)} 
+            for proj in all_projects_in_path
+        ]
+        
+        # 8. Terbitkan Sertifikat Baru!
+        new_certificate = Certificate(
+            user_id=user.id,
+            roadmap_id=roadmap.id,
+            total_hours=total_hours,
+            projects_completed_json=json.dumps(completed_projects_info)
+        )
+        db.session.add(new_certificate)
+        db.session.commit()
+        
+        # Kirim notifikasi ke pengguna
+        notification = Notification(
+            user_id=user.id,
+            message=f"Selamat! Anda telah menyelesaikan Roadmap {career_path.replace('-', ' ').title} dan mendapatkan sertifikat baru!",
+            link=url_for('routes.certificates_page') # Halaman baru untuk melihat sertifikat
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
 
 # ---> FUNGSI HELPER UNTUK MENCATAT AKTIVITAS <---
 def log_activity(user, action, details=None):
@@ -295,7 +353,7 @@ def complete_onboarding():
 # ===============================================
 # RUTE ROADMAP BELAJAR (VERSI DIPERBAIKI)
 # ===============================================
-# app/routes.py
+# Di dalam app/routes.py
 
 @bp.route('/roadmap')
 @login_required
@@ -303,38 +361,54 @@ def roadmap():
     if not current_user.career_path:
         flash('Selesaikan onboarding untuk menentukan jalur karier Anda.', 'warning')
         return redirect(url_for('routes.onboarding'))
-    
+
     log_activity(current_user, 'viewed_roadmap', {'career_path': current_user.career_path})
 
-
-    all_modules = Module.query.filter(
-        ((Module.user_id == current_user.id) | (Module.user_id == None)),
-        (Module.career_path == current_user.career_path)
-    ).options(
-        subqueryload(Module.lessons), 
-        subqueryload(Module.projects)
-    ).order_by(Module.order).all()
+    # Mengambil semua modul, materi, dan proyek yang relevan untuk jalur karier pengguna
+    all_modules = Module.query.filter_by(career_path=current_user.career_path)\
+        .options(subqueryload(Module.lessons), subqueryload(Module.projects))\
+        .order_by(Module.order).all()
     
-    # --- LOGIKA PROGRES BARU ---
+    # ---> PERBAIKAN LOGIKA DIMULAI DI SINI <---
+
+    # 1. Dapatkan ID dari SEMUA item yang dibutuhkan (materi dan proyek)
     all_lesson_ids = {lesson.id for module in all_modules for lesson in module.lessons}
-    
-    completed_progress = UserProgress.query.filter(
-        UserProgress.user_id == current_user.id,
-        UserProgress.lesson_id.in_(all_lesson_ids)
-    ).all()
-    completed_lesson_ids = {p.lesson_id for p in completed_progress}
+    all_project_ids = {project.id for module in all_modules for project in module.projects}
 
-    total_lessons = len(all_lesson_ids)
-    progress_percentage = int((len(completed_lesson_ids) / total_lessons) * 100) if total_lessons > 0 else 0
+    # 2. Dapatkan ID dari item yang SUDAH diselesaikan pengguna
+    completed_lesson_ids = {p.lesson_id for p in current_user.user_progress}
+    
+    # Penting: Kita cek dari tabel ProjectSubmission, bukan UserProject
+    submitted_project_ids = {s.project_id for s in current_user.submissions}
+
+    # 3. Hitung total item dan progresnya dengan benar
+    total_items = len(all_lesson_ids) + len(all_project_ids)
+    completed_items = len(completed_lesson_ids) + len(submitted_project_ids)
+    
+    progress_percentage = 0
+    if total_items > 0:
+        # Dibatasi maksimal 100% untuk menghindari angka aneh
+        progress_percentage = min(100, int((completed_items / total_items) * 100))
+
+    # 4. Tentukan status penyelesaian akhir (Tombol Sertifikat)
+    # Kondisinya harus: semua materi SELESAI DAN semua proyek di-SUBMIT
+    is_fully_completed = all_lesson_ids.issubset(completed_lesson_ids) and \
+                         all_project_ids.issubset(submitted_project_ids)
+    
+    # Cek apakah sertifikat sudah ada
+    roadmap_obj = Roadmap.query.first()
+    certificate = Certificate.query.filter_by(user_id=current_user.id, roadmap_id=roadmap_obj.id).first() if roadmap_obj else None
+    
+    # ---> AKHIR DARI PERBAIKAN <---
     
     return render_template('roadmap.html', 
                            title="Roadmap Belajar", 
                            modules=all_modules,
-                           completed_lesson_ids=completed_lesson_ids, # Kirim ID pelajaran yang selesai
-                           progress=progress_percentage)
-# app/routes.py
-
-# ... (import lainnya)
+                           completed_lesson_ids=completed_lesson_ids,
+                           progress=progress_percentage,
+                           is_fully_completed=is_fully_completed,
+                           certificate=certificate)
+    
 import json # <-- Pastikan 'json' sudah diimpor di bagian atas
 
 # --- Perbarui fungsi lesson_detail ---
@@ -447,6 +521,9 @@ def complete_lesson(lesson_id):
         db.session.add(new_progress)
         db.session.commit()
         log_activity(current_user, 'completed_lesson', {'lesson_id': lesson.id})
+        # ---> PANGGIL FUNGSI PENGECEKAN DI SINI <---
+        check_and_issue_certificate(current_user, lesson)
+        
         flash('Materi berhasil ditandai selesai!', 'success')
     
     # --- LOGIKA REDIRECT BARU ---
@@ -455,9 +532,6 @@ def complete_lesson(lesson_id):
         return redirect(url_for('routes.roadmap'))
     else: # Default-nya kembali ke halaman detail
         return redirect(url_for('routes.lesson_detail', lesson_id=lesson_id))
-# app/routes.py -> Tambahkan fungsi baru ini
-
-# app/routes.py
 
 @bp.route('/uncomplete-lesson/<int:lesson_id>', methods=['POST'])
 @login_required
@@ -466,6 +540,7 @@ def uncomplete_lesson(lesson_id):
     if progress:
         db.session.delete(progress)
         db.session.commit()
+        
         flash('Materi ditandai belum selesai.', 'info')
 
     # --- LOGIKA REDIRECT BARU ---
@@ -2697,3 +2772,30 @@ def create_analytics_snapshot():
     
     flash(f"Snapshot '{snapshot_name}' berhasil dibuat dan data aktivitas telah direset.", "success")
     return redirect(url_for('analytics.index'))
+
+
+
+
+# ============================================
+# == CERTIFICATE =============================
+##============================================
+
+# Rute untuk halaman "Sertifikat Saya"
+@bp.route('/my-certificates')
+@login_required
+def certificates_page():
+    user_certificates = current_user.certificates.order_by(Certificate.issued_at.desc()).all()
+    return render_template('my_certificates.html', 
+                           title="Sertifikat Saya", 
+                           certificates=user_certificates)
+
+# Rute untuk Halaman Verifikasi Kredensial Publik
+@bp.route('/credential/<credential_id>')
+def view_credential(credential_id):
+    certificate = Certificate.query.filter_by(credential_id=credential_id).first_or_404()
+    projects = json.loads(certificate.projects_completed_json) if certificate.projects_completed_json else []
+    return render_template('credential_page.html', 
+                           title="Verifikasi Kredensial", 
+                           certificate=certificate, 
+                           projects=projects)
+    

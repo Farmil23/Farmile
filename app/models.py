@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import or_
 import json # <-- Pastikan json diimpor untuk to_dict
+import uuid
 
 connections = db.Table('connections',
     db.Column('user_a_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
@@ -471,3 +472,30 @@ class AnalyticsSnapshot(db.Model):
 
     def __repr__(self):
         return f'<AnalyticsSnapshot {self.name}>'
+    
+    
+    
+    
+    
+    
+    
+class Certificate(db.Model):
+    __tablename__ = 'certificate'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    roadmap_id = db.Column(db.Integer, db.ForeignKey('roadmap.id'), nullable=False)
+    
+    # ID unik untuk halaman verifikasi kredensial
+    credential_id = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    
+    issued_at = db.Column(db.DateTime, default=datetime.utcnow)
+    total_hours = db.Column(db.Integer, nullable=False)
+    
+    # Menyimpan daftar proyek sebagai JSON untuk ditampilkan di sertifikat
+    projects_completed_json = db.Column(db.Text, nullable=True)
+
+    user = db.relationship('User', backref=db.backref('certificates', lazy='dynamic'))
+    roadmap = db.relationship('Roadmap', backref=db.backref('certificates', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<Certificate {self.id} for User {self.user_id}>'

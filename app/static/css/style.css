@@ -4770,3 +4770,21 @@ span.flatpickr-weekday {
     background-color: var(--primary-light);
 }
 
+/* Tambahkan di mana saja di dalam style.css */
+
+.button-disabled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    background-color: var(--item-bg, #374151);
+    color: var(--text-secondary, #9ca3af);
+    cursor: not-allowed;
+    opacity: 0.6;
+    gap: 0.5rem;
+}
