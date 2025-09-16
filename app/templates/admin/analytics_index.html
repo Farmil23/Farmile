@@ -8,6 +8,7 @@
         padding: 1.25rem;
         margin-bottom: 1.5rem;
         text-align: center;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
     }
     .metric-value {
         font-size: 2.5rem;
@@ -17,41 +18,55 @@
     .metric-label {
         font-size: 1rem;
         color: #6c757d;
+        margin-top: 0.5rem;
+        display: block;
     }
     .chart-container {
         position: relative;
         height: 350px;
         width: 100%;
     }
+    .table thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+    }
   </style>
   
-  <h1>Dashboard Analitik Farmile</h1>
-  <p class="lead">Ringkasan aktivitas pengguna, pembelajaran, dan persiapan karier di platform.</p>
+  <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+    <div>
+        <h1>Dashboard Analitik Farmile</h1>
+        <p class="lead">Ringkasan aktivitas pengguna, pembelajaran, dan persiapan karier di platform.</p>
+    </div>
+    <div>
+        <form action="{{ url_for('routes.create_analytics_snapshot') }}" method="POST" onsubmit="return confirm('Anda yakin ingin menyimpan data saat ini sebagai riwayat dan mereset semua log aktivitas? Tindakan ini tidak bisa dibatalkan.');">
+            <button type="submit" class="btn btn-warning">Simpan Riwayat & Reset Data</button>
+        </form>
+    </div>
+  </div>
 
-  <hr>
-  <h3>Statistik Persiapan Karier</h3>
+  <h3 class="mt-4">Statistik Persiapan Karier</h3>
   <div class="row">
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
         <div class="card-metric">
             <div class="metric-value">{{ total_resumes_analyzed }}</div>
             <div class="metric-label">Total CV Dianalisis</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
         <div class="card-metric">
             <div class="metric-value">{{ total_jobs_tracked }}</div>
             <div class="metric-label">Total Lamaran Dilacak</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
         <div class="card-metric">
             <div class="metric-value">{{ total_coach_sessions }}</div>
             <div class="metric-label">Sesi AI Coach Aktif</div>
         </div>
     </div>
-     <div class="col-md-3">
+     <div class="col-lg-3 col-md-6">
         <div class="card-metric" style="padding: 1rem;">
-            <h4>Distribusi Status Lamaran</h4>
+            <h5 class="mb-3">Distribusi Status Lamaran</h5>
             <div class="chart-container" style="height: 150px;">
                 <canvas id="jobStatusChart"></canvas>
             </div>
@@ -60,8 +75,7 @@
   </div>
 
 
-  <hr>
-  <h3>Statistik Pembelajaran & Aktivitas</h3>
+  <h3 class="mt-4">Statistik Pembelajaran & Aktivitas</h3>
   <div class="row" style="margin-top: 2rem;">
     <div class="col-md-8">
         <div class="card-metric" style="text-align: left; padding: 1.5rem;">
@@ -84,8 +98,8 @@
   <div class="row" style="margin-top: 1rem;">
     <div class="col-md-4">
       <h4>Top 5 Pengguna Paling Aktif</h4>
-      <table class="table table-bordered table-striped">
-        <thead>
+      <table class="table table-bordered table-striped table-hover">
+        <thead class="thead-light">
           <tr>
             <th>Nama Pengguna</th>
             <th>Total Aktivitas</th>
@@ -106,8 +120,8 @@
 
     <div class="col-md-4">
       <h4>Top 5 Materi Paling Populer</h4>
-      <table class="table table-bordered table-striped">
-        <thead>
+      <table class="table table-bordered table-striped table-hover">
+        <thead class="thead-light">
           <tr>
             <th>Judul Materi</th>
             <th>Jumlah Dilihat</th>
@@ -128,8 +142,8 @@
 
     <div class="col-md-4">
         <h4>Top 5 Proyek Paling Populer</h4>
-        <table class="table table-bordered table-striped">
-          <thead>
+        <table class="table table-bordered table-striped table-hover">
+          <thead class="thead-light">
             <tr>
               <th>Judul Proyek</th>
               <th>Jumlah Submission</th>
@@ -148,6 +162,35 @@
         </table>
       </div>
   </div>
+  
+  <hr style="margin-top: 3rem; margin-bottom: 2rem;">
+
+  <h3>Riwayat Analitik Tersimpan (Snapshot)</h3>
+  <table class="table table-bordered table-striped">
+      <thead class="thead-light">
+          <tr>
+              <th>Nama Laporan</th>
+              <th>Tanggal Dibuat</th>
+              <th>Lihat Data (JSON)</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for snapshot in saved_snapshots %}
+          <tr>
+              <td>{{ snapshot.name }}</td>
+              <td>{{ snapshot.created_at.strftime('%d %B %Y, %H:%M:%S') }} UTC</td>
+              <td>
+                  <pre style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 4px;"><code>{{ snapshot.summary_data }}</code></pre>
+              </td>
+          </tr>
+          {% else %}
+          <tr>
+              <td colspan="3" class="text-center">Belum ada riwayat analitik yang disimpan.</td>
+          </tr>
+          {% endfor %}
+      </tbody>
+  </table>
+
 {% endblock %}
 
 {% block tail %}
@@ -155,63 +198,37 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Data dari backend
-        const featureData = JSON.parse('{{ feature_usage_chart_data | safe }}');
-        const activityData = JSON.parse('{{ daily_activity_chart_data | safe }}');
-        const jobStatusData = JSON.parse('{{ job_status_chart_data | safe }}');
+        const featureData = {{ feature_usage_chart_data | tojson }};
+        const activityData = {{ daily_activity_chart_data | tojson }};
+        const jobStatusData = {{ job_status_chart_data | tojson }};
 
-        // Grafik Distribusi Fitur (Doughnut Chart)
+        // ... (Kode JavaScript untuk merender Chart.js tetap sama) ...
         const featureCtx = document.getElementById('featureUsageChart').getContext('2d');
-        new Chart(featureCtx, {
-            type: 'doughnut',
-            data: {
-                labels: featureData.labels,
-                datasets: [{
-                    label: 'Jumlah Penggunaan',
-                    data: featureData.data,
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2'],
-                    borderColor: '#fff',
-                    borderWidth: 2
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-        });
+        if (featureData.labels.length > 0) {
+            new Chart(featureCtx, {
+                type: 'doughnut',
+                data: { labels: featureData.labels, datasets: [{ label: 'Jumlah Penggunaan', data: featureData.data, backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2'], borderColor: '#fff', borderWidth: 2 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+        }
 
-        // Grafik Aktivitas Harian (Line Chart)
         const activityCtx = document.getElementById('dailyActivityChart').getContext('2d');
-        new Chart(activityCtx, {
-            type: 'line',
-            data: {
-                labels: activityData.labels,
-                datasets: [{
-                    label: 'Total Aktivitas per Hari',
-                    data: activityData.data,
-                    backgroundColor: 'rgba(0, 123, 255, 0.2)',
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
-        });
+        if (activityData.labels.length > 0) {
+            new Chart(activityCtx, {
+                type: 'line',
+                data: { labels: activityData.labels, datasets: [{ label: 'Total Aktivitas per Hari', data: activityData.data, backgroundColor: 'rgba(0, 123, 255, 0.2)', borderColor: 'rgba(0, 123, 255, 1)', borderWidth: 2, fill: true, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+            });
+        }
 
-        // Grafik Status Lamaran Kerja (Pie Chart)
         const jobStatusCtx = document.getElementById('jobStatusChart').getContext('2d');
-        new Chart(jobStatusCtx, {
-            type: 'pie',
-            data: {
-                labels: jobStatusData.labels,
-                datasets: [{
-                    label: 'Jumlah Lamaran',
-                    data: jobStatusData.data,
-                    backgroundColor: ['#6f42c1', '#007bff', '#fd7e14', '#28a745', '#dc3545'],
-                    borderColor: '#fff',
-                    borderWidth: 1
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
+        if (jobStatusData.labels.length > 0) {
+            new Chart(jobStatusCtx, {
+                type: 'pie',
+                data: { labels: jobStatusData.labels, datasets: [{ label: 'Jumlah Lamaran', data: jobStatusData.data, backgroundColor: ['#6f42c1', '#007bff', '#fd7e14', '#28a745', '#dc3545'], borderColor: '#fff', borderWidth: 1 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
     });
   </script>
 {% endblock %}

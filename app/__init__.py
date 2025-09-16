@@ -17,7 +17,6 @@ import pytz
 from sqlalchemy import func, cast, String
 import json
 
-# Inisialisasi Ekstensi di luar factory
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -40,19 +39,14 @@ def load_user(user_id):
 class SecureModelView(ModelView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin
-
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('routes.login', next=request.url))
-
-# ======================= KELAS-KELAS VIEW UNTUK ADMIN =======================
 
 class UserView(SecureModelView):
     column_list = ('id', 'name', 'email', 'semester', 'career_path', 'is_admin')
     column_searchable_list = ('name', 'email')
     column_filters = ('is_admin', 'semester', 'career_path')
-    column_formatters = {
-        'email': lambda view, context, model, name: Markup(f'<a href="mailto:{model.email}">{model.email}</a>')
-    }
+    column_formatters = {'email': lambda view, context, model, name: Markup(f'<a href="mailto:{model.email}">{model.email}</a>')}
 
 class TaskView(SecureModelView):
     column_list = ('id', 'title', 'author', 'due_date', 'priority', 'status')
@@ -69,61 +63,43 @@ class LessonView(SecureModelView):
     column_searchable_list = ('title', 'description')
     column_filters = ('lesson_type', 'module.title')
     form_columns = ('module', 'title', 'description', 'order', 'lesson_type', 'url', 'estimated_time', 'content', 'quiz')
-    form_ajax_refs = {
-        'module': { 'fields': ['title'], 'page_size': 10 }
-    }
+    form_ajax_refs = {'module': {'fields': ['title'], 'page_size': 10}}
 
 class ProjectView(SecureModelView):
     column_list = ('title', 'module', 'difficulty', 'is_challenge')
     column_searchable_list = ('title', 'description', 'tech_stack')
     column_filters = ('difficulty', 'is_challenge', 'module.title')
-    form_columns = (
-        'module', 'title', 'description', 'difficulty', 'is_challenge', 
-        'project_goals', 'tech_stack', 'evaluation_criteria', 'resources'
-    )
-    form_ajax_refs = {
-        'module': { 'fields': ['title'], 'page_size': 10 }
-    }
+    form_columns = ('module', 'title', 'description', 'difficulty', 'is_challenge', 'project_goals', 'tech_stack', 'evaluation_criteria', 'resources')
+    form_ajax_refs = {'module': {'fields': ['title'], 'page_size': 10}}
 
 class ModuleView(SecureModelView):
     column_list = ('title', 'roadmap', 'career_path', 'order', 'level')
     column_searchable_list = ('title',)
     column_filters = ('career_path', 'level', 'roadmap.title')
     form_columns = ('roadmap', 'user', 'title', 'order', 'career_path', 'level')
-    form_ajax_refs = {
-        'roadmap': { 'fields': ['title'], 'page_size': 10 },
-        'user': { 'fields': ['name', 'email'], 'page_size': 10 }
-    }
+    form_ajax_refs = {'roadmap': {'fields': ['title'], 'page_size': 10}, 'user': {'fields': ['name', 'email'], 'page_size': 10}}
 
 class SubmissionView(SecureModelView):
     column_list = ('id', 'project', 'author', 'interview_score', 'project_link')
     column_searchable_list = ('project.title', 'author.name')
     column_filters = ('interview_score',)
     form_columns = ('project', 'author', 'project_link', 'interview_score', 'interview_feedback')
-    form_ajax_refs = {
-        'project': { 'fields': ['title'], 'page_size': 10 },
-        'author': { 'fields': ['name', 'email'], 'page_size': 10 }
-    }
+    form_ajax_refs = {'project': {'fields': ['title'], 'page_size': 10}, 'author': {'fields': ['name', 'email'], 'page_size': 10}}
 
 class UserProjectView(SecureModelView):
     column_list = ('id', 'user', 'project', 'status', 'started_at')
     column_searchable_list = ('user.name', 'project.title')
     column_filters = ('status',)
     form_columns = ('user', 'project', 'status', 'started_at', 'reflection')
-    form_ajax_refs = {
-        'user': { 'fields': ['name', 'email'], 'page_size': 10 },
-        'project': { 'fields': ['title'], 'page_size': 10 }
-    }
+    form_ajax_refs = {'user': {'fields': ['name', 'email'], 'page_size': 10}, 'project': {'fields': ['title'], 'page_size': 10}}
 
-# ---> CLASS INI DIPERBARUI SECARA SIGNIFIKAN <---
 class AnalyticsView(BaseView):
     @expose('/')
     def index(self):
-        from .models import User, UserActivityLog, Lesson, Project, ProjectSubmission, UserResume, JobApplication, JobCoachMessage
-
-        # Metrik Pembelajaran
+        from .models import User, UserActivityLog, Lesson, Project, ProjectSubmission, UserResume, JobApplication, JobCoachMessage, AnalyticsSnapshot
+        
         feature_usage_query = db.session.query(UserActivityLog.action, func.count(UserActivityLog.action)).group_by(UserActivityLog.action).all()
-        feature_usage_chart_data = json.dumps({"labels": [row[0] for row in feature_usage_query], "data": [row[1] for row in feature_usage_query]})
+        feature_usage_chart_data = {"labels": [row[0] for row in feature_usage_query], "data": [row[1] for row in feature_usage_query]}
         
         top_users = db.session.query(User.name, func.count(UserActivityLog.id).label('total_activities')).join(UserActivityLog).group_by(User.name).order_by(db.desc('total_activities')).limit(5).all()
         top_lessons = db.session.query(Lesson.title, func.count(UserActivityLog.id).label('view_count')).join(UserActivityLog, func.json_extract(UserActivityLog.details, '$.lesson_id') == cast(Lesson.id, String)).filter(UserActivityLog.action == 'viewed_lesson').group_by(Lesson.title).order_by(db.desc('view_count')).limit(5).all()
@@ -131,18 +107,21 @@ class AnalyticsView(BaseView):
         
         seven_days_ago = datetime.utcnow() - timedelta(days=7)
         daily_activity_query = db.session.query(func.date(UserActivityLog.timestamp), func.count(UserActivityLog.id)).filter(UserActivityLog.timestamp >= seven_days_ago).group_by(func.date(UserActivityLog.timestamp)).order_by(func.date(UserActivityLog.timestamp)).all()
-        daily_activity_chart_data = json.dumps({"labels": [datetime.strptime(row[0], '%Y-%m-%d').strftime('%d %b') for row in daily_activity_query], "data": [row[1] for row in daily_activity_query]})
+        
+        # PERBAIKAN UTAMA: Ubah objek tanggal menjadi string SEBELUM dikirim ke template
+        daily_activity_chart_data = {
+            "labels": [datetime.strptime(row[0], '%Y-%m-%d').strftime('%d %b') for row in daily_activity_query],
+            "data": [row[1] for row in daily_activity_query]
+        }
 
-        # ---> METRIK BARU UNTUK KARIER <---
         total_resumes_analyzed = db.session.query(func.count(UserResume.id)).scalar()
         total_jobs_tracked = db.session.query(func.count(JobApplication.id)).scalar()
         total_coach_sessions = db.session.query(func.count(func.distinct(JobCoachMessage.application_id))).scalar()
         
         job_status_distribution_query = db.session.query(JobApplication.status, func.count(JobApplication.status)).group_by(JobApplication.status).all()
-        job_status_chart_data = json.dumps({
-            "labels": [row[0] for row in job_status_distribution_query],
-            "data": [row[1] for row in job_status_distribution_query]
-        })
+        job_status_chart_data = {"labels": [row[0] for row in job_status_distribution_query], "data": [row[1] for row in job_status_distribution_query]}
+        
+        saved_snapshots = AnalyticsSnapshot.query.order_by(AnalyticsSnapshot.created_at.desc()).all()
 
         return self.render('admin/analytics_index.html', 
                            feature_usage_chart_data=feature_usage_chart_data,
@@ -153,15 +132,13 @@ class AnalyticsView(BaseView):
                            total_resumes_analyzed=total_resumes_analyzed,
                            total_jobs_tracked=total_jobs_tracked,
                            total_coach_sessions=total_coach_sessions,
-                           job_status_chart_data=job_status_chart_data)
+                           job_status_chart_data=job_status_chart_data,
+                           saved_snapshots=saved_snapshots)
 
     def is_accessible(self):
         return current_user.is_authenticated and current_user.is_admin
-
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('routes.login', next=request.url))
-
-# ======================= FACTORY APLIKASI =======================
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -201,7 +178,7 @@ def create_app(config_class=Config):
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")
         ark_client = None
 
-    from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject, UserActivityLog, UserResume, JobApplication, JobCoachMessage)
+    from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject, UserActivityLog, UserResume, JobApplication, JobCoachMessage, AnalyticsSnapshot)
     
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 

@@ -5,7 +5,7 @@ import json
 from app import db, oauth, ark_client
 from app.models import (User, Project, ProjectSubmission, ChatMessage, 
                         ChatSession, Module, Lesson, UserProgress, 
-                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup, QuizHistory, UserActivityLog) # <-- Model baru diimpor
+                        InterviewMessage, Task, Event, Note, Notification, UserProject, UserResume, JobApplication, JobCoachMessage, JobMatchAnalysis, ConnectionRequest, Conversation, DirectMessage, StudyGroup, QuizHistory, UserActivityLog, AnalyticsSnapshot) # <-- Model baru diimpor
 from sqlalchemy.orm import subqueryload
 # File: app/routes.py
 from datetime import datetime, timedelta, date
@@ -17,6 +17,8 @@ from collections import defaultdict
 import PyPDF2
 import io
 from sqlalchemy import or_
+from sqlalchemy import func, cast, String
+
 bp = Blueprint('routes', __name__)
 
 from typing import Optional
@@ -25,7 +27,8 @@ from typing import Optional
 # ---> FUNGSI HELPER UNTUK MENCATAT AKTIVITAS <---
 def log_activity(user, action, details=None):
     """Mencatat aktivitas pengguna ke database."""
-    if user.is_authenticated:
+    # Jangan catat aktivitas admin untuk menjaga kebersihan data analitik
+    if user.is_authenticated and not user.is_admin:
         try:
             log = UserActivityLog(user_id=user.id, action=action, details=details)
             db.session.add(log)
@@ -2660,3 +2663,37 @@ def save_quiz_result(lesson_id):
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Hasil kuis berhasil disimpan.'})
+
+
+@bp.route('/admin/analytics/create_snapshot', methods=['POST'])
+@login_required
+def create_analytics_snapshot():
+    if not current_user.is_admin:
+        abort(403)
+
+    # 1. Ambil semua data analitik saat ini (mirip seperti di AnalyticsView)
+    top_users_query = db.session.query(User.name, func.count(UserActivityLog.id)).join(UserActivityLog).group_by(User.name).order_by(func.count(UserActivityLog.id).desc()).limit(5).all()
+    top_lessons_query = db.session.query(Lesson.title, func.count(UserActivityLog.id)).join(UserActivityLog, func.json_extract(UserActivityLog.details, '$.lesson_id') == cast(Lesson.id, String)).filter(UserActivityLog.action == 'viewed_lesson').group_by(Lesson.title).order_by(func.count(UserActivityLog.id).desc()).limit(5).all()
+
+    summary_data = {
+        "total_activities": UserActivityLog.query.count(),
+        "unique_users_active": db.session.query(func.count(func.distinct(UserActivityLog.user_id))).scalar(),
+        "top_users": [{"user": name, "activities": count} for name, count in top_users_query],
+        "top_lessons": [{"lesson": title, "views": count} for title, count in top_lessons_query]
+    }
+
+    # 2. Buat nama snapshot dan simpan ke database
+    snapshot_name = f"Laporan Analitik - {datetime.utcnow().strftime('%d %b %Y, %H:%M')}"
+    new_snapshot = AnalyticsSnapshot(
+        name=snapshot_name,
+        summary_data=json.dumps(summary_data, indent=2)
+    )
+    db.session.add(new_snapshot)
+
+    # 3. Hapus semua data dari UserActivityLog untuk memulai dari awal
+    UserActivityLog.query.delete()
+    
+    db.session.commit()
+    
+    flash(f"Snapshot '{snapshot_name}' berhasil dibuat dan data aktivitas telah direset.", "success")
+    return redirect(url_for('analytics.index'))

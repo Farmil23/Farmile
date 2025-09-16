@@ -460,3 +460,14 @@ class QuizHistory(db.Model):
             'timestamp': self.timestamp.isoformat(),
             'cooldown_until': self.cooldown_until.isoformat() if self.cooldown_until else None
         }
+        
+class AnalyticsSnapshot(db.Model):
+    __tablename__ = 'analytics_snapshot'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Menyimpan ringkasan data dalam format JSON
+    summary_data = db.Column(db.Text, nullable=False)
+
+    def __repr__(self):
+        return f'<AnalyticsSnapshot {self.name}>'

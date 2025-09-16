@@ -1,82 +1,269 @@
-from datetime import datetime, timedelta
-import re
-
-# ===============================================================
-# FUNGSI PARSING WAKTU YANG DISEMPURNAKAN
-# ===============================================================
-def _parse_human_readable_time(time_str: str) -> datetime:
-    """
-    Menerjemahkan string waktu bahasa manusia (e.g., 'besok jam 3 sore', '9 september jam 2') 
-    menjadi objek datetime yang akurat.
-    """
-    now = datetime.now()
-    time_str_lower = time_str.lower()
-    
-    # --- Logika untuk parsing tanggal spesifik ---
-    base_date = now
-    
-    month_map = {
-        'januari': 1, 'februari': 2, 'maret': 3, 'april': 4, 'mei': 5, 'juni': 6, 
-        'juli': 7, 'agustus': 8, 'september': 9, 'oktober': 10, 'november': 11, 'desember': 12
+{% extends 'admin/master.html' %}
+{% block body %}
+  <style>
+    .card-metric {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
     }
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #007bff;
+    }
+    .metric-label {
+        font-size: 1rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+        display: block;
+    }
+    .chart-container {
+        position: relative;
+        height: 350px;
+        width: 100%;
+    }
+    .table thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+    }
+  </style>
+  
+  <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+    <div>
+        <h1>Dashboard Analitik Farmile</h1>
+        <p class="lead">Ringkasan aktivitas pengguna, pembelajaran, dan persiapan karier di platform.</p>
+    </div>
+    <div>
+        <form action="{{ url_for('routes.create_analytics_snapshot') }}" method="POST" onsubmit="return confirm('Anda yakin ingin menyimpan data saat ini sebagai riwayat dan mereset semua log aktivitas? Tindakan ini tidak bisa dibatalkan.');">
+            <button type="submit" class="btn btn-warning">Simpan Riwayat & Reset Data</button>
+        </form>
+    </div>
+  </div>
 
-    # Coba cari format "tanggal bulan" (e.g., "9 september")
-    date_match = re.search(r'(\d{1,2})\s+(' + '|'.join(month_map.keys()) + r')', time_str_lower)
-    
-    if date_match:
-        day = int(date_match.group(1))
-        month_name = date_match.group(2)
-        month = month_map[month_name]
-        year = now.year
-        
-        # Jika tanggal yang disebutkan sudah lewat tahun ini, asumsikan tahun depan
-        if now.month > month or (now.month == month and now.day > day):
-            year += 1
-            
-        try:
-            base_date = base_date.replace(year=year, month=month, day=day)
-        except ValueError:
-            pass 
-    elif "besok" in time_str_lower:
-        base_date = now + timedelta(days=1)
-    
-    # --- Logika parsing waktu (jam dan menit) yang disempurnakan ---
-    hour, minute = 0, 0
-    
-    # Prioritaskan pencarian format 'jam 3 sore' atau 'jam 15:30'
-    match_with_period = re.search(r'(\d{1,2})\s*(pagi|siang|sore|malam)', time_str_lower)
-    match_with_colon = re.search(r'(\d{1,2})[:.](\d{2})', time_str_lower)
-    
-    if match_with_period:
-        hour = int(match_with_period.group(1))
-        period = match_with_period.group(2)
-        if period in ['sore', 'malam'] and 1 <= hour < 12:
-            hour += 12
-        if period == 'pagi' and hour == 12: # jam 12 pagi -> 00:00
-            hour = 0
-    elif match_with_colon:
-        hour = int(match_with_colon.group(1))
-        minute = int(match_with_colon.group(2))
-    else: # Fallback untuk angka saja, misal: "jam 8"
-        match_simple = re.search(r'jam\s+(\d{1,2})', time_str_lower) or re.search(r'pukul\s+(\d{1,2})', time_str_lower)
-        if match_simple:
-            hour = int(match_simple.group(1))
-            # Asumsi cerdas: jika jam antara 1-6, kemungkinan sore/malam.
-            if 1 <= hour <= 6:
-                 hour += 12 # Asumsikan jam 3 -> 15:00, jam 6 -> 18:00
-    
-    return base_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
+  <h3 class="mt-4">Statistik Persiapan Karier</h3>
+  <div class="row">
+    <div class="col-lg-3 col-md-6">
+        <div class="card-metric">
+            <div class="metric-value">{{ total_resumes_analyzed }}</div>
+            <div class="metric-label">Total CV Dianalisis</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card-metric">
+            <div class="metric-value">{{ total_jobs_tracked }}</div>
+            <div class="metric-label">Total Lamaran Dilacak</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card-metric">
+            <div class="metric-value">{{ total_coach_sessions }}</div>
+            <div class="metric-label">Sesi AI Coach Aktif</div>
+        </div>
+    </div>
+     <div class="col-lg-3 col-md-6">
+        <div class="card-metric" style="padding: 1rem;">
+            <h5 class="mb-3">Distribusi Status Lamaran</h5>
+            <div class="chart-container" style="height: 150px;">
+                <canvas id="jobStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+  </div>
 
 
-# ===============================================================
-# FUNGSI UNTUK MEMBUAT TUGAS DARI AI
-# ===============================================================
+  <h3 class="mt-4">Statistik Pembelajaran & Aktivitas</h3>
+  <div class="row" style="margin-top: 2rem;">
+    <div class="col-md-8">
+        <div class="card-metric" style="text-align: left; padding: 1.5rem;">
+            <h4>Aktivitas Pengguna (7 Hari Terakhir)</h4>
+            <div class="chart-container">
+                <canvas id="dailyActivityChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-metric" style="text-align: left; padding: 1.5rem;">
+            <h4>Distribusi Penggunaan Fitur</h4>
+            <div class="chart-container">
+                <canvas id="featureUsageChart"></canvas>
+            </div>
+        </div>
+    </div>
+  </div>
 
+  <div class="row" style="margin-top: 1rem;">
+    <div class="col-md-4">
+      <h4>Top 5 Pengguna Paling Aktif</h4>
+      <table class="table table-bordered table-striped table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th>Nama Pengguna</th>
+            <th>Total Aktivitas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user_name, total_activities in top_users %}
+          <tr>
+            <td>{{ user_name }}</td>
+            <td>{{ total_activities }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="2" class="text-center">Belum ada data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
+    <div class="col-md-4">
+      <h4>Top 5 Materi Paling Populer</h4>
+      <table class="table table-bordered table-striped table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th>Judul Materi</th>
+            <th>Jumlah Dilihat</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lesson_title, view_count in top_lessons %}
+          <tr>
+            <td>{{ lesson_title }}</td>
+            <td>{{ view_count }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="2" class="text-center">Belum ada data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-# ===============================================================
-# FUNGSI UNTUK MEMPERBARUI TUGAS DARI AI
-# ===============================================================
+    <div class="col-md-4">
+        <h4>Top 5 Proyek Paling Populer</h4>
+        <table class="table table-bordered table-striped table-hover">
+          <thead class="thead-light">
+            <tr>
+              <th>Judul Proyek</th>
+              <th>Jumlah Submission</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for project_title, submission_count in top_projects %}
+            <tr>
+              <td>{{ project_title }}</td>
+              <td>{{ submission_count }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-center">Belum ada data</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+  </div>
+  
+  <hr style="margin-top: 3rem; margin-bottom: 2rem;">
+
+  <h3>Riwayat Analitik Tersimpan (Snapshot)</h3>
+  <table class="table table-bordered table-striped">
+      <thead class="thead-light">
+          <tr>
+              <th>Nama Laporan</th>
+              <th>Tanggal Dibuat</th>
+              <th>Lihat Data (JSON)</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for snapshot in saved_snapshots %}
+          <tr>
+              <td>{{ snapshot.name }}</td>
+              <td>{{ snapshot.created_at.strftime('%d %B %Y, %H:%M:%S') }} UTC</td>
+              <td>
+                  <pre style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 4px;"><code>{{ snapshot.summary_data }}</code></pre>
+              </td>
+          </tr>
+          {% else %}
+          <tr>
+              <td colspan="3" class="text-center">Belum ada riwayat analitik yang disimpan.</td>
+          </tr>
+          {% endfor %}
+      </tbody>
+  </table>
+
+{% endblock %}
+
+{% block tail %}
+  {{ super() }}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Data dari backend
+        const featureData = JSON.parse('{{ feature_usage_chart_data | safe }}');
+        const activityData = JSON.parse('{{ daily_activity_chart_data | safe }}');
+        const jobStatusData = JSON.parse('{{ job_status_chart_data | safe }}');
+
+        // Grafik Distribusi Fitur (Doughnut Chart)
+        const featureCtx = document.getElementById('featureUsageChart').getContext('2d');
+        if (featureData.labels.length > 0) {
+            new Chart(featureCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: featureData.labels,
+                    datasets: [{
+                        label: 'Jumlah Penggunaan',
+                        data: featureData.data,
+                        backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2'],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+        }
+
+        // Grafik Aktivitas Harian (Line Chart)
+        const activityCtx = document.getElementById('dailyActivityChart').getContext('2d');
+        if (activityData.labels.length > 0) {
+            new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: activityData.labels,
+                    datasets: [{
+                        label: 'Total Aktivitas per Hari',
+                        data: activityData.data,
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // Grafik Status Lamaran Kerja (Pie Chart)
+        const jobStatusCtx = document.getElementById('jobStatusChart').getContext('2d');
+        if (jobStatusData.labels.length > 0) {
+            new Chart(jobStatusCtx, {
+                type: 'pie',
+                data: {
+                    labels: jobStatusData.labels,
+                    datasets: [{
+                        label: 'Jumlah Lamaran',
+                        data: jobStatusData.data,
+                        backgroundColor: ['#6f42c1', '#007bff', '#fd7e14', '#28a745', '#dc3545'],
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+    });
+  </script>
+{% endblock %}
 
 system_prompt = (
         "[PERAN & IDENTITAS]\n"
