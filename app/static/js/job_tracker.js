@@ -62,7 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const columnEl = document.createElement('div');
             columnEl.className = 'kanban-column';
             columnEl.dataset.status = col.id;
-            columnEl.innerHTML = `<h3>${col.title}</h3><div class="kanban-cards"></div>`;
+            // Menambahkan elemen span untuk counter
+            columnEl.innerHTML = `<h3>${col.title} <span class="card-count">(0)</span></h3><div class="kanban-cards"></div>`;
             kanbanBoard.appendChild(columnEl);
         });
     };
@@ -80,10 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
             emptyState.style.display = 'none';
         }
 
+        // Reset semua kontainer kartu
         document.querySelectorAll('.kanban-cards').forEach(col => col.innerHTML = '');
+        // Reset semua counter ke (0)
+        document.querySelectorAll('.card-count').forEach(count => count.textContent = '(0)');
+
         apps.forEach(app => {
-            const column = document.querySelector(`.kanban-column[data-status='${app.status}'] .kanban-cards`);
+            const column = document.querySelector(`.kanban-column[data-status='${app.status}']`);
             if (column) {
+                const cardsContainer = column.querySelector('.kanban-cards');
                 const card = document.createElement('div');
                 card.className = 'kanban-card';
                 card.draggable = true;
@@ -112,9 +118,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             AI Coach
                         </a>
                     </div>`;
-                column.appendChild(card);
+                cardsContainer.appendChild(card);
+                
+                // Perbarui counter untuk kolom saat ini
+                const countEl = column.querySelector('.card-count');
+                countEl.textContent = `(${cardsContainer.children.length})`;
             }
         });
+
+        // Tambahkan pesan "empty state" untuk kolom yang kosong
+        document.querySelectorAll('.kanban-cards').forEach(cardsContainer => {
+            if (cardsContainer.children.length === 0) {
+                cardsContainer.innerHTML = `<p class="empty-column-message">Belum ada lamaran di tahap ini.</p>`;
+            }
+        });
+
         addEventListeners();
     };
 
@@ -217,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // === FUNGSI SUBMIT DENGAN LOGIKA BARU YANG LEBIH TANGGUH DAN SEDERHANA ===
     appForm.addEventListener('submit', async e => {
         e.preventDefault();
         const id = document.getElementById('application-id').value;
@@ -234,26 +251,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (id) {
-                // Untuk update, kita panggil API update
                 await api.updateApp(id, data);
             } else {
-                // Untuk penambahan baru, kita panggil API add
+                data.status = 'wishlist'; // Selalu mulai dari Wishlist
                 await api.addApp(data);
             }
-
-            // **BAGIAN KUNCI DARI SOLUSI INI**
-            // Setelah aksi (add/update) berhasil, panggil `loadApplications()`
-            // untuk mengambil ulang SEMUA data dari server. Ini memastikan
-            // tampilan selalu sinkron dengan database dan menghilangkan duplikasi.
-            loadApplications();
+            
+            loadApplications(); // Selalu muat ulang dari server setelah aksi
             
             appForm.reset();
             appModal.classList.remove('visible');
 
-        } catch (error) {
-            console.error("Gagal menyimpan:", error);
-            const errorData = await error.json(); // Coba dapatkan detail error dari server
-            alert(`Gagal menyimpan lamaran: ${errorData.error || 'Periksa kembali isian Anda.'}`);
+        } catch (errorResponse) {
+            console.error("Gagal menyimpan:", errorResponse);
+            const errorData = await errorResponse.json();
+            alert(`Gagal menyimpan: ${errorData.error || 'Terjadi kesalahan tidak diketahui.'}`);
         }
     });
 
