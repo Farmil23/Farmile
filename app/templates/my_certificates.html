@@ -8,7 +8,8 @@
     <div class="certificates-grid">
         {% for cert in certificates %}
         <div class="card certificate-card">
-            <h4>{{ cert.roadmap.title }}</h4>
+            {# PERUBAHAN DI SINI: Menampilkan nama career_path #}
+            <h4>Sertifikat Kelulusan: {{ cert.career_path|replace('-', ' ')|title }}</h4>
             <p class="text-secondary">Diterbitkan pada: {{ cert.issued_at.strftime('%d %B %Y') }}</p>
             <div class="card-actions" style="margin-top: 1.5rem;">
                 <a href="{{ url_for('routes.view_credential', credential_id=cert.credential_id) }}" class="button-primary" target="_blank">Lihat Kredensial</a>

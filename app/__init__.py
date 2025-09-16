@@ -93,6 +93,17 @@ class UserProjectView(SecureModelView):
     form_columns = ('user', 'project', 'status', 'started_at', 'reflection')
     form_ajax_refs = {'user': {'fields': ['name', 'email'], 'page_size': 10}, 'project': {'fields': ['title'], 'page_size': 10}}
 
+# --- KELAS BARU UNTUK CERTIFICATE VIEW ---
+class CertificateView(SecureModelView):
+    column_list = ('id', 'user', 'roadmap', 'career_path', 'issued_at')
+    column_searchable_list = ('user.name', 'user.email', 'career_path')
+    column_filters = ('career_path', 'issued_at')
+    form_columns = ('user', 'roadmap', 'career_path', 'total_hours', 'projects_completed_json')
+    form_ajax_refs = {
+        'user': {'fields': ['name', 'email'], 'page_size': 10},
+        'roadmap': {'fields': ['title'], 'page_size': 10}
+    }
+
 class AnalyticsView(BaseView):
     @expose('/')
     def index(self):
@@ -108,10 +119,9 @@ class AnalyticsView(BaseView):
         seven_days_ago = datetime.utcnow() - timedelta(days=7)
         daily_activity_query = db.session.query(func.date(UserActivityLog.timestamp), func.count(UserActivityLog.id)).filter(UserActivityLog.timestamp >= seven_days_ago).group_by(func.date(UserActivityLog.timestamp)).order_by(func.date(UserActivityLog.timestamp)).all()
         
-        # PERBAIKAN UTAMA: Ubah objek tanggal menjadi string SEBELUM dikirim ke template
         daily_activity_chart_data = {
-            "labels": [datetime.strptime(row[0], '%Y-%m-%d').strftime('%d %b') for row in daily_activity_query],
-            "data": [row[1] for row in daily_activity_query]
+            "labels": [datetime.strptime(date_str, '%Y-%m-%d').strftime('%d %b') for date_str, count in daily_activity_query],
+            "data": [count for date_str, count in daily_activity_query]
         }
 
         total_resumes_analyzed = db.session.query(func.count(UserResume.id)).scalar()
@@ -178,8 +188,36 @@ def create_app(config_class=Config):
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")
         ark_client = None
 
-    from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject, UserActivityLog, UserResume, JobApplication, JobCoachMessage, AnalyticsSnapshot)
+    from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject, UserActivityLog, UserResume, JobApplication, JobCoachMessage, AnalyticsSnapshot, Certificate, UserProgress)
     
+    @app.context_processor
+    def inject_progress():
+        if current_user.is_authenticated and current_user.career_path:
+            all_modules_in_path = Module.query.filter_by(career_path=current_user.career_path).all()
+            all_lesson_ids_in_path = {lesson.id for module in all_modules_in_path for lesson in module.lessons}
+            all_project_ids_in_path = {project.id for module in all_modules_in_path for project in module.projects}
+            total_items = len(all_lesson_ids_in_path) + len(all_project_ids_in_path)
+
+            completed_lessons_in_path = UserProgress.query.join(Lesson).join(Module).filter(
+                UserProgress.user_id == current_user.id,
+                Module.career_path == current_user.career_path
+            ).count()
+
+            submitted_projects_in_path = ProjectSubmission.query.join(Project).join(Module).filter(
+                ProjectSubmission.user_id == current_user.id,
+                Module.career_path == current_user.career_path
+            ).count()
+            
+            completed_items = completed_lessons_in_path + submitted_projects_in_path
+
+            progress_percentage = 0
+            if total_items > 0:
+                progress_percentage = min(100, int((completed_items / total_items) * 100))
+            
+            return dict(progress_percentage=progress_percentage)
+        
+        return dict(progress_percentage=0)
+
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 
     admin.add_view(UserView(User, db.session))
@@ -192,6 +230,9 @@ def create_app(config_class=Config):
     admin.add_view(UserProjectView(UserProject, db.session))
     admin.add_view(SecureModelView(Roadmap, db.session))
     admin.add_view(SecureModelView(Notification, db.session))
+    # --- MENDAFTARKAN CERTIFICATE VIEW ---
+    admin.add_view(CertificateView(Certificate, db.session))
+    # -----------------------------------
     admin.add_view(AnalyticsView(name='Analytics', endpoint='analytics'))
     
     try:

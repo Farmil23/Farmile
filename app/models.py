@@ -485,17 +485,17 @@ class Certificate(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     roadmap_id = db.Column(db.Integer, db.ForeignKey('roadmap.id'), nullable=False)
     
-    # ID unik untuk halaman verifikasi kredensial
+    # --- TAMBAHKAN KOLOM INI ---
+    career_path = db.Column(db.String(100), nullable=True)
+    # -------------------------
+
     credential_id = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
-    
     issued_at = db.Column(db.DateTime, default=datetime.utcnow)
     total_hours = db.Column(db.Integer, nullable=False)
-    
-    # Menyimpan daftar proyek sebagai JSON untuk ditampilkan di sertifikat
     projects_completed_json = db.Column(db.Text, nullable=True)
 
     user = db.relationship('User', backref=db.backref('certificates', lazy='dynamic'))
     roadmap = db.relationship('Roadmap', backref=db.backref('certificates', lazy='dynamic'))
 
     def __repr__(self):
-        return f'<Certificate {self.id} for User {self.user_id}>'
+        return f'<Certificate {self.id} for User {self.user_id} on {self.career_path}>'
