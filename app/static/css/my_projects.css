@@ -1,179 +1,213 @@
-/* ========================== */
-/*        PROYEK SAYA         */
-/* ========================== */
+/* =================================================== */
+/* ===     MY PROJECTS PAGE (FINAL POLISHED DESIGN) === */
+/* =================================================== */
 
+/* --- 1. Struktur Utama & Judul Kategori --- */
+.project-category-section {
+  margin-bottom: 3rem;
+}
+.category-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
 .projects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
-  }
-  
-  /* CARD PROJECT */
-  .project-card {
-    background: var(--item-bg, #1f2937);
-    border: 1px solid var(--border-color, #374151);
-    border-radius: 14px;
-    padding: 1.25rem 1.5rem;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  .project-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-  }
-  
-  .project-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .project-card-header h4 {
-    font-size: 1.05rem;
-    font-weight: 700;
-    margin: 0;
-    color: var(--text-primary, #f9fafb);
-    line-height: 1.4;
-  }
-  
-  /* STATUS BADGE */
-  .status-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.35rem 0.8rem;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-  
-  .status-badge.completed {
-    background: var(--accent-green, #10b981);
-    color: white;
-  }
-  
-  .status-badge.pending {
-    background: var(--accent-yellow, #d97706);
-    color: white;
-  }
-  
-  .status-badge.in-progress {
-    background: var(--accent-blue, #3b82f6);
-    color: white;
-  }
-  
-  /* SKOR BADGE */
-  .skor-badge {
-    background: var(--accent-green, #10b981);
-    color: white;
-    font-weight: 700;
-    padding: 0.3rem 0.6rem;
-    border-radius: 8px;
-  }
-  
-  /* CARD ACTIONS */
-  .card-actions,
-  .sertifikat-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: auto;
-  }
-  
-  .card-actions a,
-  .card-actions button,
-  .sertifikat-actions a,
-  .sertifikat-actions button {
-    flex: 1;
-    text-align: center;
-    padding: 0.6rem 0.75rem;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 120px;
-  }
-  
-  /* BUTTON STYLES */
-  .button-primary {
-    background: var(--accent-blue, #3b82f6);
-    color: white;
-  }
-  .button-primary:hover {
-    background: var(--accent-blue-hover, #2563eb);
-  }
-  
-  .button-secondary {
-    background: var(--sidebar-bg, #374151);
-    color: var(--text-primary, #f9fafb);
-  }
-  .button-secondary:hover {
-    background: var(--item-bg-hover, #4b5563);
-  }
-  
-  .button-danger {
-    background: var(--accent-red, #ef4444);
-    color: white;
-  }
-  .button-danger:hover {
-    background: var(--accent-red-hover, #dc2626);
-  }
-  
-  .full-width {
-    width: 100%;
-  }
-  
-  /* EMPTY STATE */
-  .empty-state {
-    background: var(--item-bg, #1f2937);
-    border-radius: 14px;
-    padding: 2rem;
-    text-align: center;
-    border: 1px dashed var(--border-color, #4b5563);
-  }
-  .empty-state h3 {
-    margin-top: 1rem;
-    font-size: 1.2rem;
-    font-weight: 600;
-  }
-  .empty-state p {
-    color: var(--text-secondary, #9ca3af);
-    margin-top: 0.5rem;
-    font-size: 0.95rem;
-  }
-  
-  /* RESPONSIVE */
-  @media (max-width: 768px) {
-    .projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* --- 2. Kartu Proyek (Ringkas & Klikabel) --- */
+.project-card-simplified {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  border-left: 4px solid var(--border-light);
+  overflow: hidden;
+}
+.project-card-simplified:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+.project-card-simplified h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.project-card-simplified .description-summary,
+.project-card-simplified .score-summary {
+  flex-grow: 1;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.project-card-simplified:has(.status-badge.in-progress) { border-left-color: var(--primary-color); }
+.project-card-simplified:has(.status-badge.pending) { border-left-color: var(--warning-color); }
+.project-card-simplified:has(.status-badge.completed) { border-left-color: var(--success-color); }
+
+/* --- 3. Badge Status & Skor --- */
+.status-badge {
+  font-size: 0.7rem; font-weight: 600; padding: 0.3rem 0.8rem;
+  border-radius: 999px; color: white; text-transform: uppercase;
+}
+.status-badge.in-progress { background-color: var(--primary-color); }
+.status-badge.pending { background-color: var(--warning-color); }
+.status-badge.completed { background-color: var(--success-color); }
+.skor-badge {
+  font-size: 1rem; font-weight: 700; padding: 0.4rem 0.7rem;
+  border-radius: 6px; background: var(--success-color); color: white;
+}
+/* --- 4. Modal Detail Proyek Premium --- */
+#projectDetailModal.modal-overlay {
+  background-color: rgba(13, 13, 20, 0.815);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#projectDetailModal .modal-box {
+  max-width: 600px;
+  padding: 0;
+  background-color: var(--card-bg-alt);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+  border-radius: 16px;
+}
+#projectDetailModal .modal-header {
+  padding: 1.5rem 2rem;
+  position: relative;
+  border-bottom: 1px solid var(--border-color);
+}
+#projectDetailModal .modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+#projectDetailModal .modal-close-btn {
+  position: absolute; top: 0.75rem; right: 0.75rem; background: none; border: none;
+  font-size: 2rem; line-height: 1; color: var(--text-muted); cursor: pointer;
+  padding: 0.5rem; border-radius: 50%; transition: all 0.2s ease;
+}
+#projectDetailModal .modal-close-btn:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+#projectDetailModal .modal-body {
+  padding: 2rem;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+#projectDetailModal .project-module-info {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+#projectDetailModal p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+#projectDetailModal .modal-footer {
+  padding: 1.5rem 2rem;
+  background-color: var(--background-color);
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 0 16px 16px;
+}
+
+/* --- 5. Tombol Aksi di Modal (DESAIN BARU & KONSISTEN) --- */
+.modal-actions-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+.modal-actions-container form { display: contents; }
+
+/* Gaya dasar untuk SEMUA tombol di modal */
+.modal-actions-container .button-primary,
+.modal-actions-container .button-secondary,
+.modal-actions-container .button-danger,
+.modal-actions-container .button-text {
+  padding: 0.7rem 1.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-width: 140px;
+}
+
+/* Tombol Aksi Utama (Solid & Menonjol) */
+.modal-actions-container .button-primary {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+.modal-actions-container .button-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px var(--primary-glow);
+}
+
+/* Tombol Aksi Sekunder (Outline) */
+.modal-actions-container .button-secondary {
+  background: transparent;
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+}
+.modal-actions-container .button-secondary:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+}
+
+/* Tombol Aksi Bahaya (Outline Merah) */
+.modal-actions-container .button-danger {
+  background: transparent;
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+.modal-actions-container .button-danger:hover {
+  background: var(--danger-color);
+  color: white;
+}
+
+/* Tombol Teks (Disabled/Prioritas Rendah) */
+.button-text {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  opacity: 0.7;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+.button-text:hover {
+  color: var(--text-muted); /* Pastikan tidak ada perubahan warna saat hover */
+}
+
+
+/* --- 6. RESPONSIVE DESIGN --- */
+@media (max-width: 768px) {
+  .projects-grid {
       grid-template-columns: 1fr;
-    }
-  
-    .project-card {
-      padding: 1rem;
-    }
-  
-    .card-actions a,
-    .card-actions button {
-      flex: 1 1 100%;
-    }
   }
-  
-  .card-buttons {
-    display: flex;
-    gap: 0.5rem;
+  #projectDetailModal .modal-box {
+      width: 95%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
   }
-  
-  .card-buttons button {
-    flex: 1; /* Biar ukurannya konsisten */
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    font-weight: 600;
+  #projectDetailModal .modal-body {
+      overflow-y: auto;
   }
-  
+  .modal-actions-container {
+      flex-direction: column;
+      align-items: stretch;
+  }
+  .modal-actions-container .button-text {
+      text-align: center; /* Pusatkan teks di mobile */
+  }
+}
+

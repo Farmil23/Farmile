@@ -2,7 +2,6 @@
 
 {% block styles %}
     {{ super() }}
-   
     <link rel="stylesheet" href="{{ url_for('static', filename='css/my_projects.css') }}">
 {% endblock %}
 
@@ -14,157 +13,138 @@
         </div>
         <div class="header-actions">
             <a href="{{ url_for('routes.challenge_projects') }}" class="button-secondary">Ambil Challenge Project 🏆</a>
-            <a href="{{ url_for('routes.select_project') }}" class="button-secondary" style="background-color: var(--accent-blue);"  >Ambil Project dari Roadmap</a>
+            <a href="{{ url_for('routes.select_project') }}" class="button-primary">Ambil Project dari Roadmap</a>
         </div>
     </div>
-    
-    {% if projects_data %}
-        <div class="projects-grid">
-            {% for data in projects_data %}
-            <div class="card project-card">
-                <div class="project-card-header">
-                    <h4>{{ data.user_project.project.title }}</h4>
+
+    {% if grouped_projects %}
+        {% for category_name, projects_in_category in grouped_projects.items() %}
+        <div class="project-category-section">
+            <h3 class="category-title">{{ category_name }}</h3>
+            <div class="projects-grid">
+                {% for data in projects_in_category %}
+                {# --- KARTU PROYEK YANG DISEDERHANAKAN --- #}
+                <div class="card project-card-simplified" 
+                     role="button" 
+                     tabindex="0"
+                     data-project='{{ {
+                         "title": data.user_project.project.title,
+                         "description": data.user_project.project.description or 'Proyek ini menantang Anda untuk menerapkan konsep yang telah dipelajari.',
+                         "module_title": data.module_title,
+                         "status": "completed" if (data.submission and data.submission.interview_score) else "pending" if data.submission else "in-progress",
+                         "score": data.submission.interview_score if data.submission else none,
+                         "submission_id": data.submission.id if data.submission else none,
+                         "user_project_id": data.user_project.id,
+                         "project_id": data.user_project.project.id
+                     } | tojson }}'>
                     
+                    <div class="project-card-header">
+                        <h4>{{ data.user_project.project.title }}</h4>
+                        {% if data.submission and data.submission.interview_score %}
+                            <span class="status-badge completed">Selesai</span>
+                        {% elif data.submission %}
+                            <span class="status-badge pending">Wawancara</span>
+                        {% else %}
+                            <span class="status-badge in-progress">Dikerjakan</span>
+                        {% endif %}
+                    </div>
+                    <div class="project-module-info">
+                        <small><strong>Modul:</strong> {{ data.module_title }}</small>
+                    </div>
                     {% if data.submission and data.submission.interview_score %}
-                        <span class="status-badge completed">Selesai (Dinilai)</span>
-                    {% elif data.submission %}
-                        <span class="status-badge pending">Menunggu Wawancara</span>
+                        <p class="score-summary">Skor Akhir: <span class="skor-badge">{{ data.submission.interview_score }}</span></p>
                     {% else %}
-                        <span class="status-badge in-progress">Sedang Dikerjakan</span>
+                        <p class="description-summary">{{ data.user_project.project.description | truncate(100) }}</p>
                     {% endif %}
                 </div>
-
-                {% if data.submission and data.submission.interview_score %}
-                    <p><strong>Skor Akhir:</strong> <span class="skor-badge">{{ data.submission.interview_score }}</span></p>
-                {% elif data.submission %}
-                    <p><strong>Link:</strong> <a href="{{ data.submission.project_link }}" target="_blank" rel="noopener noreferrer">Lihat Proyek</a></p>
-                {% else %}
-                    <p>{{ data.user_project.project.description | truncate(100) }}</p>
-                {% endif %}
-                
-                <div class="card-actions" style=" display: flex; flex-wrap: wrap;">
-                    
-                    {% if data.submission and data.submission.interview_score %}
-                        <a href="{{ url_for('routes.view_portfolio', submission_id=data.submission.id) }}" class="button-primary" style="flex-grow: 1;" target="_blank">Lihat Portofolio</a>
-                        <button type="button" class="button-secondary open-reflection-modal" 
-                                data-reflection="{{ data.user_project.reflection or '' }}" 
-                                data-userprojectid="{{ data.user_project.id }}"
-                                style="flex-grow: 1;">
-                            Tambah/Edit Refleksi
-                        </button>
-                        <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-secondary" style="flex-grow: 1;">Lihat Riwayat</a>
-                        <form action="{{ url_for('routes.retry_interview', submission_id=data.submission.id) }}" method="POST" style="width: 100%; margin-top: 10px;" class="js-confirm-delete" data-confirm-message="Anda yakin ingin mereset wawancara ini? Skor dan riwayat chat akan dihapus.">
-                            <button type="submit" class="button-secondary full-width">Ulangi Wawancara</button>
-                        </form>
-
-                    {% elif data.submission %}
-                        <div class="sertifikat-actions" style="width: 100%;">
-                            <a href="{{ url_for('routes.interview', submission_id=data.submission.id) }}" class="button-primary">Mulai Wawancara</a>
-                            <a href="{{ url_for('routes.edit_submission', submission_id=data.submission.id) }}" class="button-secondary">Edit</a>
-                            <form action="{{ url_for('routes.cancel_submission', submission_id=data.submission.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan submission proyek ini?">
-                                <button type="submit" class="button-danger">Hapus</button>
-                            </form>
-                        </div>
-
-                    {% else %}
-                        <a href="{{ url_for('routes.project_detail', project_id=data.user_project.project.id) }}" class="button-primary" style="flex-grow: 2;">Lanjutkan Mengerjakan</a>
-                        <form action="{{ url_for('routes.cancel_project', user_project_id=data.user_project.id) }}" method="POST" class="js-confirm-delete" data-confirm-message="Anda yakin ingin membatalkan proyek ini? Semua progres akan hilang.">
-                            <button type="submit" class="button-danger">Batalkan</button>
-                        </form>
-                    {% endif %}
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
     {% else %}
-        <div class="card empty-state" style="text-align: center; padding: 40px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <h3>Anda Belum Memiliki Proyek Aktif</h3>
-            <p>Mulai perjalanan Anda dengan mengambil proyek dari roadmap atau tantangan proyek.</p>
-            <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 20px;">Pilih Proyek Pertama</a>
+        <div class="card empty-state">
+            <h3>Belum Ada Proyek Aktif</h3>
+            <p>Mulai perjalanan Anda dengan mengambil proyek dari roadmap.</p>
+            <a href="{{ url_for('routes.select_project') }}" class="button-primary" style="margin-top: 1rem;">Pilih Proyek Pertama</a>
         </div>
     {% endif %}
 {% endblock %}
 
+
 {% block page_scripts %}
-<div id="reflectionModal" class="modal-overlay">
+{# --- MODAL PREMIUM UNTUK DETAIL PROYEK --- #}
+<div id="projectDetailModal" class="modal-overlay">
     <div class="modal-box card">
-        <h3>Refleksi Proyek</h3>
-        <button class="modal-close-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem;">&times;</button>
-        <form id="reflectionForm" style="text-align: left;">
-            <input type="hidden" id="reflectionUserProjectId">
-            <p class="text-secondary" style="margin-top: 0; margin-bottom: 1rem;">
-                Ceritakan tentang kontribusi dan hal-hal penting yang Anda pelajari selama mengerjakan proyek ini. Teks ini akan ditampilkan di halaman portofolio publik Anda.
-            </p>
-            <div class="form-group">
-                <textarea id="reflectionText" class="form-input" rows="8" required></textarea>
-            </div>
-            <div class="modal-actions" style="display: flex; justify-content: flex-end; margin-top: 1rem;">
-                <button type="submit" class="button-primary">Simpan Refleksi</button>
-            </div>
-        </form>
+        <div class="modal-header">
+            <h3 id="modalProjectTitle">Judul Proyek</h3>
+            <button class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="modalProjectModule" class="project-module-info"></div>
+            <p id="modalProjectDescription"></p>
+        </div>
+        <div class="modal-footer">
+            <div id="modalProjectActions" class="modal-actions-container">
+                </div>
+        </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const reflectionModal = document.getElementById('reflectionModal');
-    if (reflectionModal) {
-        const reflectionForm = document.getElementById('reflectionForm');
-        const reflectionText = document.getElementById('reflectionText');
-        const reflectionUserProjectId = document.getElementById('reflectionUserProjectId');
-        
-        document.querySelectorAll('.open-reflection-modal').forEach(button => {
-            button.addEventListener('click', () => {
-                const userProjectId = button.dataset.userprojectid;
-                const currentReflection = button.dataset.reflection;
+    const detailModal = document.getElementById('projectDetailModal');
+    if (detailModal) {
+        const modalTitle = document.getElementById('modalProjectTitle');
+        const modalModule = document.getElementById('modalProjectModule');
+        const modalDescription = document.getElementById('modalProjectDescription');
+        const modalActions = document.getElementById('modalProjectActions');
+
+        document.querySelectorAll('.project-card-simplified').forEach(card => {
+            card.addEventListener('click', () => {
+                const projectData = JSON.parse(card.dataset.project);
                 
-                reflectionUserProjectId.value = userProjectId;
-                reflectionText.value = currentReflection;
+                modalTitle.textContent = projectData.title;
+                modalModule.innerHTML = `<small><strong>Dari Modul:</strong> ${projectData.module_title}</small>`;
+                modalDescription.textContent = projectData.description;
+                modalActions.innerHTML = generateActionButtons(projectData);
                 
-                reflectionModal.classList.add('visible');
+                detailModal.classList.add('visible');
             });
         });
 
-        reflectionModal.addEventListener('click', (e) => {
-            if (e.target === reflectionModal || e.target.closest('.modal-close-btn')) {
-                reflectionModal.classList.remove('visible');
-            }
-        });
-
-        reflectionForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userProjectId = reflectionUserProjectId.value;
-            const text = reflectionText.value;
-            const submitButton = reflectionForm.querySelector('button[type="submit"]');
-            
-            submitButton.disabled = true;
-            submitButton.textContent = 'Menyimpan...';
-
-            try {
-                const response = await fetch(`/api/user-project/${userProjectId}/reflection`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reflection: text })
-                });
-                if (!response.ok) throw new Error('Gagal menyimpan refleksi.');
-
-                const buttonToUpdate = document.querySelector(`.open-reflection-modal[data-userprojectid='${userProjectId}']`);
-                if(buttonToUpdate) {
-                    buttonToUpdate.dataset.reflection = text;
-                }
-                
-                reflectionModal.classList.remove('visible');
-                // Optional: Beri notifikasi sukses
-                alert('Refleksi berhasil disimpan!');
-            } catch (error) {
-                alert(error.message);
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Simpan Refleksi';
+        detailModal.addEventListener('click', (e) => {
+            if (e.target === detailModal || e.target.closest('.modal-close-btn')) {
+                detailModal.classList.remove('visible');
             }
         });
     }
+
+    function generateActionButtons(data) {
+        const actions = {
+            lanjutkan: `<a href="/project/${data.project_id}" class="button-primary">Lanjutkan Mengerjakan</a>`,
+            batalkan: `<form action="/cancel-project/${data.user_project_id}" method="POST" class="js-confirm-delete" data-confirm-message="Yakin membatalkan proyek ini?"><button type="submit" class="button-danger">Batalkan</button></form>`,
+            mulaiWawancara: `<a href="/interview/${data.submission_id}" class="button-primary">Mulai Wawancara</a>`,
+            editLink: `<a href="/edit-submission/${data.submission_id}" class="button-secondary" style= " margin:0">Edit Link</a>`,
+            hapusSubmission: `<form action="/cancel-submission/${data.submission_id}" method="POST" class="js-confirm-delete" data-confirm-message="Yakin membatalkan submission?"><button type="submit" class="button-danger">Hapus</button></form>`,
+            lihatPortfolio: `<a href="/submission/${data.submission_id}/portfolio" class="button-primary" target="_blank">Lihat Portofolio</a>`,
+            ulangiWawancara: `<form action="/submission/${data.submission_id}/retry-interview" method="POST" class="js-confirm-delete" data-confirm-message="Yakin reset wawancara?"><button type="submit" class="button-secondary">Ulangi Wawancara</button></form>`,
+            lihatRiwayat: `<a href="/interview/${data.submission_id}" class="button-secondary">Lihat Riwayat</a>`
+        };
+
+        const disabledActions = {
+            mulaiWawancara: `<button class="button-text" disabled>Mulai Wawancara</button>`,
+            lihatPortfolio: `<button class="button-text" disabled>Lihat Portofolio</button>`
+        };
+
+        if (data.status === 'in-progress') {
+            return `${actions.lanjutkan} ${actions.batalkan} ${disabledActions.mulaiWawancara} ${disabledActions.lihatPortfolio}`;
+        } else if (data.status === 'pending') {
+            return `${actions.mulaiWawancara} ${actions.editLink} ${actions.hapusSubmission} ${disabledActions.lihatPortfolio}`;
+        } else if (data.status === 'completed') {
+            return `${actions.lihatPortfolio} ${actions.ulangiWawancara} ${actions.lihatRiwayat}`;
+        }
+        return '';
+    }
 });
 </script>
-{% endblock %}RRR 
+{% endblock %}

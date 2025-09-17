@@ -659,26 +659,40 @@ def cancel_project(user_project_id):
 @login_required
 def my_projects():
     log_activity(current_user, 'viewed_my_projects')
-    # Ambil semua proyek yang sedang aktif dikerjakan oleh pengguna
     user_projects = UserProject.query.filter_by(user_id=current_user.id).order_by(UserProject.started_at.desc()).all()
-    
-    # Siapkan data lengkap untuk dikirim ke template
-    projects_data = []
+
+    # --- PERUBAHAN UTAMA: Mengelompokkan proyek ---
+    grouped_projects = defaultdict(list)
+    career_map = {
+        'frontend': 'Proyek Frontend',
+        'backend': 'Proyek Backend',
+        'data-analyst': 'Proyek Data Analyst',
+        'ai-ml-engineer': 'Proyek AI/ML Engineer',
+        'devops-engineer': 'Proyek DevOps Engineer',
+        'cyber-security': 'Proyek Cyber Security',
+        'network-engineer': 'Proyek Network Engineer',
+        None: 'Proyek Tantangan Lainnya' # Untuk proyek yang tidak punya career_path (misal: Challenge)
+    }
+
     for user_project in user_projects:
-        # Untuk setiap proyek aktif, cari submission yang sesuai
         submission = ProjectSubmission.query.filter_by(
             user_id=current_user.id,
             project_id=user_project.project_id
         ).first()
-        
-        projects_data.append({
+
+        # Tentukan kunci grup (nama jalur karier yang mudah dibaca)
+        project_career_path = user_project.project.module.career_path if user_project.project.module else None
+        group_key = career_map.get(project_career_path, 'Proyek Tantangan Lainnya')
+
+        grouped_projects[group_key].append({
             'user_project': user_project,
-            'submission': submission  # Bisa bernilai None jika belum submit
+            'submission': submission,
+            'module_title': user_project.project.module.title if user_project.project.module else 'Tantangan Umum'
         })
-        
-    return render_template('my_projects.html', 
-                           title="Proyek Saya", 
-                           projects_data=projects_data)
+
+    return render_template('my_projects.html',
+                           title="Proyek Saya",
+                           grouped_projects=grouped_projects) # Kirim data yang sudah dikelompokkan
 
 # TAMBAHKAN FUNGSI BARU INI DI app/routes.py
 @bp.route('/take-project/<int:project_id>', methods=['POST'])
