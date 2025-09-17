@@ -250,7 +250,7 @@ def create_app(config_class=Config):
         # Ubah juga return di sini agar konsisten
         return dict(progress=0)
 
-    admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
+    admin = Admin(app, name='Farmile Admin', template_mode='bootstrap4', url='/admin')
 
     admin.add_view(UserView(User, db.session))
     admin.add_view(TaskView(Task, db.session))
@@ -291,6 +291,6 @@ def create_app(config_class=Config):
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
         app.logger.setLevel(logging.INFO)
-        app.logger.info('Farsight app startup')
+        app.logger.info('Farmile app startup')
 
     return app

@@ -628,10 +628,8 @@ def cancel_project(user_project_id):
     if user_project.user_id != current_user.id:
         abort(403)
 
-    # --- PERBAIKAN: Ambil nama proyek SEBELUM dihapus ---
     project_title = user_project.project.title
     
-    # Hapus juga submission terkait jika ada
     submission = ProjectSubmission.query.filter_by(
         user_id=current_user.id,
         project_id=user_project.project_id
@@ -641,13 +639,12 @@ def cancel_project(user_project_id):
         InterviewMessage.query.filter_by(submission_id=submission.id).delete()
         db.session.delete(submission)
 
-    # Hapus entri UserProject
     db.session.delete(user_project)
     db.session.commit()
     
-    # Gunakan nama yang sudah disimpan untuk pesan flash
-    flash(f"Proyek '{project_title}' berhasil dibatalkan.", 'success')
-    return redirect(url_for('routes.my_projects'))
+    # Ganti 'redirect' dengan 'jsonify'
+    return jsonify({'success': True, 'message': f"Proyek '{project_title}' berhasil dibatalkan."})
+
 
 # ===============================================
 # RUTE PROYEK & WAWANCARA
@@ -956,8 +953,8 @@ def cancel_submission(submission_id):
         abort(403)
     db.session.delete(submission)
     db.session.commit()
-    flash('Submission proyek berhasil dibatalkan.', 'success')
-    return redirect(url_for('routes.my_projects'))
+    # Ganti 'redirect' dengan 'jsonify'
+    return jsonify({'success': True, 'message': 'Submission proyek berhasil dibatalkan.'})
 
 
 # GANTI SELURUH FUNGSI LAMA DENGAN VERSI FINAL INI

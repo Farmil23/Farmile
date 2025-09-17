@@ -119,15 +119,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- FUNGSI BARU UNTUK MEMBUAT TOMBOL AKSI ---
     function generateActionButtons(data) {
+        // Definisikan URL di sini agar lebih rapi
+        const cancelProjectUrl = `/cancel-project/${data.user_project_id}`;
+        const cancelSubmissionUrl = `/cancel-submission/${data.submission_id}`;
+        const retryInterviewUrl = `/submission/${data.submission_id}/retry-interview`;
+
+        // Gunakan elemen <button> biasa untuk aksi POST, bukan form
         const actions = {
             lanjutkan: `<a href="/project/${data.project_id}" class="button-primary">Lanjutkan Mengerjakan</a>`,
-            batalkan: `<form action="/cancel-project/${data.user_project_id}" method="POST" class="js-confirm-delete" data-confirm-message="Yakin membatalkan proyek ini?"><button type="submit" class="button-danger">Batalkan</button></form>`,
+            batalkan: `<button class="button-danger dynamic-action-btn" data-url="${cancelProjectUrl}" data-confirm-message="Yakin membatalkan proyek ini?">Batalkan</button>`,
             mulaiWawancara: `<a href="/interview/${data.submission_id}" class="button-primary">Mulai Wawancara</a>`,
-            editLink: `<a href="/edit-submission/${data.submission_id}" class="button-secondary" style= " margin:0">Edit Link</a>`,
-            hapusSubmission: `<form action="/cancel-submission/${data.submission_id}" method="POST" class="js-confirm-delete" data-confirm-message="Yakin membatalkan submission?"><button type="submit" class="button-danger">Hapus</button></form>`,
+            editLink: `<a href="/edit-submission/${data.submission_id}" class="button-secondary" style="margin:0">Edit Link</a>`,
+            hapusSubmission: `<button class="button-danger dynamic-action-btn" data-url="${cancelSubmissionUrl}" data-confirm-message="Yakin membatalkan submission?">Hapus</button>`,
             lihatPortfolio: `<a href="/submission/${data.submission_id}/portfolio" class="button-primary" target="_blank">Lihat Portofolio</a>`,
-            ulangiWawancara: `<form action="/submission/${data.submission_id}/retry-interview" method="POST" class="js-confirm-delete" data-confirm-message="Yakin reset wawancara?"><button type="submit" class="button-secondary">Ulangi Wawancara</button></form>`,
+            ulangiWawancara: `<button class="button-secondary dynamic-action-btn" data-url="${retryInterviewUrl}" data-confirm-message="Yakin reset wawancara? Ini akan menghapus skor dan riwayat chat Anda.">Ulangi Wawancara</button>`,
             lihatRiwayat: `<a href="/interview/${data.submission_id}" class="button-secondary">Lihat Riwayat</a>`
         };
 
@@ -145,6 +152,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return '';
     }
+
+    // --- EVENT LISTENER BARU UNTUK TOMBOL AKSI DINAMIS ---
+    document.body.addEventListener('click', async (e) => {
+        const button = e.target.closest('.dynamic-action-btn');
+        if (!button) return;
+
+        const url = button.dataset.url;
+        const confirmMessage = button.dataset.confirmMessage || 'Apakah Anda yakin?';
+        const originalText = button.textContent;
+
+        if (confirm(confirmMessage)) {
+            button.disabled = true;
+            button.textContent = 'Memproses...';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json(); // Selalu coba parse JSON
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Terjadi kesalahan pada server.');
+                }
+                
+                alert(result.message || 'Aksi berhasil!');
+                window.location.reload(); // Muat ulang halaman untuk melihat perubahan
+
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+    });
 });
 </script>
 {% endblock %}
