@@ -221,6 +221,7 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_progress():
         if current_user.is_authenticated and current_user.career_path:
+            # ... (semua logika kalkulasi di sini sudah benar, tidak perlu diubah)
             all_modules_in_path = Module.query.filter_by(career_path=current_user.career_path).all()
             all_lesson_ids_in_path = {lesson.id for module in all_modules_in_path for lesson in module.lessons}
             all_project_ids_in_path = {project.id for module in all_modules_in_path for project in module.projects}
@@ -242,9 +243,12 @@ def create_app(config_class=Config):
             if total_items > 0:
                 progress_percentage = min(100, int((completed_items / total_items) * 100))
             
-            return dict(progress_percentage=progress_percentage)
+            # --- PERUBAHAN DI SINI ---
+            # Ubah nama variabel yang dikirim dari 'progress_percentage' menjadi 'progress'
+            return dict(progress=progress_percentage)
         
-        return dict(progress_percentage=0)
+        # Ubah juga return di sini agar konsisten
+        return dict(progress=0)
 
     admin = Admin(app, name='Farsight Admin', template_mode='bootstrap4', url='/admin')
 
