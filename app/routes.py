@@ -265,33 +265,63 @@ def index():
         return redirect(url_for('routes.dashboard'))
     return render_template('landing_page.html', title='Selamat Datang di FARSIGHT')
 
+# Di dalam file app/routes.py
+
 @bp.route('/dashboard')
 @login_required
 def dashboard():
     log_activity(current_user, 'viewed_dashboard')
     
     progress_percentage = 0
+    next_learning_url = None
+
     if current_user.career_path:
-        all_modules_in_path = Module.query.filter_by(career_path=current_user.career_path).all()
-        all_lesson_ids_in_path = {lesson.id for module in all_modules_in_path for lesson in module.lessons}
-        all_project_ids_in_path = {project.id for module in all_modules_in_path for project in module.projects}
-        total_items = len(all_lesson_ids_in_path) + len(all_project_ids_in_path)
-
-        completed_lessons_in_path = UserProgress.query.join(Lesson).join(Module).filter(
-            UserProgress.user_id == current_user.id,
-            Module.career_path == current_user.career_path
-        ).count()
-
-        submitted_projects_in_path = ProjectSubmission.query.join(Project).join(Module).filter(
-            ProjectSubmission.user_id == current_user.id,
-            Module.career_path == current_user.career_path
-        ).count()
+        # Mengambil semua modul, pelajaran, dan proyek HANYA untuk jalur karier saat ini
+        all_modules_in_path = Module.query.filter_by(career_path=current_user.career_path).order_by(Module.order).all()
         
-        completed_items = completed_lessons_in_path + submitted_projects_in_path
+        # Membuat satu daftar gabungan dari semua item pembelajaran
+        learnable_items = []
+        for module in all_modules_in_path:
+            # Mengurutkan lesson berdasarkan 'order' untuk konsistensi
+            for lesson in sorted(module.lessons, key=lambda l: l.order):
+                learnable_items.append({'type': 'lesson', 'id': lesson.id})
+            for project in module.projects:
+                learnable_items.append({'type': 'project', 'id': project.id})
+        
+        # --- INI BAGIAN PERBAIKAN UTAMA ---
+        # Mengambil ID item yang sudah diselesaikan HANYA untuk jalur karier saat ini
+        completed_lesson_ids = {
+            p.lesson_id for p in current_user.user_progress 
+            if p.lesson.module.career_path == current_user.career_path
+        }
+        submitted_project_ids = {
+            s.project_id for s in current_user.submissions 
+            if s.project.module and s.project.module.career_path == current_user.career_path
+        }
+        # --- AKHIR PERBAIKAN ---
 
+        # Logika untuk menemukan item berikutnya (tidak berubah, sekarang akan berfungsi benar)
+        for item in learnable_items:
+            is_completed = False
+            if item['type'] == 'lesson' and item['id'] in completed_lesson_ids:
+                is_completed = True
+            elif item['type'] == 'project' and item['id'] in submitted_project_ids:
+                is_completed = True
+            
+            if not is_completed:
+                if item['type'] == 'lesson':
+                    next_learning_url = url_for('routes.lesson_detail', lesson_id=item['id'])
+                else:
+                    next_learning_url = url_for('routes.project_detail', project_id=item['id'])
+                break
+
+        # Kalkulasi progress (tidak berubah)
+        total_items = len(learnable_items)
+        completed_items = len(completed_lesson_ids) + len(submitted_project_ids)
         if total_items > 0:
             progress_percentage = min(100, int((completed_items / total_items) * 100))
 
+    # Mengambil aktivitas terbaru (tidak berubah)
     recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(1).all()
     recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(1).all()
     recent_progress = current_user.user_progress.order_by(UserProgress.completed_at.desc()).limit(1).all()
@@ -303,7 +333,8 @@ def dashboard():
         recent_sessions=recent_sessions,
         recent_submissions=recent_submissions,
         recent_progress=recent_progress,
-        Lesson=Lesson
+        Lesson=Lesson,
+        next_learning_url=next_learning_url
     )
 
 

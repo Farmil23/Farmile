@@ -112,7 +112,13 @@
             </svg>
             Lihat Roadmap
           </a>
-          <a href="#" class="button-secondary">Lanjutkan Belajar</a>
+          {# --- INI BAGIAN YANG DIPERBARUI --- #}
+          {% if next_learning_url %}
+            <a href="{{ next_learning_url }}" class="button-secondary">Lanjutkan Belajar</a>
+          {% elif current_user.career_path %}
+            <a href="{{ url_for('routes.roadmap') }}" class="button-secondary">🎉 Roadmap Selesai!</a>
+          {% endif %}
+          {# --- AKHIR BAGIAN YANG DIPERBARUI --- #}
         </div>
       {% else %}
         <p class="card-description">
