@@ -104,3 +104,107 @@
 .career-description-panel h4 { margin-top: 0; margin-bottom: 1rem; font-size: 1.2rem; }
 .career-description-panel p { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
 .modal-footer { padding: 1.5rem 2rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; flex-shrink: 0; }
+
+@media (max-width: 426px) {
+    p, .lesson-info strong, .lesson-info span , .lesson-actions .button-primary, .lesson-actions .button-secondary {
+        font-size: 0.8rem !important;
+        line-height: 1.4;
+    }
+    h4 , .module-title  {
+        font-size: 0.95rem !important;
+    }
+
+    h3 ,     .header-link {
+        font-size: 1.2rem !important;
+    }
+
+
+    .roadmap-header h2 {
+        font-size: 1.6rem;
+        line-height: 1.2;
+    }
+
+    .roadmap-supertitle {
+        font-size: 0.7rem;
+        
+    }
+
+    .roadmap-header .subtitle, p{
+        font-size: 0.8rem;
+ 
+    }
+
+    #open-change-path-modal {
+        padding: 0.7rem 1.4rem;
+        gap: 0.3rem;
+        font-size: 0.8rem;
+    }
+
+    .fa-solid, .fas {
+        font-weight: 900;
+        font-size: 0.8;
+    }
+
+    .modal-body {
+        padding: 0.5rem;
+        gap: 0.5rem;
+        min-height: 0;
+    }
+    .career-card-option {
+        gap: 1rem;
+        padding: 0.8rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        
+    }
+
+
+    .career-description-panel {
+        border-radius: 8px;
+        padding: 0.8rem;
+    }
+
+    .career-description-panel h4 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        
+    }
+
+    .career-card-option .title {
+        font-size: 0.8rem;
+    }
+
+    .career-card-option .icon {
+        font-size: 0.8rem;
+    }
+    
+
+    .modal-footer {
+        padding: 0.7rem 1.4rem;
+    }
+    .button-primary, .button-secondary {
+        gap: 0.2rem;
+        padding: 0.7rem 1.4rem;
+        border-radius: 7px;
+        font-size: 0.8rem;
+    }
+
+    
+    .module-item summary {
+        padding: 0.5rem 1.2rem;
+        font-size: 1rem;
+    }
+
+    .module-item summary::before {
+        content: '▶';
+        position: absolute;
+        left: 5px;
+        top: 50%;
+        margin-right: 3px;
+    }
+
+ 
+
+  
+
+}

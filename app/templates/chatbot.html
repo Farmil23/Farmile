@@ -9,7 +9,7 @@
 
     <aside id="history-sidebar" class="chat-history-sidebar">
         <div class="sidebar-header">
-            <h3>Riwayat Percakapan</h3>
+            <h4>Riwayat Percakapan</h4>
             <button id="close-sidebar-btn" class="icon-btn">&times;</button>
         </div>
         
@@ -46,13 +46,13 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
                 <div id="session-title-container">
-                    <h2 id="session-title">
+                    <h4 id="session-title">
                         {% if current_session.project %}
                             Diskusi Proyek: {{ current_session.project.title }}
                         {% else %}
                             {{ current_session.title }}
                         {% endif %}
-                    </h2>
+                    </h4>
                     {% if not current_session.project %}
                         <input type="text" id="session-title-input" class="hidden" value="{{ current_session.title }}">
                     {% endif %}

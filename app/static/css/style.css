@@ -4825,3 +4825,68 @@ span.flatpickr-weekday {
 .toast.success {
     background-color: var(--success-color);
 }
+
+
+@media (max-width: 426px) {
+    .notification-panel {
+        position: absolute;
+        top: 180%;
+        right: -80px;
+        width: 260px;
+    }
+
+    .button-primary, .button-secondary ,   .quick-action-btn{
+        gap: 0.2rem;
+        padding: 0.7rem 1.4rem;
+        border-radius: 7px;
+        font-size: 0.8rem;
+    }
+
+    p, a,  .lesson-info strong, .lesson-info span , .lesson-actions .button-primary, .lesson-actions .button-secondary , .message{
+        font-size: 0.8rem !important;
+        line-height: 1.4;
+    }
+    h4 , .module-title ,   
+    .notification-panel-header {
+        font-size: 0.95rem !important;
+    }
+
+    h3 ,     .header-link {
+        font-size: 1.2rem !important;
+    } 
+
+
+    h1 {
+        font-size: 1.9rem !important;
+    }
+
+    h2 {
+        font-size: 1.6rem !important;
+    }
+      
+    .notification-panel-header {
+        padding: 0.7rem 1.4rem;
+    }
+
+    .main-app-nav a {
+        font-size: 0.8rem;
+        padding: 0;
+
+    }
+
+    .toast {
+        top: 70px;
+        right: 0px;
+        padding: 0.5rem 1rem;
+    }
+
+    .toast-message {
+        font-size: 0.8rem;
+    }
+
+    .chat-header-left {
+        gap: 0rem !important;
+    }
+
+    
+}

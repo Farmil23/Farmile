@@ -179,7 +179,7 @@
 
 .session-title-link {
     flex-grow: 1;
-    white-space: nowrap;
+    white-space: wrap;
     overflow: hidden;
     text-overflow: ellipsis;
     text-decoration: none;
@@ -336,6 +336,50 @@
     flex-shrink: 0;
     max-width: 100%;            /* cegah terpotong */
     box-sizing: border-box;
+}
+
+@media (max-width: 426px) {
+    .session-title {
+        font-size: 0.8rem !important;
+    }
+
+    .chat-message .edit-btn  {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+
+    }
+
+
+    .chat-header, .chat-header a {
+        padding: 0.3rem 0.6rem;
+    }
+    .message {
+        gap: 0.5rem;
+    }
+
+    .chat-window {
+        padding: 1rem;
+    }
+
+    textarea#chat-input {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+
+    }
+
+    .chat-input-area button {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+    }
+
+    .chat-history-sidebar {
+        width: 260px;
+    }
+    .session-title-link {
+        padding: 0.5rem 1rem;
+        margin:0;
+    }
 }
 
 
