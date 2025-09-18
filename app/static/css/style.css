@@ -43,7 +43,7 @@ body {
 }
 
 /* === 2. KOMPONEN UMUM === */
-main { max-width: 1600px; margin: 40px auto; padding: 0 20px; }
+main { max-width: 1600px; margin: 1rem auto; padding: 0 0.8rem; }
 .hidden { display: none !important; }
 .card { background: var(--card-bg-color); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 4px 12px 0 var(--shadow-color); padding: 30px; }
 .button-primary, .button-secondary, .button-danger, .icon-btn {
@@ -4793,4 +4793,35 @@ span.flatpickr-weekday {
     transition: all 0.3s ease;
     border: none;
     cursor: pointer;
+}
+
+/* =============================================== */
+/* ===      STYLE UNTUK TOAST NOTIFIKASI       === */
+/* =============================================== */
+
+.toast {
+    position: fixed;
+    top: 80px; /* Sedikit lebih ke bawah agar tidak tertutup header */
+    right: 20px;
+    background-color: var(--success-color);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 9999;
+    transform: translateX(120%);
+    transition: transform 0.4s ease-in-out;
+    font-weight: 500;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast.error {
+    background-color: var(--danger-color);
+}
+
+.toast.success {
+    background-color: var(--success-color);
 }

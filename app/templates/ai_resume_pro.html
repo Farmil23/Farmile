@@ -53,6 +53,7 @@
                 <div class="panel resume-display-panel"><h3>Teks CV Anda</h3><pre id="resume-content-text"></pre></div>
                 <div class="panel feedback-panel"><h3>Feedback AI</h3><div id="feedback-content" class="feedback-content"></div></div>
                 
+                {# --- BLOK BARU UNTUK JOB MATCHER --- #}
                 <div id="job-matcher-panel" class="panel full-width" style="display: none;">
                     <h3>✨ Analisis Kecocokan Lowongan (ATS Checker)</h3>
                     <p class="text-secondary" style="margin-top: -10px; margin-bottom: 20px;">
@@ -66,10 +67,14 @@
                     </div>
                     
                     <div id="analysis-results-container" style="margin-top: 20px;">
-                        <div id="match-result-content"></div>
+                        {# Hasil analisis dari AI akan ditampilkan di sini oleh JavaScript #}
+                        <div id="match-result-content"></div> 
+                        
+                        {# Riwayat analisis sebelumnya akan ditampilkan di sini #}
                         <div id="saved-analyses-list" style="margin-top: 20px;"></div>
                     </div>
-                    </div>
+                </div>
+                {# --- AKHIR BLOK BARU --- #}
             </div>
 
             <div id="template-selection-box" class="template-selection-box" style="display: none;">

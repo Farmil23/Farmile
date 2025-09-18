@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ title|default('Farmile') }} - Farmile</title>
+    <title>{{ title|default('FARSIGHT') }} - FARSIGHT</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,7 +44,7 @@
   <body data-theme="dark" style="margin:0; width: 100%;">
     <header>
       <a href="{{ url_for('routes.dashboard') }}" class="header-link"
-        >Farmile</a
+        >FARSIGHT</a
       >
 
       <nav class="main-app-nav">
@@ -116,6 +116,10 @@
         </div>
       </div>
     </div>
+    
+    <div id="toast-notification" class="toast">
+        <div id="toast-message" class="toast-message"></div>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -168,19 +172,48 @@
                 });
             }
         });
-        </script>
+    </script>
         
-        {% block scripts %}{% endblock %}
-        
-        {% if current_user.is_authenticated %}
-        <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
-        {% endif %}
+    {% block scripts %}{% endblock %}
+    
+    {% if current_user.is_authenticated %}
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    {% endif %}
 
-        {# --- BLOK BARU DAN TERPISAH UNTUK SKRIP HALAMAN TURUNAN --- #}
-        {% block page_scripts %}{% endblock %}
+    {# --- BLOK BARU DAN TERPISAH UNTUK SKRIP HALAMAN TURUNAN --- #}
+    {% block page_scripts %}{% endblock %}
 
-        <div id="toast-notification" class="toast">
-          <div id="toast-message" class="toast-message"></div>
-      </div>
+    {# --- SCRIPT UNTUK MENAMPILKAN TOAST DARI FLASH MESSAGE --- #}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toast = document.getElementById('toast-notification');
+            const toastMessage = document.getElementById('toast-message');
+            let toastTimeout;
+
+            function showToast(message, type = 'success') {
+                if (!toast || !toastMessage) return;
+                
+                clearTimeout(toastTimeout);
+                toastMessage.textContent = message;
+                toast.className = 'toast';
+                toast.classList.add(type);
+                
+                toast.classList.add('show');
+                
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 4000);
+            }
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        showToast("{{ message }}", "{{ category }}");
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        });
+    </script>
+
   </body>
 </html>

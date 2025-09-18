@@ -13,10 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainActions = document.getElementById('main-actions');
     const mainTitle = document.getElementById('main-title');
     const newAnalysisBtn = document.getElementById('new-analysis-btn');
+
+    // --- Elemen Baru untuk Job Matcher ---
     const jobMatcherPanel = document.getElementById('job-matcher-panel');
     const jobDescriptionInput = document.getElementById('job-description-input');
     const matchJobBtn = document.getElementById('match-job-btn');
+    const matchResultContent = document.getElementById('match-result-content');
     const savedAnalysesList = document.getElementById('saved-analyses-list');
+    // --- Akhir Elemen Baru ---
 
     let currentResumeId = null;
     let currentResumeData = null;
@@ -46,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 mainTitle.textContent = `Hasil Analisis untuk ${currentResumeData.filename}`;
                 mainActions.innerHTML = `
                     <button id="delete-btn" class="button-danger">Hapus</button>
-                    
                     ${currentResumeData.generated_cv_json ? '<button id="view-generated-btn" class="button-secondary">Lihat CV Jadi</button>' : ''}
                     <button id="create-resume-btn" class="button-primary">${currentResumeData.generated_cv_json ? 'Buat Ulang CV' : 'Buat Resume/CV'}</button>`;
                 addReviewActionListeners();
@@ -76,11 +79,20 @@ document.addEventListener('DOMContentLoaded', () => {
         resumeContentEl.textContent = data.resume_content;
         feedbackContentEl.innerHTML = window.marked ? marked.parse(data.feedback) : data.feedback;
 
+        // --- Logika Baru untuk Menampilkan Riwayat Analisis ---
         jobDescriptionInput.value = '';
+        matchResultContent.innerHTML = ''; // Kosongkan hasil analisis saat ini
 
         if (savedAnalysesList) {
-            savedAnalysesList.innerHTML = '';
+            savedAnalysesList.innerHTML = ''; // Kosongkan daftar riwayat
             if (data.analyses && data.analyses.length > 0) {
+                // Buat judul jika ada riwayat
+                const historyTitle = document.createElement('h4');
+                historyTitle.textContent = 'Riwayat Analisis Sebelumnya';
+                historyTitle.style.marginTop = '2rem';
+                savedAnalysesList.appendChild(historyTitle);
+                
+                // Render setiap item riwayat
                 data.analyses.forEach(analysis => {
                     const analysisItem = document.createElement('div');
                     analysisItem.className = 'saved-analysis-item card';
@@ -99,10 +111,66 @@ document.addEventListener('DOMContentLoaded', () => {
                 savedAnalysesList.innerHTML = '<p class="text-secondary" style="text-align: center; padding: 1rem;">Belum ada analisis lowongan untuk CV ini.</p>';
             }
         }
+        // --- Akhir Logika Baru ---
+
         showState('review');
         document.querySelectorAll('.resume-item.active').forEach(el => el.classList.toggle('active', el.dataset.id == currentResumeId));
     };
+    
+    // --- Fungsi analyzeJobMatch (BARU) ---
+    const analyzeJobMatch = async () => {
+        const jobDescription = jobDescriptionInput.value.trim();
+        if (!currentResumeId || !jobDescription) {
+            alert('Harap pilih resume dan isi deskripsi pekerjaan.');
+            return;
+        }
 
+        matchJobBtn.disabled = true;
+        matchJobBtn.textContent = 'Menganalisis...';
+        matchResultContent.innerHTML = '<div class="spinner-container" style="position: static; background: none;"><div class="spinner"></div></div>'; // Tampilkan spinner lokal
+
+        try {
+            const response = await fetch('/api/ai/match-job-description', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resume_id: currentResumeId, job_description: jobDescription })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Server error');
+            
+            // Tampilkan hasil analisis baru
+            matchResultContent.innerHTML = data.match_result;
+
+            // Muat ulang seluruh data resume (termasuk riwayat analisis yang baru)
+            await fetchAndDisplayResume(currentResumeId);
+            
+        } catch (error) {
+            matchResultContent.innerHTML = `<p style="color: red;">Gagal mendapatkan analisis: ${error.message}</p>`;
+        } finally {
+            matchJobBtn.disabled = false;
+            matchJobBtn.textContent = 'Analisis Sekarang';
+        }
+    };
+    
+    // --- Event Listeners (Tambahkan listener untuk tombol baru) ---
+    // (Kode listener lainnya tetap sama)
+    uploadInput.addEventListener('change', () => { if (uploadInput.files.length > 0) processFile(uploadInput.files[0]); });
+    uploadBox.addEventListener('dragover', (e) => e.preventDefault());
+    uploadBox.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]); });
+    newAnalysisBtn.addEventListener('click', () => showState('upload'));
+    document.querySelectorAll('.resume-item').forEach(item => {
+        item.addEventListener('click', (e) => { e.preventDefault(); fetchAndDisplayResume(item.dataset.id); });
+    });
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.addEventListener('click', () => generateAndShowFinalResume(card.dataset.template));
+    });
+
+    if (matchJobBtn) {
+        matchJobBtn.addEventListener('click', analyzeJobMatch);
+    }
+    
+    // Fungsi processFile, fetchAndDisplayResume, generateAndShowFinalResume, renderTemplate, downloadFinalCV, deleteResume, addReviewActionListeners, addResumeToSidebar (TIDAK BERUBAH)
+    // Silakan salin fungsi-fungsi tersebut dari kode sebelumnya jika belum ada.
     const processFile = async (file) => {
         showState('loading');
         const formData = new FormData();
@@ -336,45 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
         list.prepend(wrapper);
         wrapper.querySelector('.resume-item').addEventListener('click', (e) => { e.preventDefault(); fetchAndDisplayResume(data.resume_id); });
     };
-
-    const analyzeJobMatch = async () => {
-        const jobDescription = jobDescriptionInput.value.trim();
-        if (!currentResumeId || !jobDescription) {
-            alert('Harap pilih resume dan isi deskripsi pekerjaan.');
-            return;
-        }
-        matchJobBtn.disabled = true;
-        matchJobBtn.textContent = 'Menganalisis...';
-        try {
-            const response = await fetch('/api/ai/match-job-description', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ resume_id: currentResumeId, job_description: jobDescription })
-            });
-            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Server error'); }
-            await fetchAndDisplayResume(currentResumeId);
-        } catch (error) {
-            alert(`Gagal mendapatkan analisis: ${error.message}`);
-        } finally {
-            matchJobBtn.disabled = false;
-            matchJobBtn.textContent = 'Analisis Sekarang';
-        }
-    };
-
-    // Event Listeners
-    uploadInput.addEventListener('change', () => { if (uploadInput.files.length > 0) processFile(uploadInput.files[0]); });
-    uploadBox.addEventListener('dragover', (e) => e.preventDefault());
-    uploadBox.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]); });
-    newAnalysisBtn.addEventListener('click', () => showState('upload'));
-    document.querySelectorAll('.resume-item').forEach(item => {
-        item.addEventListener('click', (e) => { e.preventDefault(); fetchAndDisplayResume(item.dataset.id); });
-    });
-    document.querySelectorAll('.template-card').forEach(card => {
-        card.addEventListener('click', () => generateAndShowFinalResume(card.dataset.template));
-    });
-    if (matchJobBtn) {
-        matchJobBtn.addEventListener('click', analyzeJobMatch);
-    }
 
     // Inisialisasi
     showState('upload');

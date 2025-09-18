@@ -25,6 +25,36 @@ bp = Blueprint('routes', __name__)
 
 from typing import Optional
 
+
+
+# --- FUNGSI HELPER (TERMASUK PERBAIKAN DI log_activity) ---
+
+def award_xp(user, action):
+    xp_map = {
+        'completed_lesson': 10,
+        'submitted_project': 25,
+        'passed_quiz': 5,
+        'high_interview_score': 50,
+        'used_ai_mentor': 2,
+        'added_connection': 5
+    }
+    xp_to_add = xp_map.get(action, 0)
+    if xp_to_add > 0:
+        user.xp += xp_to_add
+        flash(f"Anda mendapatkan +{xp_to_add} XP!", 'success')
+        current_level = (user.xp // 100) + 1
+        if current_level > user.level:
+            user.level = current_level
+            flash(f"🎉 Selamat! Anda telah mencapai Level {user.level}!", 'success')
+            notification = Notification(
+                user_id=user.id,
+                message=f"Selamat! Anda telah mencapai Level {user.level}!",
+                link=url_for('routes.profile')
+            )
+            db.session.add(notification)
+
+
+
 # --- PERBAIKAN 1: Sederhanakan fungsi check_and_issue_certificate ---
 def check_and_issue_certificate(user):
     """
@@ -76,15 +106,31 @@ def check_and_issue_certificate(user):
         db.session.add(notification)
         db.session.commit()
         
-
-# ---> FUNGSI HELPER UNTUK MENCATAT AKTIVITAS <---
 def log_activity(user, action, details=None):
-    """Mencatat aktivitas pengguna ke database."""
-    # Jangan catat aktivitas admin untuk menjaga kebersihan data analitik
+    """Mencatat aktivitas pengguna dan memberikan XP (dengan pencegahan farming)."""
     if user.is_authenticated and not user.is_admin:
+        
+        # --- PERBAIKAN UTAMA UNTUK MENCEGAH XP FARMING ---
+        if action == 'completed_lesson':
+            lesson_id_to_check = details.get('lesson_id')
+            if lesson_id_to_check:
+                # Cek apakah log untuk penyelesaian materi ini SUDAH PERNAH ada.
+                existing_log = UserActivityLog.query.filter_by(
+                    user_id=user.id, 
+                    action='completed_lesson'
+                ).filter(
+                    UserActivityLog.details['lesson_id'].as_string() == str(lesson_id_to_check)
+                ).first()
+                
+                # Jika log sudah ada, jangan lakukan apa-apa.
+                if existing_log:
+                    return
+        # --- AKHIR PERBAIKAN ---
+
         try:
             log = UserActivityLog(user_id=user.id, action=action, details=details)
             db.session.add(log)
+            award_xp(user, action) # XP hanya diberikan jika log baru dibuat
             db.session.commit()
         except Exception as e:
             db.session.rollback()
@@ -482,21 +528,13 @@ def save_quiz_attempt(lesson_id):
     score = data.get('score')
     attempt_number = data.get('attempt_number')
     answers_data = data.get('answers_data')
-    instant_retries = 2  # Batas percobaan tanpa cooldown
-    cooldown_seconds = 60 # Durasi cooldown
+    cooldown_seconds = 60
+    cooldown_end_time = None
 
     if score is None or attempt_number is None:
         return jsonify({'error': 'Data tidak lengkap'}), 400
 
-    QuizHistory.query.filter_by(
-        user_id=current_user.id,
-        lesson_id=lesson_id,
-        attempt_number=attempt_number
-    ).delete()
-
-    cooldown_end_time = None
-    # ---> LOGIKA BARU UNTUK MENENTUKAN COOLDOWN <---
-    if attempt_number >= instant_retries:
+    if attempt_number >= 2:
         cooldown_end_time = datetime.utcnow() + timedelta(seconds=cooldown_seconds)
 
     new_attempt = QuizHistory(
@@ -505,12 +543,18 @@ def save_quiz_attempt(lesson_id):
         score=score,
         attempt_number=attempt_number,
         answers_data=json.dumps(answers_data),
-        cooldown_until=cooldown_end_time # Simpan waktu cooldown berakhir
+        cooldown_until=cooldown_end_time
     )
     db.session.add(new_attempt)
+
+    # --- PENAMBAHAN LOGIKA XP UNTUK KUIS ---
+    if score >= 80: # Anggap lulus jika skor 80 atau lebih
+        log_activity(current_user, 'passed_quiz', {'lesson_id': lesson_id, 'score': score})
+    # --- AKHIR PENAMBAHAN ---
+
     db.session.commit()
-    
     return jsonify({'success': True, 'message': 'Percobaan kuis berhasil disimpan.'})
+
 
 @bp.route('/project/<int:project_id>')
 @login_required
@@ -541,39 +585,25 @@ def project_detail(project_id):
 @login_required
 def complete_lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
-    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson.id).first()
+    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
 
     if not progress:
         new_progress = UserProgress(user_id=current_user.id, module_id=lesson.module_id, lesson_id=lesson.id)
         db.session.add(new_progress)
-        db.session.commit()
+        db.session.commit() # Commit dulu untuk membuat state
+        
+        # Panggil log_activity SETELAH state disimpan.
+        # Fungsi ini sekarang akan memeriksa log permanen sebelum memberi XP.
         log_activity(current_user, 'completed_lesson', {'lesson_id': lesson.id})
-        # Panggil fungsi dengan parameter yang sudah disederhanakan
+        
         check_and_issue_certificate(current_user)
         flash('Materi berhasil ditandai selesai!', 'success')
     
     source = request.form.get('source')
-    if source == 'roadmap':
-        return redirect(url_for('routes.roadmap'))
-    else:
-        return redirect(url_for('routes.lesson_detail', lesson_id=lesson_id))
+    return redirect(url_for('routes.roadmap') if source == 'roadmap' else url_for('routes.lesson_detail', lesson_id=lesson_id))
 
-@bp.route('/uncomplete-lesson/<int:lesson_id>', methods=['POST'])
-@login_required
-def uncomplete_lesson(lesson_id):
-    progress = UserProgress.query.filter_by(user_id=current_user.id, lesson_id=lesson_id).first()
-    if progress:
-        db.session.delete(progress)
-        db.session.commit()
-        
-        flash('Materi ditandai belum selesai.', 'info')
 
-    # --- LOGIKA REDIRECT BARU ---
-    source = request.form.get('source')
-    if source == 'roadmap':
-        return redirect(url_for('routes.roadmap'))
-    else: # Default-nya kembali ke halaman detail
-        return redirect(url_for('routes.lesson_detail', lesson_id=lesson_id))
+
 
 
 
@@ -988,7 +1018,6 @@ def cancel_submission(submission_id):
     return jsonify({'success': True, 'message': 'Submission proyek berhasil dibatalkan.'})
 
 
-# GANTI SELURUH FUNGSI LAMA DENGAN VERSI FINAL INI
 @bp.route('/api/interview/<int:submission_id>/get-score', methods=['POST'])
 @login_required
 def get_interview_score(submission_id):
@@ -997,7 +1026,7 @@ def get_interview_score(submission_id):
         abort(403)
 
     messages = submission.interview_messages.order_by(InterviewMessage.timestamp.asc()).all()
-    transcript = "\n".join([f"{msg.role}: {msg.content}" for msg in messages])
+    transcript = "\\n".join([f"{msg.role}: {msg.content}" for msg in messages])
 
     scoring_prompt = f"""
     Anda adalah seorang penilai wawancara teknis senior.
@@ -1011,29 +1040,30 @@ def get_interview_score(submission_id):
     {transcript}
     --- AKHIR TRANSKRIP ---
     """
-
     try:
         completion = ark_client.chat.completions.create(
             model=current_app.config['MODEL_ENDPOINT_ID'],
             messages=[{"role": "user", "content": scoring_prompt}],
-            # --- PERBAIKAN UTAMA: HAPUS PARAMETER response_format ---
         )
-        
         response_str = completion.choices[0].message.content
-        print(f"DEBUG: Respons mentah dari AI untuk penilaian => {response_str}")
-
-        json_match = re.search(r'\{.*\}', response_str, re.DOTALL)
+        json_match = re.search(r'\\{.*\\}', response_str, re.DOTALL)
         if not json_match:
             raise ValueError("AI tidak mengembalikan format JSON yang valid.")
-
         result = json.loads(json_match.group(0))
 
-        submission.interview_score = result.get('score')
-        submission.interview_feedback = result.get('feedback')
+        score = result.get('score')
+        feedback = result.get('feedback')
+
+        submission.interview_score = score
+        submission.interview_feedback = feedback
+        
+        # --- PENAMBAHAN LOGIKA XP UNTUK WAWANCARA ---
+        if score and score >= 80:
+            log_activity(current_user, 'high_interview_score', {'project_id': submission.project_id, 'score': score})
+        # --- AKHIR PENAMBAHAN ---
+
         db.session.commit()
-
         return jsonify(result)
-
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"AI Scoring Error: {e}")
@@ -1286,7 +1316,18 @@ def delete_chat_session(session_id):
 @bp.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', title="Profil Saya")
+    # Mengambil data aktivitas dan proyek terbaru untuk ditampilkan di profil
+    recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(3).all()
+    recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(3).all()
+    recent_progress = current_user.user_progress.order_by(UserProgress.completed_at.desc()).limit(3).all()
+    
+    # Kirim 'current_user' sebagai variabel 'user' ke template
+    return render_template('profile.html', 
+                           title="Profil Saya", 
+                           user=current_user, 
+                           recent_sessions=recent_sessions,
+                           recent_submissions=recent_submissions,
+                           recent_progress=recent_progress)
 
 @bp.route('/settings/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -1305,6 +1346,8 @@ def edit_profile():
 @login_required
 def chat_ai(session_id):
     # 1. Validasi sesi dan pengguna
+    log_activity(current_user, 'used_ai_mentor', {'session_id': session_id})
+    
     session_data = ChatSession.query.get_or_404(session_id)
     if session_data.user_id != current_user.id:
         abort(403)
@@ -2309,13 +2352,12 @@ def match_job_description_api():
     if resume.user_id != current_user.id:
         abort(403)
 
-    # Prompt HTML tetap sama
     prompt = f"""
     PERAN DAN TUJUAN:
     Anda adalah seorang Pakar Perekrutan Teknologi dan Spesialis Desain UI. Tugas Anda adalah menganalisis kecocokan CV dengan deskripsi pekerjaan (JD) dan menyajikan hasilnya dalam format HTML murni yang bersih dan terstruktur.
 
     TUGAS UTAMA:
-    Berikan analisis lengkap, lalu format seluruh output HANYA sebagai satu blok kode HTML. JANGAN tambahkan teks atau penjelasan apa pun di luar tag HTML utama.
+    Berikan analisis lengkap, lalu format seluruh output HANYA sebagai satu blok kode HTML. JANGAN tambahkan teks atau penjelasan apa pun di luar tag HTML utama atau ```html.
 
     STRUKTUR HTML YANG WAJIB DIIKUTI (Gunakan kelas CSS yang sama persis):
     <div class="ats-analysis-result">
@@ -2332,7 +2374,7 @@ def match_job_description_api():
             <ul class="keywords-list">
                 <li><strong>[Kata Kunci 1]:</strong> [Penjelasan singkat mengapa ini penting]</li>
                 <li><strong>[Kata Kunci 2]:</strong> [Penjelasan singkat mengapa ini penting]</li>
-                </ul>
+            </ul>
         </div>
         <div class="analysis-section">
             <h4>Saran Implementasi</h4>
@@ -2340,19 +2382,15 @@ def match_job_description_api():
                 <h5>[Lokasi di CV, misal: Di Bagian "Keahlian"]</h5>
                 <p>[Saran konkret dalam bentuk kalimat atau poin yang bisa langsung disalin]</p>
             </div>
-            <div class="suggestion-block">
-                <h5>[Lokasi lain di CV, misal: Di Bagian "Pengalaman"]</h5>
-                <p>[Saran konkret lainnya]</p>
-            </div>
         </div>
     </div>
 
     DATA INPUT:
-    1.  CV KANDIDAT:
+    1. CV KANDIDAT:
     ---
     {resume.resume_content}
     ---
-    2.  DESKRIPSI PEKERJAAN (JD):
+    2. DESKRIPSI PEKERJAAN (JD):
     ---
     {job_description}
     ---
@@ -2365,18 +2403,14 @@ def match_job_description_api():
         )
         raw_html = completion.choices[0].message.content
         
-        # --- PERBAIKAN UTAMA: BERSIHKAN OUTPUT AI ---
-        # Menghapus ```html dari awal dan ``` dari akhir
         cleaned_html = raw_html.strip()
         if cleaned_html.startswith("```html"):
-            cleaned_html = cleaned_html[7:] # Hapus ```html
+            cleaned_html = cleaned_html[7:]
         if cleaned_html.endswith("```"):
-            cleaned_html = cleaned_html[:-3] # Hapus ```
+            cleaned_html = cleaned_html[:-3]
         
         match_result_html = cleaned_html.strip()
-        # --- AKHIR PERBAIKAN ---
 
-        # Simpan hasil analisis HTML yang sudah bersih ke database
         new_analysis = JobMatchAnalysis(
             user_resume_id=resume.id,
             job_description=job_description,
@@ -2392,7 +2426,8 @@ def match_job_description_api():
         current_app.logger.error(f"AI Job Match Error: {e}")
         return jsonify({'error': 'Gagal mendapatkan analisis kecocokan dari AI.'}), 500
 
-# Ganti fungsi handle_resume dengan ini
+
+# Ganti fungsi handle_resume yang sudah ada dengan yang ini
 @bp.route('/api/resumes/<int:resume_id>', methods=['GET', 'DELETE'])
 @login_required
 def handle_resume(resume_id):
@@ -2400,17 +2435,14 @@ def handle_resume(resume_id):
     resume = UserResume.query.filter_by(id=resume_id, user_id=current_user.id).first_or_404()
 
     if request.method == 'GET':
-        # --- PERUBAHAN UTAMA: MUAT RIWAYAT ANALISIS ---
         saved_analyses = resume.analyses.order_by(JobMatchAnalysis.created_at.desc()).all()
-        # --- AKHIR PERUBAHAN ---
-
         return jsonify({
             'id': resume.id,
             'filename': resume.original_filename,
             'resume_content': resume.resume_content,
             'feedback': resume.ai_feedback,
             'generated_cv_json': resume.generated_cv_json,
-            'analyses': [analysis.to_dict() for analysis in saved_analyses] # <-- KIRIM DATA BARU
+            'analyses': [analysis.to_dict() for analysis in saved_analyses]
         })
 
     if request.method == 'DELETE':
@@ -2487,6 +2519,7 @@ def community_groups():
 def send_connection_request(user_id):
     # Gunakan .get() untuk mencari user, yang mengembalikan None jika tidak ada
     receiver = User.query.get(user_id)
+    
     if not receiver:
         return jsonify({'error': 'Pengguna tidak ditemukan.'}), 404
 
@@ -2521,6 +2554,10 @@ def accept_connection_request(request_id):
     
     sender = req.sender
     current_user.add_connection(sender)
+    
+    # Log aktivitas untuk kedua pengguna
+    log_activity(current_user, 'added_connection', {'connected_to': sender.id})
+    log_activity(sender, 'added_connection', {'connected_by': current_user.id})
     
      # --- TAMBAHKAN LOGIKA NOTIFIKASI DI SINI ---
     notification = Notification(

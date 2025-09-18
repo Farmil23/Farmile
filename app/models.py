@@ -36,6 +36,13 @@ class User(UserMixin, db.Model):
     
     activity_logs = db.relationship('UserActivityLog', backref=db.backref('user', lazy=True), cascade="all, delete-orphan")
     
+    # --- TAMBAHKAN DUA KOLOM INI ---
+    xp = db.Column(db.Integer, default=0, nullable=False)
+    level = db.Column(db.Integer, default=1, nullable=False)
+    # --- AKHIR PENAMBAHAN ---
+
+
+    
     submissions = db.relationship("ProjectSubmission", backref="author", lazy="dynamic", cascade="all, delete-orphan")
     chat_sessions = db.relationship("ChatSession", backref="author", lazy="dynamic", cascade="all, delete-orphan")
     modules = db.relationship("Module", backref="user", lazy='dynamic', cascade="all, delete-orphan")

@@ -4,212 +4,6 @@
 
 /* --- 1. Layout Utama & Header Halaman --- */
 .content-layout {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-}
-
-.page-header {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.page-header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-top: 1rem;
-    line-height: 1.2;
-    color: var(--text-primary);
-}
-
-.page-header .subtitle {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    margin-top: 0.5rem;
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    font-weight: 500;
-    margin-bottom: 1rem;
-}
-
-/* --- 2. Konten Materi di Dalam Card --- */
-.lesson-content {
-    padding: 1rem;
-    max-width: 1100px;
-    min-width: 1100px;
-}
-
-/* --- 3. Gaya untuk Konten Materi Inti (Hasil Generate AI) --- */
-.core-content h3 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-top: 2.5rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    
-    border-bottom: 1px solid var(--border-light);
-    color: var(--text-primary);
-}
-
-.core-content p {
-    font-size: 1rem;
-    line-height: 1.8;
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
-}
-
-.core-content ul {
-    list-style-type: disc;
-    padding-left: 20px;
-    margin-bottom: 1.5rem;
-    color: var(--text-secondary);
-}
-
-.core-content li {
-    margin-bottom: 0.75rem;
-}
-
-.core-content pre {
-    background-color: #0d1117;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1.5rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-x: auto;
-    margin-top: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.core-content code {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.9rem;
-    color: #e6edf3;
-}
-
-/* --- Gaya untuk Tabel --- */
-.core-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1.5rem 0;
-    font-size: 0.95rem;
-    box-shadow: 0 2px 8px var(--shadow-color);
-    border-radius: 8px;
-    overflow: hidden; /* Penting untuk border-radius */
-}
-
-.core-content th, .core-content td {
-    border: 1px solid var(--border-color);
-    padding: 12px 15px;
-    text-align: left;
-}
-
-.core-content th {
-    background-color: var(--sidebar-bg);
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-.core-content tr:nth-of-type(even) {
-    background-color: var(--background-color);
-}
-
-.core-content tr:hover {
-    background-color: var(--primary-light);
-}
-
-
-/* --- Gaya untuk Tantangan Mini --- */
-.core-content details {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    transition: all 0.2s ease;
-}
-
-.core-content details:hover {
-    border-color: var(--accent-blue);
-}
-
-.core-content summary {
-    cursor: pointer;
-    padding: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    background-color: var(--background-color);
-    border-radius: 8px;
-}
-
-.core-content details[open] > summary {
-    border-bottom: 1px solid var(--border-color);
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.core-content details > p,
-.core-content details > pre {
-    padding: 1rem;
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-/* --- 4. Video & Link Eksternal --- */
-.video-container {
-    position: relative;
-    padding-bottom: 56.25%; /* Rasio 16:9 */
-    height: 0;
-    overflow: hidden;
-    border-radius: 12px;
-    margin-top: 1.5rem;
-    background-color: #000;
-}
-
-.video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-.lesson-content a.button-secondary {
-    margin-top: 1rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* --- 5. Tombol Aksi di Bawah --- */
-.lesson-actions {
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--border-color);
-    display: flex;
-    justify-content: flex-end; /* Posisikan tombol di kanan */
-    min-width: 1100px;
-    max-width: 1200px;
-}
-
-.lesson-actions .button-primary,
-.lesson-actions .button-secondary {
-    font-size: 0.95rem;
-    padding: 0.3rem 1rem;
-}
-
-
-/* =============================================== */
-/* === STYLE UNTUK DETAIL MATERI (VERSI FINAL) === */
-/* =============================================== */
-
-/* --- 1. Layout Utama & Header Halaman --- */
-.content-layout {
     max-width: 900px;
     margin: 2rem auto;
     padding: 0 1rem;
@@ -249,9 +43,10 @@
     padding: 1.6rem;
     background-color: var(--card-bg-color);
     border-radius: 16px;
+    overflow: hidden;
 }
 
-/* --- 3. Gaya Inti untuk Konten Hasil Generate AI --- */
+/* --- 3. Konten Inti --- */
 .core-content h3 {
     font-size: 1.6rem;
     font-weight: 600;
@@ -266,74 +61,46 @@
     margin-top: 1rem;
 }
 
-.core-content p {
+.core-content p, .core-content li {
     font-size: 1rem;
     line-height: 1.8;
     color: var(--text-secondary);
     margin-bottom: 1.5rem;
 }
 
-/* --- PERBAIKAN UTAMA UNTUK DAFTAR (UL/LI) --- */
 .core-content ul {
-    list-style: none; /* Hapus bullet point default */
-    padding-left: 0; /* Hapus padding default browser */
-    margin-bottom: 1.5rem;
+    list-style: none;
+    padding-left: 0;
 }
 
 .core-content li {
-    padding-left: 2.5rem; /* Beri ruang untuk bullet point custom */
+    padding-left: 2.5rem;
     position: relative;
-    margin-bottom: 1rem;
-    color: var(--text-secondary);
-    line-height: 1.8;
 }
 
 .core-content li::before {
-    content: '•'; /* Buat bullet point custom */
+    content: '•';
     position: absolute;
     left: 1rem;
     top: 0;
-    color: var(--primary-color); /* Ubah warna bullet point */
+    color: var(--primary-color);
     font-size: 1.5rem;
     line-height: inherit;
 }
-/* --- AKHIR PERBAIKAN --- */
 
-
-.core-content strong {
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-/* --- Gaya untuk Blok Kode --- */
-.core-content pre {
-    background-color: var(--background-color);
+/* --- 4. Tabel Responsif & Blok Kode --- */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin: 2rem 0;
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 1.5rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-x: auto;
-    margin: 1.5rem 0;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.core-content code {
-    font-family: 'SF Mono', 'Courier New', Courier, monospace;
-    font-size: 0.9rem;
-    color: #cbd5e1;
-}
-
-/* --- Gaya untuk Tabel --- */
 .core-content table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin: 2rem 0;
-    font-size: 0.95rem;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    overflow: hidden;
+    min-width: 600px;
+    border-collapse: collapse;
 }
 
 .core-content th, .core-content td {
@@ -342,359 +109,255 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-.core-content th {
-    background-color: var(--sidebar-bg);
-    color: var(--text-primary);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom-width: 2px;
-}
-
 .core-content tr:last-child td {
     border-bottom: none;
 }
 
-.core-content tr {
-    transition: background-color 0.2s ease;
+.core-content th {
+    background-color: var(--sidebar-bg);
 }
 
-.core-content tr:hover {
-    background-color: var(--primary-light);
-}
-
-/* --- Gaya untuk Tantangan Mini --- */
-.core-content details {
-    border: 1px solid var(--border-color);
+.core-content pre {
+    padding: 1.5rem;
     border-radius: 12px;
-    margin: 2rem 0;
+    overflow-x: auto;
     background-color: var(--background-color);
-    transition: all 0.2s ease;
 }
 
-.core-content details:hover {
-    border-color: var(--primary-color);
-}
-
-.core-content summary {
-    cursor: pointer;
-    padding: 1rem 1.5rem;
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: var(--text-primary);
-    position: relative;
-    list-style: none;
-}
-
-.core-content summary::-webkit-details-marker {
-    display: none;
-}
-
-.core-content summary::before {
-    content: '▶';
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%) rotate(0deg);
-    transition: transform 0.2s ease;
-    color: var(--primary-color);
-}
-
-.core-content details[open] > summary::before {
-    transform: translateY(-50%) rotate(90deg);
-}
-
-.core-content details[open] > summary {
-    border-bottom: 1px solid var(--border-color);
-}
-
-.core-content details > p,
-.core-content details > pre {
-    padding: 0.5rem;
-    margin: 0;
-}
-
-/* --- Video & Link Eksternal --- */
-.video-container {
-    position: relative;
-    padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
-    border-radius: 12px;
-    margin-top: 1.5rem;
-    background-color: #000;
-}
-
-.video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-}
-
-/* --- Tombol Aksi di Bawah --- */
+/* --- 5. Tombol Aksi --- */
 .lesson-actions {
     margin-top: 2rem;
     padding-top: 2rem;
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end;
+    gap: 1rem;
 }
 
-/* --- 6. Aturan Responsif untuk Mobile --- */
+/* --- 6. Kuis (Tidak ada perubahan signifikan) --- */
+.quiz-container.slider-mode {
+    overflow: hidden;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 2rem;
+}
+/* ... (sisa style kuis Anda yang sudah baik) ... */
+
+
+/* =============================================== */
+/* === PERBAIKAN UTAMA UNTUK TAMPILAN MOBILE === */
+/* =============================================== */
 @media (max-width: 768px) {
     .content-layout {
         margin: 1rem auto;
-    }
-
-
-
-    .page-header h1 {
-        font-size: 2rem;
+        padding: 0 0.5rem; /* Perkecil padding samping */
     }
 
     .lesson-content {
-        padding: 0.7rem;
+        padding: 1rem; /* Perkecil padding di dalam kotak konten */
+    }
+
+    .page-header h1 {
+        font-size: 1.8rem; /* Perkecil font judul utama */
+        line-height: 1.3;
+    }
+
+    .page-header .subtitle {
+        font-size: 1rem; /* Perkecil font sub-judul */
     }
 
     .core-content h3 {
-        font-size: 1.3rem;
+        font-size: 1.4rem; /* Perkecil font sub-judul di konten */
     }
 
-    .core-content pre, .core-content table {
-        font-size: 0.85rem;
+    /* --- PERBAIKAN FONT KONTEN --- */
+    .core-content p, .core-content li {
+        font-size: 0.95rem; /* Perkecil font paragraf dan list */
+        line-height: 1.7;
     }
 
-    .lesson-content {
-        max-width: 450px;
-        min-width: 520px;
+    .core-content th, .core-content td {
+        padding: 10px 12px; /* Perkecil padding di dalam sel tabel */
+        font-size: 0.9rem; /* Perkecil font di dalam tabel */
     }
-
+    
     .lesson-actions {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        font-size: 12px;
-        min-width: 400px;
-        max-width: 500px;
+        flex-direction: column;
+        align-items: stretch;
     }
-
-    .button-secondary {
-        font-size: 0.9rem;
+    
+    .lesson-actions .button-primary, 
+    .lesson-actions .button-secondary,
+    .lesson-actions form {
+        width: 100%;
+        margin: 0.25rem 0 !important;
+        justify-content: center;
     }
-}
-
-
-
-li::marker {
-    color : transparent;
 }
 
 /* =============================================== */
-/* ===         PERBAIKAN UNTUK RUMUS SVG         === */
+/* === STYLE UNTUK DETAIL MATERI (VERSI FINAL) === */
 /* =============================================== */
 
-.core-content mjx-container {
-    overflow-x: auto;  /* Aktifkan scroll horizontal jika rumus terlalu panjang */
-    overflow-y: hidden; /* Sembunyikan scroll vertikal yang tidak perlu */
-    max-width: 100%;   /* Pastikan wadah tidak lebih lebar dari kontainer induknya */
-    padding: 1rem 0;   /* Beri sedikit ruang vertikal agar tidak terlalu mepet */
+/* --- 1. Layout & Header --- */
+.content-layout {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
 }
 
-body {
-    margin: 0;
-}
-
-
-/* ... (CSS yang sudah ada di file Anda) ... */
-
-/* === GAYA BARU UNTUK KUIS SLIDER === */
-
-.quiz-container.slider-mode {
-    overflow: hidden; /* Sembunyikan slide yang tidak aktif */
-}
-
-.quiz-progress-container {
-    height: 8px;
-    background-color: var(--border-light);
-    border-radius: 4px;
+.page-header {
     margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-top: 1rem;
+    line-height: 1.2;
+}
+
+.page-header .subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+/* --- 2. Konten Materi & Inti --- */
+.lesson-content {
+    padding: 1.6rem;
+    background-color: var(--card-bg-color);
+    border-radius: 16px;
     overflow: hidden;
 }
 
-.quiz-progress-bar {
-    width: 0%;
-    height: 100%;
-    background-color: var(--primary-color);
-    border-radius: 4px;
-    transition: width 0.4s ease-in-out;
+.core-content h3 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 2.5rem 0 1.5rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--primary-color);
 }
 
-.quiz-slider {
-    width: 100%;
-}
-
-.quiz-slides-wrapper {
-    display: flex;
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.quiz-slide {
-    flex: 0 0 100%; /* Setiap slide mengambil 100% lebar container */
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 0.5rem; /* Memberi sedikit jarak jika ada rounding error */
-}
-
-.quiz-navigation {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 2rem;
-}
-
-#quiz-result-card {
-    text-align: center;
-}
-
-.summary-item {
-    text-align: left;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    border-left-width: 5px;
-    border-left-style: solid;
-}
-
-.summary-item.correct {
-    background-color: rgba(34, 197, 94, 0.1);
-    border-color: var(--success-color);
-}
-
-.summary-item.incorrect {
-    background-color: rgba(239, 68, 68, 0.1);
-    border-color: var(--danger-color);
-}
-
-.summary-item p {
-    margin: 0 0 0.5rem 0;
-}
-
-/* ... (CSS yang sudah ada di file Anda) ... */
-
-/* === PERBAIKAN DESAIN OPSI KUIS (BARU) === */
-
-.quiz-options {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.quiz-option {
-    display: flex; /* Menggunakan flexbox untuk mensejajarkan radio button dan teks */
-    align-items: center; /* Menjaga semuanya sejajar secara vertikal */
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background-color: var(--card-bg-color);
-}
-
-.quiz-option:hover {
-    border-color: var(--primary-color);
-    background-color: var(--primary-light);
-}
-
-.quiz-option input[type="radio"] {
-    margin-right: 0.75rem;
-    accent-color: var(--primary-color);
-    /* Sedikit memperbesar ukuran radio button agar mudah diklik */
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0; /* Mencegah radio button menyusut */
-}
-
-.quiz-option span {
-    flex-grow: 1; /* Memastikan teks mengambil sisa ruang */
-}
-
-/* ... (CSS yang sudah ada) ... */
-
-/* === TAMBAHAN CSS UNTUK INFO PERCOBAAN === */
-.quiz-meta-info {
-    text-align: center;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    font-weight: 500;
+.core-content p, .core-content li {
+    font-size: 1rem;
+    line-height: 1.8;
     color: var(--text-secondary);
 }
 
-/* ... (CSS yang sudah ada) ... */
-
-/* === TAMBAHAN CSS UNTUK MENAMPILKAN HASIL SETIAP PERCOBAAN === */
-.attempt-result-wrapper {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px dashed var(--border-color);
+.core-content ul {
+    list-style: none;
+    padding-left: 0;
 }
 
-#quiz-attempts-container .attempt-result-wrapper:last-of-type {
-    border-bottom: none; /* Hapus garis untuk hasil terakhir */
-    margin-bottom: 0;
-    padding-bottom: 0;
+.core-content li {
+    padding-left: 2.5rem;
+    position: relative;
+    margin-bottom: 1rem;
 }
 
-#quiz-attempts-container h4 {
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-    font-size: 1.3rem;
-    color: var(--text-primary);
+.core-content li::before {
+    content: '•';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    line-height: inherit;
 }
 
-/* ... (CSS yang sudah ada) ... */
-
-/* === TAMBAHAN CSS UNTUK DETAIL HASIL PERCOBAAN === */
-.attempt-result-wrapper {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px dashed var(--border-color);
+/* --- 3. Tabel Responsif & Blok Kode --- */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin: 2rem 0;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
 }
 
-#quiz-attempts-container .attempt-result-wrapper:last-of-type {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
+.core-content table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
 }
 
-.attempt-header {
+.core-content th, .core-content td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.core-content th { background-color: var(--sidebar-bg); }
+
+.core-content pre {
+    padding: 1.5rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    background-color: var(--background-color);
+}
+
+/* --- 4. Tombol Aksi --- */
+.lesson-actions {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.attempt-header h4 , h2, .em{
-    margin: 0;
-    font-size: 1.3rem;
-    color: var(--text-primary);
-}
-
-.view-details-btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-}
-
-.summary-content {
-    display: flex;
-    flex-direction: column;
+    justify-content: flex-end;
     gap: 1rem;
 }
-/* ... (CSS yang sudah ada) ... */
 
-/* === PERBAIKAN UKURAN FONT PENJELASAN KUIS === */
-.summary-item em {
-    font-size: 0.9rem; /* Atur ukuran font agar sesuai dengan teks lainnya */
-    color: var(--text-secondary); /* Beri warna yang sedikit lebih lembut */
+/* ... (Style untuk kuis bisa Anda biarkan seperti sebelumnya) ... */
+
+
+/* =============================================== */
+/* === PERBAIKAN UTAMA UNTUK TAMPILAN MOBILE === */
+/* =============================================== */
+@media (max-width: 768px) {
+    main {
+        padding: 0 10px;
+    }
+    .content-layout {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+
+    /* --- PERBAIKAN PADDING & FONT KONTEN --- */
+    .lesson-content {
+        padding: 1.2rem; /* Perkecil padding di dalam kotak konten */
+    }
+
+    .page-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .core-content h3 {
+        font-size: 1.4rem;
+        margin-top: 2rem;
+    }
+
+    .core-content p, .core-content li {
+        font-size: 0.95rem; /* Perkecil font paragraf agar lebih pas */
+    }
+    
+    .core-content th, .core-content td {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+    /* --- AKHIR PERBAIKAN PADDING & FONT --- */
+    
+    .lesson-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .lesson-actions .button-primary, 
+    .lesson-actions .button-secondary,
+    .lesson-actions form {
+        width: 100%;
+        margin: 0.25rem 0 !important;
+        justify-content: center;
+    }
 }
