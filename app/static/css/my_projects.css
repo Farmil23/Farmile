@@ -209,5 +209,26 @@
   .modal-actions-container .button-text {
       text-align: center; /* Pusatkan teks di mobile */
   }
+
+  #projectDetailModal .modal-footer {
+    padding: 0.6rem 1.2rem;
+    border-radius: 0 0 8px 8px;
 }
 
+}
+
+@media (max-width: 400px) {
+
+  #projectDetailModal .modal-footer {
+    padding: 0.4rem 0.8rem;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .modal-actions-container .button-primary, .modal-actions-container .button-secondary, .modal-actions-container .button-danger, .modal-actions-container .button-text {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.6rem;
+      min-width: 100px;
+  }
+
+
+}

@@ -7,7 +7,7 @@
 
 {% block dashboard_content %}
 
-<div class="content-layout" style= "margin: 20px 30px;">
+<div class="content-layout" >
     <div class="page-header">
         <div>
             <a href="{{ url_for('routes.roadmap') }}" class="back-link button-secondary" style= "padding: 0.4rem 0.8rem;">‹ Kembali ke Roadmap</a>
@@ -60,21 +60,23 @@
         {% endif %}
     </div>
 
-    {# --- BAGIAN YANG DIPERBARUI --- #}
+    {# --- BAGIAN YANG DIPERBARUI DENGAN STRUKTUR BARU --- #}
     <div class="lesson-actions">
-        <a href="{{ url_for('routes.dashboard') }}" class="button-secondary">Kembali ke Dashboard</a>
-        
-        <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST" style="margin-left: 1rem; margin-right: 1rem;">
-            <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
-        </form>
-        
         {% if not is_completed %}
-            <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST">
+            <form action="{{ url_for('routes.complete_lesson', lesson_id=lesson.id) }}" method="POST" class="main-action-form">
                 <input type="hidden" name="source" value="detail">
-                <button type="submit" class="button-primary">Tandai Sudah Selesai ✔</button>
+                <button type="submit" class="button-primary full-width">Tandai Sudah Selesai ✔</button>
             </form>
         {% endif %}
+
+        <div class="secondary-actions">
+            <a href="{{ url_for('routes.dashboard') }}" class="button-secondary">Kembali ke Dashboard</a>
+            <form action="{{ url_for('routes.new_chat_for_lesson', lesson_id=lesson.id) }}" method="POST">
+                <button type="submit" class="button-secondary ask-ai-btn">Tanya AI</button>
+            </form>
+        </div>
     </div>
+    {# --- AKHIR BAGIAN YANG DIPERBARUI --- #}
     {# --- AKHIR BAGIAN YANG DIPERBARUI --- #}
 </div>
 

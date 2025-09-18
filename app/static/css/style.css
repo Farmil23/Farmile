@@ -4890,3 +4890,87 @@ span.flatpickr-weekday {
 
     
 }
+
+@media (max-width: 400px) {
+    .notification-panel {
+        position: absolute;
+        top: 180%;
+        right: -80px;
+        width: 260px;
+    }
+
+    .button-primary, .button-secondary ,   .quick-action-btn{
+        gap: 0.2rem;
+        padding: 0.55rem 1.1rem;
+        border-radius: 7px;
+        font-size: 0.6rem !important;
+    }
+
+    p, a,  .lesson-info strong, .lesson-info span , .lesson-actions .button-primary, .lesson-actions .button-secondary , .message{
+        font-size: 0.6rem !important;
+        line-height: 1.4;
+    }
+    h4 , .module-title ,   
+    .notification-panel-header {
+        font-size: 0.85rem !important;
+    }
+
+    h3 ,     .header-link {
+        font-size: 1.1rem !important;
+    }
+
+    .message .avatar , .main-app-nav .profile-link img{
+        width: 28px;
+        height: 28px;
+    }
+
+
+    h1 {
+        font-size: 1.7rem !important;
+    }
+
+    h2 {
+        font-size: 1.38rem !important;
+    }
+      
+    .notification-panel-header {
+        padding: 0.6rem 1.2rem;
+    }
+
+    .main-app-nav a {
+        font-size: 0.6rem;
+        padding: 0;
+
+    }
+
+    .toast {
+        top: 70px;
+        right: 0px;
+        padding: 0.5rem 1rem;
+    }
+
+    .toast-message {
+        font-size: 0.6rem;
+    }
+
+    .chat-header-left {
+        gap: 0rem !important;
+    }
+
+    .notification-item .timestamp {
+        font-size: 0.6rem;
+    }
+
+    .mobile-menu-toggle {
+
+        border-radius: 5px;
+        padding: 0.3rem;
+    }
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+
+   
+}

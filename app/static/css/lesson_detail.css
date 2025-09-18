@@ -443,48 +443,6 @@
     justify-content: flex-end;
 }
 
-/* --- 6. Aturan Responsif untuk Mobile --- */
-@media (max-width: 768px) {
-    .content-layout {
-        margin: 1rem auto;
-    }
-
-
-
-    .page-header h1 {
-        font-size: 2rem;
-    }
-
-    .lesson-content {
-        padding: 0.7rem;
-    }
-
-    .core-content h3 {
-        font-size: 1.3rem;
-    }
-
-    .core-content pre, .core-content table {
-        font-size: 0.85rem;
-    }
-
-    .lesson-content {
-        max-width: 450px;
-        min-width: 520px;
-    }
-
-    .lesson-actions {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        font-size: 12px;
-        min-width: 400px;
-        max-width: 500px;
-    }
-
-    .button-secondary {
-        font-size: 0.9rem;
-    }
-}
-
 
 
 li::marker {
@@ -697,4 +655,96 @@ body {
 .summary-item em {
     font-size: 0.9rem; /* Atur ukuran font agar sesuai dengan teks lainnya */
     color: var(--text-secondary); /* Beri warna yang sedikit lebih lembut */
+}
+
+
+
+
+/* --- 6. Aturan Responsif untuk Mobile --- */
+@media (max-width: 426px) {
+
+
+    .page-header h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .lesson-content {
+        padding: 0.7rem;
+    }
+
+    .core-content h3 {
+        font-size: 1.3rem;
+    }
+
+    .core-content pre, .core-content table {
+        font-size: 0.85rem;
+    }
+
+    .lesson-content {
+        max-width: 400px;
+        min-width: 200px;
+    }
+
+    .lesson-actions {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        font-size: 12px;
+        min-width: 200px;
+        max-width: 400px;
+    }
+
+    .lesson-actions .button-primary,
+    .lesson-actions .button-secondary,
+    .quiz-navigation .button-primary,
+    .quiz-navigation .button-secondary {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    element.style {
+        margin: 0.5rem 1rem !important;
+    }
+
+ 
+}
+
+/* =============================================== */
+/* ===     PERBAIKAN FINAL LAYOUT TOMBOL MOBILE === */
+/* =============================================== */
+
+@media (max-width: 768px) {
+    .lesson-actions {
+        display: flex;
+        flex-direction: column; /* Tumpuk elemen-elemen di dalamnya secara vertikal */
+        gap: 0.75rem;          /* Beri jarak antar baris tombol */
+    }
+
+    .lesson-actions .main-action-form {
+        width: 100%; /* Pastikan form tombol utama mengisi lebar penuh */
+    }
+
+    .lesson-actions .button-primary.full-width {
+        width: 100%;
+        padding: 0.8rem 1.5rem; /* Buat tombol utama sedikit lebih besar */
+        font-size: 0.95rem;
+    }
+
+    .secondary-actions {
+        display: flex; /* Buat dua tombol di bawahnya menjadi sejajar */
+        width: 100%;
+        gap: 0.75rem;  /* Jarak antara tombol "Kembali" dan "Tanya AI" */
+    }
+    
+    .secondary-actions a,
+    .secondary-actions form {
+        flex: 1; /* Bagi ruang secara merata untuk kedua tombol */
+        display: flex;
+    }
+
+    .secondary-actions .button-secondary {
+        width: 100%; /* Pastikan tombol mengisi ruang yang tersedia */
+        justify-content: center; /* Pusatkan teks di dalam tombol */
+        padding: 0.7rem 1rem;
+        font-size: 0.85rem;
+    }
 }
