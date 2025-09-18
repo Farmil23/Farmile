@@ -1,63 +1,60 @@
 {% extends "dashboard_base.html" %}
 
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_detail.css') }}">
+{% endblock %}
+
 {% block dashboard_content %}
-
-
-<div class="project-detail-container">
-    <div class="project-header">
-        <h1>{{ project.title }}</h1>
-        <span class="difficulty-badge difficulty-{{ project.difficulty.lower() if project.difficulty else 'beginner' }}">
-            {{ project.difficulty or 'Beginner' }}
-        </span>
+<div class="project-detail-layout">
+    <div class="project-detail-header">
+        <div class="header-top">
+            <div>
+                <a href="{{ url_for('routes.my_projects') }}" class="back-link button-secondary" style="padding: 0.4rem 0.8rem; margin-bottom: 1rem;">‹ Kembali</a>
+                <h1>{{ project.title }}</h1>
+            </div>
+            <span class="difficulty-badge difficulty-{{ project.difficulty.lower() if project.difficulty else 'beginner' }}">
+                {{ project.difficulty or 'Beginner' }}
+            </span>
+        </div>
+        <p class="subtitle">{{ project.description }}</p>
     </div>
 
-    <div class="project-content">
-        <div class="project-main">
-            <h3>Deskripsi Proyek</h3>
-            <p>{{ project.description | safe }}</p>
-
-            <h3>Tujuan Proyek</h3>
-            <p>{{ project.project_goals | safe }}</p>
-
-            <h3>Kriteria Penilaian</h3>
-            <p>{{ project.evaluation_criteria | safe }}</p>
+    <div class="project-detail-main">
+        {# PERUBAHAN NAMA CLASS DARI .project-content-panel menjadi .ai-generated-content #}
+        <div class="ai-generated-content card">
+            {% if project.generated_content %}
+                {{ project.generated_content | safe }}
+            {% else %}
+                <h3>Panduan Pengerjaan</h3>
+                <p>Konten panduan untuk proyek ini akan segera tersedia. Kami sedang membuatnya dengan AI, silakan cek kembali nanti.</p>
+            {% endif %}
         </div>
-        <div class="project-sidebar">
-            <div class="sidebar-card">
-                <h4>Teknologi yang Digunakan</h4>
-                <p>{{ project.tech_stack }}</p>
-            </div>
-            <div class="sidebar-card">
-                <h4>Sumber Daya</h4>
-                <p>{{ project.resources }}</p>
-            </div>
-        </div>
-    </div>
 
-    <div class="project-actions">
-        <!-- FORM UNTUK SUBMIT LINK PROYEK (misal: GitHub, Vercel) -->
-        <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST" class="submit-form">
-            <h3>Ajukan Proyek Anda</h3>
-            <p>Masukkan link ke repository GitHub atau link live demo proyek Anda.</p>
-            <div class="form-group">
-                <input type="url" name="project_link" placeholder="https://github.com/username/project" required>
-                <button type="submit" class="button-primary">Submit</button>
+        <aside class="project-sidebar-panel">
+            <div class="sidebar-card info-card card">
+                <h4><i class="fas fa-cogs"></i> Teknologi</h4>
+                <div class="tech-stack-container">
+                    {% for tech in project.tech_stack.split(',') %}
+                        <span class="tech-badge">{{ tech.strip() }}</span>
+                    {% endfor %}
+                </div>
+                <hr>
+                <h4><i class="fas fa-bullseye"></i> Tujuan Proyek</h4>
+                <p>{{ project.project_goals | safe }}</p>
             </div>
-        </form>
+
+            <div class="sidebar-card submission-card card">
+                <h3><i class="fas fa-paper-plane"></i> Ajukan Proyek Anda</h3>
+                <form action="{{ url_for('routes.submit_project', project_id=project.id) }}" method="POST" class="submit-form">
+                    <div class="form-group">
+                        <label for="project_link" class="form-label">Link Proyek (GitHub/Vercel)</label>
+                        <input type="url" id="project_link" name="project_link" placeholder="https://github.com/..." required>
+                        <button type="submit" class="button-primary full-width">Submit untuk Wawancara</button>
+                    </div>
+                </form>
+            </div>
+        </aside>
     </div>
 </div>
-
-<style>
-    /* Styling sederhana untuk halaman detail proyek */
-    .project-detail-container { max-width: 900px; margin: 40px auto; padding: 20px; }
-    .project-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
-    .difficulty-badge { background-color: #e0eaff; color: #0033cc; padding: 5px 12px; border-radius: 15px; font-weight: bold; font-size: 14px; }
-    .project-content { display: flex; gap: 30px; }
-    .project-main { flex: 2; }
-    .project-sidebar { flex: 1; }
-    .sidebar-card { background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-    .submit-form { margin-top: 40px; padding-top: 25px; border-top: 2px solid #eee; }
-    .form-group { display: flex; gap: 10px; }
-    .form-group input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-</style>
 {% endblock %}

@@ -140,6 +140,8 @@ class Project(db.Model):
     tech_stack = db.Column(db.Text, nullable=True)
     evaluation_criteria = db.Column(db.Text, nullable=True)
     resources = db.Column(db.Text, nullable=True)
+    
+    generated_content = db.Column(db.Text, nullable=True)
 
     chat_session = db.relationship("ChatSession", back_populates="project", uselist=False, cascade="all, delete-orphan")
     submissions = db.relationship("ProjectSubmission", backref="project", lazy="dynamic", cascade="all, delete-orphan")

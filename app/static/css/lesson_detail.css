@@ -41,8 +41,8 @@
 /* --- 2. Konten Materi di Dalam Card --- */
 .lesson-content {
     padding: 1rem;
-    max-width: 1100px;
-    min-width: 1100px;
+    max-width: 1000px;
+    min-width: 1000px;
 }
 
 /* --- 3. Gaya untuk Konten Materi Inti (Hasil Generate AI) --- */
@@ -193,8 +193,8 @@
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: flex-end; /* Posisikan tombol di kanan */
-    min-width: 1100px;
-    max-width: 1200px;
+    min-width: 1000px;
+    max-width: 1100px;
 }
 
 .lesson-actions .button-primary,
