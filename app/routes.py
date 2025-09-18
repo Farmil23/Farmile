@@ -656,7 +656,12 @@ def change_career_path():
         'ai-ml-engineer', 
         'devops-engineer',
         'cyber-security',
-        'network-engineer'
+        'network-engineer',
+        'game-developer',
+        'ui-ux-designer',
+        'generative-ai',
+        'nlp-engineer',
+        'computer-vision-engineer'
     ]
     
     # Cek apakah new_path ada di dalam daftar yang valid
