@@ -1129,12 +1129,10 @@ def get_interview_score(submission_id):
         completion = ark_client.chat.completions.create(
             model=current_app.config['MODEL_ENDPOINT_ID'],
             messages=[{"role": "user", "content": scoring_prompt}],
+            response_format={"type": "json_object"}
         )
         response_str = completion.choices[0].message.content
-        json_match = re.search(r'\\{.*\\}', response_str, re.DOTALL)
-        if not json_match:
-            raise ValueError("AI tidak mengembalikan format JSON yang valid.")
-        result = json.loads(json_match.group(0))
+        result = json.loads(response_str)
 
         score = result.get('score')
         feedback = result.get('feedback')

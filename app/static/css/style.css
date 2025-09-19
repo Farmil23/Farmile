@@ -2446,7 +2446,7 @@ textarea#chat-input::placeholder {
 
 .skill-tag {
     background: var(--primary-light);
-    color: var(--primary-color);
+    color: white;
     padding: 0.4rem 0.8rem;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -4638,7 +4638,7 @@ span.flatpickr-weekday {
     }
 
     .header-link {
-        padding-left: 60px;
+        padding-left: 0px;
     }
 
     .dashboard-content {
@@ -4691,6 +4691,8 @@ span.flatpickr-weekday {
         line-height: 1;
         box-shadow: 0 2px 6px var(--shadow-color);
     }
+
+    
 }
 
 /* =============================================== */
@@ -4966,6 +4968,36 @@ span.flatpickr-weekday {
         padding-top: 20px;
     }
 
+    .landing-header nav {
+        gap: 0.24rem;
+    }
+
+    .visual-card {
+        padding: 0.8rem;
+        max-width: 250px;
+        border-radius: 10px;
+    }
+
+    .progress-label {
+        display: block;
+        font-size: 0.6rem;
+        max-width: 250px;
+    }
+
+    .mobile-menu-toggle {
+        display: block;
+        position: fixed;
+        top: 3rem;
+        left: 1rem;
+        z-index: 1001;
+        background: var(--card-bg-color);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.5rem;
+        cursor: pointer;
+    }
+
     
 
     
@@ -5055,5 +5087,7 @@ span.flatpickr-weekday {
         height: 18px;
     }
 
-   
+    .landing-header nav {
+        gap: 0.2rem;
+    }
 }
