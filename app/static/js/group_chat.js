@@ -1,155 +1,98 @@
+// File: app/static/js/direct_message.js (Versi Final dengan Kunci Unik)
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Ambil konfigurasi dari template HTML
-    const config = window.GROUP_CHAT_CONFIG;
-    if (!config) {
-        console.error("Konfigurasi chat grup tidak ditemukan!");
-        return;
-    }
+    const config = window.DM_CONFIG;
+    if (!config) return;
 
-    // Referensi ke elemen-elemen penting di halaman
     const chatWindow = document.getElementById('chat-window');
-    const messageInput = document.getElementById('chat-input');
+    const messageInput = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
-    const welcomeMessage = chatWindow.querySelector('.chat-welcome');
+    const apiUrl = `/api/messages/${config.conversationId}`;
+    
+    let isSending = false; // Kunci untuk mencegah klik berturut-turut
 
-    // Variabel untuk menyimpan ID pesan terakhir yang ditampilkan
-    let lastMessageId = 0;
-
-    /**
-     * Fungsi untuk menampilkan satu pesan di jendela chat.
-     * @param {object} msg - Objek pesan dari server.
-     */
+    // Fungsi appendMessage dan scrollToBottom tetap sama...
     const appendMessage = (msg) => {
-        // Hapus pesan selamat datang jika ada
-        if (welcomeMessage && !welcomeMessage.hidden) {
-            welcomeMessage.hidden = true;
-        }
-
+        if (document.querySelector(`.message[data-id='${msg.id}']`)) return;
         const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message');
-
-        // Tentukan apakah pesan ini dari pengguna saat ini atau orang lain
-        if (msg.author.id === config.currentUserId) {
-            messageDiv.classList.add('user'); // Pesan dari diri sendiri (kanan)
-        } else {
-            messageDiv.classList.add('ai'); // Kita pinjam style 'ai' untuk penerima (kiri)
-        }
-        
-        // Buat HTML untuk gelembung pesan
+        messageDiv.className = `message ${msg.sender.id === config.currentUserId ? 'user' : 'ai'}`;
+        messageDiv.dataset.id = msg.id;
         messageDiv.innerHTML = `
-            <img src="${msg.author.profile_pic}" alt="${msg.author.name}" class="avatar" title="${msg.author.name}">
-            <div class="bubble">
-                <p>${msg.content.replace(/\n/g, '<br>')}</p>
-            </div>
-        `;
+            <img src="${msg.sender.profile_pic}" alt="${msg.sender.name}" class="avatar">
+            <div class="bubble"><p>${msg.content.replace(/\n/g, '<br>')}</p></div>`;
         chatWindow.appendChild(messageDiv);
-
-        // Perbarui ID pesan terakhir
-        if (msg.id > lastMessageId) {
-            lastMessageId = msg.id;
-        }
     };
+    const scrollToBottom = () => { chatWindow.scrollTop = chatWindow.scrollHeight; };
 
-    /**
-     * Fungsi untuk menggulir jendela chat ke pesan paling bawah.
-     */
-    const scrollToBottom = () => {
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    };
-
-    /**
-     * Fungsi untuk memuat semua riwayat pesan saat halaman dibuka,
-     * atau hanya memuat pesan baru jika sudah ada pesan.
-     */
     const loadMessages = async () => {
+        // Logika polling sederhana untuk pesan dari orang lain
         try {
-            // URL API untuk mengambil pesan
-            const url = `/api/groups/${config.groupId}/messages`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("Gagal memuat pesan.");
-
+            const response = await fetch(apiUrl);
             const messages = await response.json();
-            
-            // Jika ini pertama kali memuat, bersihkan jendela dan tampilkan semua
-            if (lastMessageId === 0) {
-                chatWindow.innerHTML = ''; // Bersihkan jendela dari pesan "memuat"
-                messages.forEach(appendMessage);
-            } else {
-                // Jika tidak, hanya tampilkan pesan yang lebih baru
-                messages.forEach(msg => {
-                    if (msg.id > lastMessageId) {
-                        appendMessage(msg);
-                    }
-                });
-            }
-
-            // Selalu gulir ke bawah setelah memuat pesan
-            scrollToBottom();
-
-        } catch (error) {
-            console.error(error);
-            // Anda bisa menambahkan pesan error di UI jika diperlukan
-        }
+            messages.forEach(appendMessage);
+        } catch (error) { console.error("Gagal memuat pesan:", error); }
     };
 
-    /**
-     * Fungsi untuk mengirim pesan baru ke server.
-     */
     const sendMessage = async () => {
         const content = messageInput.value.trim();
-        if (!content) return;
-
+        if (!content || isSending) return;
+        
+        isSending = true; // <-- KUNCI DI SINI
         sendBtn.disabled = true;
-        sendBtn.textContent = '...';
+
+        // --- TIKET UNIK ---
+        // Buat sebuah ID unik untuk permintaan ini di sisi klien
+        const requestId = `msg_${Date.now()}_${Math.random()}`;
+        // --- AKHIR TIKET UNIK ---
+
+        // Tampilkan pesan di UI secara optimis (tapi tanpa ID dari server)
+        const tempMessageDiv = document.createElement('div');
+        tempMessageDiv.className = 'message user pending'; // Beri class 'pending'
+        tempMessageDiv.innerHTML = `
+            <img src="${config.currentUserProfilePic}" alt="You" class="avatar">
+            <div class="bubble"><p>${content.replace(/\n/g, '<br>')}</p></div>`;
+        chatWindow.appendChild(tempMessageDiv);
+        scrollToBottom();
+        messageInput.value = '';
 
         try {
-            const formData = new FormData();
-            formData.append('message_type', 'text');
-            formData.append('content', content);
-
-            const response = await fetch(`/api/groups/${config.groupId}/messages`, {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    content: content,
+                    request_id: requestId // Kirim tiket unik ke server
+                }),
             });
 
-            if (!response.ok) {
-                throw new Error('Gagal mengirim pesan.');
-            }
+            if (!response.ok) throw new Error('Gagal mengirim pesan.');
+            
+            const newMessages = await response.json();
+            
+            // Hapus pesan sementara dan ganti dengan pesan asli dari server
+            tempMessageDiv.remove();
+            newMessages.forEach(appendMessage); // Tampilkan semua pesan baru dari server
 
-            const newMessage = await response.json();
-            appendMessage(newMessage); // Tampilkan pesan baru secara instan
-            scrollToBottom();
-            messageInput.value = ''; // Kosongkan input
-            messageInput.style.height = 'auto'; // Reset tinggi textarea
         } catch (error) {
-            alert(error.message); // Tampilkan error jika gagal
+            tempMessageDiv.remove(); // Hapus pesan sementara jika gagal
+            alert(error.message);
         } finally {
+            isSending = false; // <-- BUKA KUNCI DI SINI
             sendBtn.disabled = false;
-            sendBtn.textContent = 'Kirim';
         }
     };
 
-    // --- Event Listeners ---
+    // --- Inisialisasi ---
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keydown', (e) => {
-        // Kirim dengan Enter, buat baris baru dengan Shift+Enter
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-    
-    // Auto-resize textarea
-    messageInput.addEventListener('input', () => {
-        messageInput.style.height = 'auto';
-        messageInput.style.height = `${messageInput.scrollHeight}px`;
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
 
-
-    // --- Inisialisasi ---
-    // Muat pesan saat halaman pertama kali dibuka
-    loadMessages();
-
-    // Polling: Memeriksa pesan baru setiap 5 detik
-    setInterval(loadMessages, 5000);
+    // Muat semua pesan awal, lalu mulai polling
+    fetch(apiUrl).then(res => res.json()).then(messages => {
+        chatWindow.innerHTML = '';
+        messages.forEach(appendMessage);
+        scrollToBottom();
+        setInterval(loadMessages, 5000);
+    });
 });

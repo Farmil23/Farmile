@@ -1,3 +1,5 @@
+// File: app/static/js/community.js (Versi Final dengan Logika Pengunci)
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNGSI UNTUK MENAMPILKAN NOTIFIKASI POP-UP (TOAST) ---
@@ -11,14 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} [type='success'] - Tipe notifikasi ('success' atau 'error').
      */
     function showToast(message, type = 'success') {
-        clearTimeout(toastTimeout); // Hapus timeout sebelumnya jika ada
+        if (!toast || !toastMessage) return;
+        clearTimeout(toastTimeout);
         toastMessage.textContent = message;
-        toast.className = 'toast'; // Reset class
-        toast.classList.add(type); // Tambahkan tipe notifikasi (success/error)
+        toast.className = 'toast';
+        toast.classList.add(type);
         
         toast.classList.add('show');
         
-        // Sembunyikan notifikasi setelah 4 detik
         toastTimeout = setTimeout(() => {
             toast.classList.remove('show');
         }, 4000);
@@ -30,7 +32,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userGrid) {
         userGrid.addEventListener('click', async (e) => {
             const button = e.target.closest('button.action-btn');
-            if (!button) return;
+            
+            // --- LOGIKA PENGUNCI UTAMA ---
+            // Jika yang diklik bukan tombol, atau tombol sedang dinonaktifkan, hentikan fungsi.
+            if (!button || button.disabled) {
+                return;
+            }
+            
+            // Segera nonaktifkan tombol untuk mencegah klik ganda
+            button.disabled = true;
+            const originalButtonHTML = button.innerHTML;
+            button.innerHTML = 'Memproses...';
+            // --- AKHIR LOGIKA PENGUNCI ---
 
             const userCard = button.closest('.user-card');
             const userId = userCard.dataset.userId;
@@ -60,13 +73,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     url = `/api/connect/remove/${userId}`;
                     break;
                 default:
+                    // Jika aksi tidak dikenali, aktifkan kembali tombolnya
+                    button.disabled = false;
+                    button.innerHTML = originalButtonHTML;
                     return;
             }
             
-            const originalButtonText = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = 'Memproses...';
-
             try {
                 const response = await fetch(url, options);
                 const data = await response.json();
@@ -77,22 +89,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 showToast(data.message);
 
-                // --- PERBAIKAN UTAMA: UPDATE UI SECARA DINAMIS ---
-                // Alih-alih me-refresh, kita ubah tombolnya langsung.
+                // Update UI secara dinamis dengan tombol baru
                 const actionsContainer = button.parentElement;
                 actionsContainer.innerHTML = getUpdatedButtons(action, userId);
-                // --- AKHIR PERBAIKAN ---
 
             } catch (error) {
                 showToast(`Error: ${error.message}`, 'error');
+                // Jika terjadi error, aktifkan kembali tombol agar pengguna bisa mencoba lagi.
                 button.disabled = false;
-                button.innerHTML = originalButtonText; // Kembalikan tombol jika error
+                button.innerHTML = originalButtonHTML;
             }
         });
     }
 
     /**
      * Fungsi helper untuk membuat HTML tombol yang baru setelah aksi berhasil.
+     * @param {string} lastAction - Aksi yang baru saja dilakukan.
+     * @param {string} userId - ID pengguna yang terkait.
+     * @returns {string} - String HTML untuk tombol baru.
      */
     function getUpdatedButtons(lastAction, userId) {
         switch (lastAction) {

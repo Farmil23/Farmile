@@ -190,6 +190,17 @@
             const toastMessage = document.getElementById('toast-message');
             let toastTimeout;
 
+            // --- PERBAIKAN DI SINI ---
+            const flashMessages = JSON.parse('{{ get_flashed_messages(with_categories=true) | tojson | safe }}');
+            if (flashMessages) {
+                flashMessages.forEach(msg => {
+                    const category = msg[0];
+                    const message = msg[1];
+                    showToast(message, category);
+                });
+            }
+            // --- AKHIR PERBAIKAN ---
+
             function showToast(message, type = 'success') {
                 if (!toast || !toastMessage) return;
                 

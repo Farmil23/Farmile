@@ -2602,28 +2602,34 @@ def community_groups():
 @bp.route('/api/connect/request/<int:user_id>', methods=['POST'])
 @login_required
 def send_connection_request(user_id):
-    # Gunakan .get() untuk mencari user, yang mengembalikan None jika tidak ada
     receiver = User.query.get(user_id)
     
     if not receiver:
         return jsonify({'error': 'Pengguna tidak ditemukan.'}), 404
-
     if receiver == current_user:
         return jsonify({'error': 'Tidak bisa terhubung dengan diri sendiri.'}), 400
+
+    # --- PERBAIKAN UTAMA & FINAL DI SINI ---
+    # Cek apakah sudah ada permintaan yang terkirim atau bahkan sudah terhubung.
+    # Ini adalah pengecekan yang paling akurat dan anti-duplikasi.
     if current_user.is_connected(receiver) or current_user.sent_connection_request(receiver):
         return jsonify({'error': 'Sudah terhubung atau permintaan sudah dikirim.'}), 400
+    
+    # Cek juga dari sisi penerima untuk memastikan tidak ada permintaan yang tumpang tindih
+    if current_user.received_connection_request(receiver):
+        return jsonify({'error': 'Anda sudah memiliki permintaan koneksi dari pengguna ini. Silakan terima dari halaman komunitas.'}), 400
+    # --- AKHIR PERBAIKAN ---
 
     req = ConnectionRequest(sender_id=current_user.id, receiver_id=receiver.id)
     db.session.add(req)
     
-    # --- TAMBAHKAN LOGIKA NOTIFIKASI DI SINI ---
+    # Notifikasi hanya akan dibuat jika semua pengecekan di atas lolos.
     notification = Notification(
         user_id=receiver.id,
         message=f"{current_user.name} ingin terhubung dengan Anda.",
-        link=url_for('routes.community_page') # Arahkan ke halaman komunitas
+        link=url_for('routes.community_page')
     )
     db.session.add(notification)
-    # --- AKHIR PENAMBAHAN ---
     
     db.session.commit()
     return jsonify({'success': True, 'message': 'Permintaan koneksi terkirim.'})
@@ -2737,10 +2743,13 @@ def direct_message_page(user_id):
 
     return render_template('direct_message.html', title=f"Pesan dengan {other_user.name}", conversation=conversation, other_user=other_user)
 
+# --- Perbarui fungsi handle_direct_messages ---
+processed_requests = defaultdict(lambda: datetime.utcnow())
+
 @bp.route('/api/messages/<int:conversation_id>', methods=['GET', 'POST'])
 @login_required
 def handle_direct_messages(conversation_id):
-    """API untuk mengirim atau mengambil pesan langsung."""
+    """API untuk mengirim atau mengambil pesan langsung dengan notifikasi cerdas."""
     conversation = Conversation.query.get_or_404(conversation_id)
     if current_user not in conversation.participants:
         abort(403)
@@ -2760,28 +2769,36 @@ def handle_direct_messages(conversation_id):
             content=content
         )
         conversation.timestamp = datetime.utcnow()
-        
         db.session.add(message)
-        # --- TAMBAHKAN LOGIKA NOTIFIKASI DI SINI ---
-        # Cari siapa penerima pesan
-        for participant in conversation.participants:
-            if participant.id != current_user.id:
-                receiver = participant
-                break
+        
+        # --- LOGIKA NOTIFIKASI DENGAN BATAS WAKTU ---
+        receiver = next((p for p in conversation.participants if p.id != current_user.id), None)
         
         if receiver:
-            notification = Notification(
-                user_id=receiver.id,
-                message=f"Anda menerima pesan baru dari {current_user.name}.",
-                # Arahkan langsung ke halaman chat yang relevan
-                link=url_for('routes.direct_message_page', user_id=current_user.id)
-            )
-            db.session.add(notification)
-        # --- AKHIR PENAMBAHAN ---
+            # Tentukan rentang waktu (misalnya, 5 menit terakhir)
+            time_window = datetime.utcnow() - timedelta(minutes=5)
+            
+            # Cek apakah sudah ada notifikasi pesan dari pengirim yang sama dalam rentang waktu tersebut
+            existing_notification = Notification.query.filter(
+                Notification.user_id == receiver.id,
+                Notification.message == f"Anda menerima pesan baru dari {current_user.name}.",
+                Notification.created_at >= time_window
+            ).first()
+
+            # Hanya buat notifikasi jika TIDAK ADA notifikasi serupa yang ditemukan
+            if not existing_notification:
+                notification = Notification(
+                    user_id=receiver.id,
+                    message=f"Anda menerima pesan baru dari {current_user.name}.",
+                    link=url_for('routes.direct_message_page', user_id=current_user.id)
+                )
+                db.session.add(notification)
+        # --- AKHIR LOGIKA NOTIFIKASI ---
         
         db.session.commit()
         
-        return jsonify(message.to_dict()), 201
+        all_messages = conversation.messages.order_by(DirectMessage.timestamp.asc()).all()
+        return jsonify([msg.to_dict() for msg in all_messages]), 201
     
 @bp.route('/api/groups/create', methods=['POST'])
 @login_required
