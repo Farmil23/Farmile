@@ -40,11 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoading) {
             bubbleDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
         } else {
-            // --- PERUBAHAN UTAMA: Render konten sebagai Markdown ---
-            // Ini akan mengubah *, **, ```, dll. menjadi format HTML yang benar.
+            // --- PERUBAHAN UTAMA DI SINI ---
+            // 1. Ubah konten Markdown menjadi HTML menggunakan marked.js
             bubbleDiv.innerHTML = window.marked ? marked.parse(content) : content;
             
-            // Terapkan syntax highlighting pada code blocks jika hljs tersedia
+            // 2. Terapkan syntax highlighting pada semua blok kode di dalam bubble baru ini
             if (window.hljs) {
                 bubbleDiv.querySelectorAll('pre code').forEach((block) => {
                     hljs.highlightElement(block);

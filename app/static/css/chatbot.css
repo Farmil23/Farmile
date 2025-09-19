@@ -3,6 +3,12 @@
 /* =============================================== */
 
 /* --- Layout Utama --- */
+::marker {
+    padding-left: 0.6rem;
+}
+
+
+
 .chat-page-layout {
     display: flex;
     height: calc(100vh - 60px); /* Ganti 60px dengan tinggi header Anda */
@@ -379,6 +385,13 @@
     .session-title-link {
         padding: 0.5rem 1rem;
         margin:0;
+    }
+
+    pre code.hljs {
+        display: block;
+        overflow-x: auto;
+        padding: 0.6em;
+        font-size:0.56rem;
     }
 }
 

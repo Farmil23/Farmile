@@ -77,6 +77,10 @@
     color: var(--text-primary);
 }
 
+.sidebar-card h4, .sidebar-card p {
+    color: #ffeeee;
+}
+
 .sidebar-card hr {
     border-color: var(--border-light);
     margin: 1rem 0;
@@ -372,5 +376,37 @@
         right: 0;
         top: 0;
         order: -1;
+    }
+}
+
+@media (max-width: 426px) { 
+    .tech-badge {
+        padding: 0.2rem 0.4rem;
+        border-radius: 10px;
+        font-size: 0.65rem;
+        
+    }
+
+    h4 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .submit-form {
+        margin: 0px;
+        padding: 10px 0;
+        border-top: 2px solid #eee;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.8rem;
+    }
+
+    .form-group input {
+        padding: 10px 5px;
+        font-size: 0.7rem;
     }
 }

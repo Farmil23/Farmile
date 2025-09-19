@@ -203,6 +203,14 @@
         margin-right: 3px;
     }
 
+    .certificate-card .button-disabled {
+        font-size: 0.7rem;
+    }
+
+    .module-accordion {
+        gap: 0.4rem;
+    }
+
  
 
   

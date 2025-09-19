@@ -25,7 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoading) {
             bubbleDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
         } else {
+            // --- PERUBAHAN DITERAPKAN DI SINI JUGA ---
+            // 1. Ubah konten Markdown menjadi HTML
             bubbleDiv.innerHTML = window.marked ? window.marked.parse(content) : content.replace(/\n/g, '<br>');
+
+            // 2. Terapkan syntax highlighting
+            if (window.hljs) {
+                bubbleDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
         }
         
         messageDiv.appendChild(bubbleDiv);
