@@ -34,6 +34,10 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=True)
     timezone = db.Column(db.String(50), nullable=False, server_default='Asia/Jakarta')
     
+    # --- TAMBAHAN BARU DI SINI ---
+    last_proactive_greet_at = db.Column(db.DateTime, nullable=True)
+    # --- AKHIR TAMBAHAN ---
+    
     activity_logs = db.relationship('UserActivityLog', backref=db.backref('user', lazy=True), cascade="all, delete-orphan")
     
     # --- TAMBAHKAN DUA KOLOM INI ---

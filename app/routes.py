@@ -312,62 +312,134 @@ def index():
     return render_template('landing_page.html', title='Selamat Datang di FARSIGHT')
 
 # Di dalam file app/routes.py
-
 @bp.route('/dashboard')
 @login_required
 def dashboard():
+    # --- LOGIKA 1: Pengecekan "Tiket Masuk Sekali Pakai" untuk Pengguna Baru ---
+    # Cek apakah pengguna baru saja selesai onboarding.
+    if session.pop('just_onboarded', None):
+        # Jika ya, langsung tampilkan dashboard dan lewati semua logika sapaan proaktif.
+        log_activity(current_user, 'viewed_dashboard_first_time')
+        
+        # (Kode untuk menampilkan dashboard normal disalin di sini)
+        progress_percentage = 0
+        next_learning_url = None
+        if current_user.career_path:
+            all_modules_in_path = Module.query.filter_by(career_path=current_user.career_path).order_by(Module.order).all()
+            learnable_items = []
+            for module in all_modules_in_path:
+                for lesson in sorted(module.lessons, key=lambda l: l.order):
+                    learnable_items.append({'type': 'lesson', 'id': lesson.id})
+                for project in module.projects:
+                    learnable_items.append({'type': 'project', 'id': project.id})
+            
+            completed_lesson_ids = {p.lesson_id for p in current_user.user_progress if p.lesson.module.career_path == current_user.career_path}
+            submitted_project_ids = {s.project_id for s in current_user.submissions if s.project.module and s.project.module.career_path == current_user.career_path}
+            
+            for item in learnable_items:
+                is_completed = (item['type'] == 'lesson' and item['id'] in completed_lesson_ids) or \
+                               (item['type'] == 'project' and item['id'] in submitted_project_ids)
+                if not is_completed:
+                    next_learning_url = url_for('routes.lesson_detail', lesson_id=item['id']) if item['type'] == 'lesson' else url_for('routes.project_detail', project_id=item['id'])
+                    break
+            
+            total_items = len(learnable_items)
+            completed_items = len(completed_lesson_ids) + len(submitted_project_ids)
+            if total_items > 0:
+                progress_percentage = min(100, int((completed_items / total_items) * 100))
+
+        recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(1).all()
+        recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(1).all()
+        recent_progress = current_user.user_progress.order_by(UserProgress.completed_at.desc()).limit(1).all()
+        
+        return render_template('dashboard.html', title='Dasbor Anda', progress_percentage=progress_percentage,
+                               recent_sessions=recent_sessions, recent_submissions=recent_submissions,
+                               recent_progress=recent_progress, Lesson=Lesson, next_learning_url=next_learning_url)
+
+    # --- LOGIKA 2: Sapaan Harian Proaktif untuk Pengguna yang Kembali ---
+    user_tz = pytz.timezone(current_user.timezone or 'Asia/Jakarta')
+    now_user_time = datetime.now(user_tz)
+    
+    needs_greeting = True
+    if current_user.last_proactive_greet_at:
+        last_greet_utc = pytz.utc.localize(current_user.last_proactive_greet_at)
+        last_greet_user_time = last_greet_utc.astimezone(user_tz)
+        if last_greet_user_time.date() == now_user_time.date():
+            needs_greeting = False
+
+    if needs_greeting:
+        current_user.last_proactive_greet_at = datetime.utcnow()
+        db.session.commit()
+
+        today_local = now_user_time.date()
+        todays_events = Event.query.filter(db.func.date(Event.start_time) == today_local, Event.user_id == current_user.id).all()
+        relevant_tasks = Task.query.filter(Task.user_id == current_user.id, Task.status != 'done', or_(db.func.date(Task.due_date) <= today_local, Task.due_date == None)).all()
+        
+        event_list_str = "\\n- ".join([f"{e.title} (pukul {e.start_time.strftime('%H:%M')})" for e in todays_events]) or "Tidak ada acara."
+        task_list_str = "\\n- ".join([f"{t.title}" for t in relevant_tasks]) or "Tidak ada tugas."
+        
+        prompt = f"""
+        Anda adalah Farmile, seorang mentor AI yang ramah dan suportif.
+        Sapa pengguna bernama {current_user.name.split()[0]} dengan sapaan pagi yang hangat.
+        Rangkum jadwal mereka hari ini secara singkat dan jelas berdasarkan data di bawah.
+        Berikan satu saran proaktif atau pertanyaan pembuka yang relevan untuk memulai percakapan.
+
+        Data Jadwal Hari Ini:
+        - Acara: {event_list_str}
+        - Tugas Aktif: {task_list_str}
+        """
+        
+        try:
+            completion = ark_client.chat.completions.create(
+                model=current_app.config['MODEL_ENDPOINT_ID'],
+                messages=[{"role": "user", "content": prompt}]
+            )
+            proactive_message = completion.choices[0].message.content
+        except Exception as e:
+            current_app.logger.error(f"AI Proactive Greeting Error: {e}")
+            proactive_message = f"Selamat pagi, {current_user.name.split()[0]}! Siap untuk memulai hari ini? Ada yang bisa kubantu?"
+
+        daily_session = ChatSession.query.filter_by(user_id=current_user.id, title="Sapaan Harian Farmile").first()
+        if not daily_session:
+            daily_session = ChatSession(user_id=current_user.id, title="Sapaan Harian Farmile")
+            db.session.add(daily_session)
+            db.session.flush()
+
+        new_message = ChatMessage(session_id=daily_session.id, user_id=current_user.id, role='assistant', content=proactive_message)
+        db.session.add(new_message)
+        db.session.commit()
+        
+        return redirect(url_for('routes.chatbot_session', session_id=daily_session.id))
+
+    # --- LOGIKA 3: Tampilan Dashboard Normal untuk Kunjungan Berulang ---
     log_activity(current_user, 'viewed_dashboard')
     
     progress_percentage = 0
     next_learning_url = None
-
     if current_user.career_path:
-        # Mengambil semua modul, pelajaran, dan proyek HANYA untuk jalur karier saat ini
         all_modules_in_path = Module.query.filter_by(career_path=current_user.career_path).order_by(Module.order).all()
-        
-        # Membuat satu daftar gabungan dari semua item pembelajaran
         learnable_items = []
         for module in all_modules_in_path:
-            # Mengurutkan lesson berdasarkan 'order' untuk konsistensi
             for lesson in sorted(module.lessons, key=lambda l: l.order):
                 learnable_items.append({'type': 'lesson', 'id': lesson.id})
             for project in module.projects:
                 learnable_items.append({'type': 'project', 'id': project.id})
         
-        # --- INI BAGIAN PERBAIKAN UTAMA ---
-        # Mengambil ID item yang sudah diselesaikan HANYA untuk jalur karier saat ini
-        completed_lesson_ids = {
-            p.lesson_id for p in current_user.user_progress 
-            if p.lesson.module.career_path == current_user.career_path
-        }
-        submitted_project_ids = {
-            s.project_id for s in current_user.submissions 
-            if s.project.module and s.project.module.career_path == current_user.career_path
-        }
-        # --- AKHIR PERBAIKAN ---
+        completed_lesson_ids = {p.lesson_id for p in current_user.user_progress if p.lesson.module.career_path == current_user.career_path}
+        submitted_project_ids = {s.project_id for s in current_user.submissions if s.project.module and s.project.module.career_path == current_user.career_path}
 
-        # Logika untuk menemukan item berikutnya (tidak berubah, sekarang akan berfungsi benar)
         for item in learnable_items:
-            is_completed = False
-            if item['type'] == 'lesson' and item['id'] in completed_lesson_ids:
-                is_completed = True
-            elif item['type'] == 'project' and item['id'] in submitted_project_ids:
-                is_completed = True
-            
+            is_completed = (item['type'] == 'lesson' and item['id'] in completed_lesson_ids) or \
+                           (item['type'] == 'project' and item['id'] in submitted_project_ids)
             if not is_completed:
-                if item['type'] == 'lesson':
-                    next_learning_url = url_for('routes.lesson_detail', lesson_id=item['id'])
-                else:
-                    next_learning_url = url_for('routes.project_detail', project_id=item['id'])
+                next_learning_url = url_for('routes.lesson_detail', lesson_id=item['id']) if item['type'] == 'lesson' else url_for('routes.project_detail', project_id=item['id'])
                 break
-
-        # Kalkulasi progress (tidak berubah)
+        
         total_items = len(learnable_items)
         completed_items = len(completed_lesson_ids) + len(submitted_project_ids)
         if total_items > 0:
             progress_percentage = min(100, int((completed_items / total_items) * 100))
-
-    # Mengambil aktivitas terbaru (tidak berubah)
+    
     recent_sessions = current_user.chat_sessions.order_by(ChatSession.timestamp.desc()).limit(1).all()
     recent_submissions = current_user.submissions.order_by(ProjectSubmission.id.desc()).limit(1).all()
     recent_progress = current_user.user_progress.order_by(UserProgress.completed_at.desc()).limit(1).all()
@@ -417,6 +489,8 @@ def onboarding():
         return redirect(url_for('routes.dashboard'))
     return render_template('onboarding.html', title='Selamat Datang')
 
+# File: app/routes.py
+
 @bp.route('/complete-onboarding', methods=['POST'])
 @login_required
 def complete_onboarding():
@@ -428,6 +502,12 @@ def complete_onboarding():
     log_activity(current_user, 'completed_onboarding', {'career_path': current_user.career_path})
     
     current_user.has_completed_onboarding = True
+    
+    # --- TAMBAHAN BARU DI SINI ---
+    # Beri "tiket masuk sekali pakai" ke dashboard
+    session['just_onboarded'] = True
+    # --- AKHIR TAMBAHAN ---
+
     db.session.commit()
     return jsonify({'status': 'success', 'redirect_url': url_for('routes.dashboard')})
 
