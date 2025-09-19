@@ -413,3 +413,36 @@
     flex-direction: column;
     gap: 0.5rem;
 }
+
+
+/* File: app/static/css/community.css */
+
+/* ... (Kode CSS yang sudah ada) ... */
+
+/* === TAMBAHAN UNTUK TAMPILAN MOBILE === */
+@media (max-width: 768px) {
+    .user-grid {
+        /* Mengubah grid menjadi 2 kolom di layar mobile */
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem; /* Sedikit mengurangi jarak antar kartu */
+    }
+
+    .user-card {
+        padding: 1rem; /* Mengurangi padding di dalam kartu */
+    }
+
+    .user-card h4 {
+        font-size: 1rem; /* Menyesuaikan ukuran font nama */
+    }
+
+    .user-career {
+        font-size: 0.8rem; /* Menyesuaikan ukuran font karier */
+    }
+
+    .user-card .card-actions .button-primary,
+    .user-card .card-actions .button-secondary,
+    .user-card .card-actions .button-danger {
+        font-size: 0.8rem; /* Menyesuaikan ukuran font tombol */
+        padding: 0.5rem 0.75rem;
+    }
+}

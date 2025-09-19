@@ -76,7 +76,7 @@
 .lesson-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--border-light); }
 .lesson-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-light); }
 .lesson-list li:last-child { border-bottom: none; }
-.lesson-details { display: flex; align-items: center; gap: 1rem; flex-grow: 1; }
+.lesson-details { display: flex; align-items: center; gap: 0.7rem; flex-grow: 1; }
 .lesson-status { flex-shrink: 0; }
 .lesson-status .icon-completed { color: var(--success-color); }
 .lesson-status .icon-pending { color: var(--text-muted); }

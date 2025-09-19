@@ -2548,20 +2548,37 @@ def handle_resume(resume_id):
 @login_required
 def community_page():
     """Menampilkan halaman utama Komunitas untuk menemukan pengguna lain."""
-    # Logika untuk auto-generate username jika belum ada
     if not current_user.username:
         base_username = current_user.name.lower().replace(' ', '-')
         username = base_username
         counter = 1
-        # Loop untuk memastikan username unik
         while User.query.filter_by(username=username).first():
             username = f"{base_username}-{counter}"
             counter += 1
         current_user.username = username
         db.session.commit()
 
-    # Ambil semua pengguna lain untuk ditampilkan di halaman
     users = User.query.filter(User.id != current_user.id).all()
+
+    # --- PERBAIKAN DI SINI ---
+    # Memastikan semua pengguna yang ditampilkan memiliki username
+    users_changed = False
+    for user in users:
+        if not user.username:
+            base_username = user.name.lower().replace(' ', '-')
+            username = base_username
+            counter = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{base_username}-{counter}"
+                counter += 1
+            user.username = username
+            users_changed = True
+
+    # Jika ada username baru yang dibuat, simpan ke database
+    if users_changed:
+        db.session.commit()
+    # --- AKHIR PERBAIKAN ---
+
     return render_template('community.html', title="Komunitas", users=users)
 
 

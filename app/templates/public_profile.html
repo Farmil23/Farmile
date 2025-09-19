@@ -27,6 +27,7 @@
                 <div class="profile-badges">
                     <span class="career-badge">{{ user.career_path|replace('-', ' ')|title if user.career_path else 'Explorer' }}</span>
                     <span class="semester-badge">Semester {{ user.semester if user.semester else 'N/A' }}</span>
+                    <span class="level-badge">Level {{ user.level }}</span>
                 </div>
                 <div class="profile-actions">
                     {% if current_user.is_authenticated and current_user.id != user.id %}
@@ -65,6 +66,10 @@
         <div class="stat-item">
             <div class="stat-number">{{ user.chat_sessions.count() }}</div>
             <div class="stat-label">Sesi Chat AI</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ user.xp }}</div>
+            <div class="stat-label">Total XP</div>
         </div>
     </div>
 

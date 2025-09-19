@@ -1,28 +1,9 @@
-from app import create_app, db
+from app import create_app
 
+# Variabel 'app' ini yang akan dicari oleh Vercel
 app = create_app()
 
-@app.shell_context_processor
-def make_shell_context():
-    # Impor model di sini untuk shell context yang aman
-    from app.models import (User, Project, ProjectSubmission, ChatMessage, 
-                            ChatSession, Module, Lesson, UserProgress, Task, 
-                            Event, Note, Notification, UserProject, UserResume, 
-                            JobApplication, JobCoachMessage, JobMatchAnalysis, 
-                            ConnectionRequest, Conversation, DirectMessage, 
-                            StudyGroup, UserActivityLog, QuizHistory)
-    return {
-        'db': db, 'User': User, 'Project': Project, 'ProjectSubmission': ProjectSubmission,
-        'ChatMessage': ChatMessage, 'ChatSession': ChatSession, 'Module': Module,
-        'Lesson': Lesson, 'UserProgress': UserProgress, 'Task': Task, 'Event': Event,
-        'Note': Note, 'Notification': Notification, 'UserProject': UserProject,
-        'UserResume': UserResume, 'JobApplication': JobApplication, 
-        'JobCoachMessage': JobCoachMessage, 'JobMatchAnalysis': JobMatchAnalysis,
-        'ConnectionRequest': ConnectionRequest, 'Conversation': Conversation,
-        'DirectMessage': DirectMessage, 'StudyGroup': StudyGroup, 
-        'UserActivityLog': UserActivityLog, 'QuizHistory': QuizHistory
-    }
-
+# Bagian di bawah ini hanya untuk menjalankan di lokal, 
+# Vercel tidak akan menggunakannya.
 if __name__ == '__main__':
-    # use_reloader=False penting untuk mencegah scheduler berjalan dua kali dalam mode debug
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=True)
