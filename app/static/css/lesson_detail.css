@@ -660,6 +660,7 @@ body {
 
 
 
+
 /* --- 6. Aturan Responsif untuk Mobile --- */
 @media (max-width: 426px) {
 
@@ -748,5 +749,18 @@ body {
         justify-content: center; /* Pusatkan teks di dalam tombol */
         padding: 0.7rem 1rem;
         font-size: 0.85rem;
+    }
+
+    .lesson-content {
+        padding: 1rem;
+        max-width: 800px;
+        min-width: 700px;
+    }
+
+    .lesson-actions {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        max-width: 800px;
+        min-width: 700px;
     }
 }
