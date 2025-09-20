@@ -12,7 +12,7 @@ SQLAlchemy==2.0.15
 Flask-SQLAlchemy==3.0.3
 Flask-Migrate==4.0.4
 alembic==1.11.1
-greenlet==2.0.2
+greenlet==3.0.3
 
 # Authentication & Login
 Flask-Login==0.6.2
