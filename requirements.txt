@@ -36,6 +36,7 @@ pytz==2025.2
 tzdata==2025.2
 
 # --- Utilities & Lainnya ---
+httpx 
 python-dotenv==1.1.1
 requests==2.27.1
 beautifulsoup4==4.13.5
