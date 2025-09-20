@@ -6,7 +6,7 @@ Flask-SQLAlchemy
 Flask-Migrate
 Flask-Admin
 Authlib
-byteplus-python-sdk-v2git commit -m "Last"
+byteplus-python-sdk-v2
 PyPDF2
 gunicorn
 psycopg2-binary
