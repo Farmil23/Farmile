@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 import pytz
 from sqlalchemy import func, cast, String
 import json
-
+from byteplus.ark.runtime import Ark
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
