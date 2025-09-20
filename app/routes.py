@@ -2009,13 +2009,7 @@ def save_reflection(user_project_id):
 # ===============================================
 # AI-RESUME SECTION
 # ===============================================
-    # Tambahkan import ini di bagian atas file app/routes.py
-import PyPDF2
 import io
-
-# ... (kode lainnya tetap sama) ...
-
-# Ganti DUA route terakhir di app/routes.py dengan TIGA route ini
 
 @bp.route('/ai-resume-pro')
 @login_required
