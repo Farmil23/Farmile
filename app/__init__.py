@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
 from authlib.integrations.flask_client import OAuth
 # --- PERBAIKAN 1: Ganti import yang lama dengan yang ini ---
-from byteplus.ark.runtime import Ark
+from byteplussdkarkruntime import Ark
 # ---------------------------------------------------------
 from flask_migrate import Migrate
 from flask_admin import Admin, BaseView, expose
