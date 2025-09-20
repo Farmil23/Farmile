@@ -18,7 +18,6 @@ greenlet==3.0.3
 Flask-Login==0.6.2
 Authlib==1.2.0
 cryptography==41.0.1
-httpx==0.27.0
 
 # Admin & Forms
 Flask-Admin==1.6.1
@@ -27,6 +26,8 @@ WTForms==3.0.1
 # Utilities
 python-dotenv==1.0.0
 requests==2.31.0
+httpx==0.27.0
+pydantic==2.5.3
 python-dateutil==2.8.2
 pytz==2023.3
 
@@ -37,8 +38,8 @@ pypdf==3.12.0
 beautifulsoup4==4.12.2
 soupsieve==2.4.1
 
-# AI SDK (Sesuai Dokumentasi Anda)
- byteplus-python-sdk-v2==3.0.11
+# AI SDK
+byteplus-python-sdk-v2==3.0.11
 
 # Scheduler
 Flask-APScheduler==1.13.0
