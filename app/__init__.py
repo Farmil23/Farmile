@@ -8,7 +8,9 @@ from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
 from authlib.integrations.flask_client import OAuth
-from byteplussdkarkruntime import Ark
+# --- PERBAIKAN 1: Ganti import yang lama dengan yang ini ---
+from byteplus.ark.runtime import Ark
+# ---------------------------------------------------------
 from flask_migrate import Migrate
 from flask_admin import Admin, BaseView, expose
 from flask_admin.contrib.sqla import ModelView
@@ -18,7 +20,7 @@ from datetime import datetime, timedelta
 import pytz
 from sqlalchemy import func, cast, String
 import json
-from byteplus.ark.runtime import Ark
+
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -95,7 +97,6 @@ class UserProjectView(SecureModelView):
     form_columns = ('user', 'project', 'status', 'started_at', 'reflection')
     form_ajax_refs = {'user': {'fields': ['name', 'email'], 'page_size': 10}, 'project': {'fields': ['title'], 'page_size': 10}}
 
-# --- KELAS BARU UNTUK CERTIFICATE VIEW ---
 class CertificateView(SecureModelView):
     column_list = ('id', 'user', 'roadmap', 'career_path', 'issued_at')
     column_searchable_list = ('user.name', 'user.email', 'career_path')
@@ -106,7 +107,6 @@ class CertificateView(SecureModelView):
         'roadmap': {'fields': ['title'], 'page_size': 10}
     }
 
-# === KELAS BARU UNTUK MELIHAT JOB APPLICATION DI ADMIN ===
 class JobApplicationView(SecureModelView):
     can_create = True
     can_edit = True
@@ -116,10 +116,8 @@ class JobApplicationView(SecureModelView):
     column_searchable_list = ('author.name', 'company_name', 'position')
     column_filters = ('status', 'application_date', 'author.name')
     
-    # Kolom yang akan muncul saat membuat/mengedit
     form_columns = ('author', 'company_name', 'position', 'status', 'application_date', 'work_model', 'job_link', 'notes', 'resume_used')
     
-    # Untuk dropdown pencarian yang lebih baik
     form_ajax_refs = {
         'author': {
             'fields': ['name', 'email'],
@@ -130,7 +128,6 @@ class JobApplicationView(SecureModelView):
             'page_size': 10
         }
     }
-# === AKHIR DARI BLOK BARU ===
 
 class AnalyticsView(BaseView):
     @expose('/')
@@ -204,31 +201,30 @@ def create_app(config_class=Config):
 
     oauth.register(name='google', client_id=app.config.get('GOOGLE_CLIENT_ID'), client_secret=app.config.get('GOOGLE_CLIENT_SECRET'), server_metadata_url='https://accounts.google.com/.well-known/openid-configuration', client_kwargs={'scope': 'openid email profile'})
     
+    # --- PERBAIKAN 2: Ganti seluruh blok inisialisasi Ark Client ---
     global ark_client
     try:
         api_key = app.config.get('ARK_API_KEY')
         if not api_key: raise ValueError("ARK_API_KEY not found in config.")
-
-        # --- PERBAIKAN INISIALISASI ---
-        # Tidak perlu mengatur os.environ, library akan menanganinya
+        
+        # Inisialisasi yang benar
         ark_client = Ark(
             api_key=api_key,
             base_url="https://ark.ap-southeast.bytepluses.com/api/v3"
         )
-        # ------------------------------
-
+        
         app.ark_client = ark_client
         app.logger.info("BytePlus Ark client initialized successfully!")
     except Exception as e:
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")
         ark_client = None
+    # -------------------------------------------------------------
 
     from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject, UserActivityLog, UserResume, JobApplication, JobCoachMessage, AnalyticsSnapshot, Certificate, UserProgress)
     
     @app.context_processor
     def inject_progress():
         if current_user.is_authenticated and current_user.career_path:
-            # ... (semua logika kalkulasi di sini sudah benar, tidak perlu diubah)
             all_modules_in_path = Module.query.filter_by(career_path=current_user.career_path).all()
             all_lesson_ids_in_path = {lesson.id for module in all_modules_in_path for lesson in module.lessons}
             all_project_ids_in_path = {project.id for module in all_modules_in_path for project in module.projects}
@@ -250,11 +246,8 @@ def create_app(config_class=Config):
             if total_items > 0:
                 progress_percentage = min(100, int((completed_items / total_items) * 100))
             
-            # --- PERUBAHAN DI SINI ---
-            # Ubah nama variabel yang dikirim dari 'progress_percentage' menjadi 'progress'
             return dict(progress=progress_percentage)
         
-        # Ubah juga return di sini agar konsisten
         return dict(progress=0)
 
     admin = Admin(app, name='Farmile Admin', template_mode='bootstrap4', url='/admin')
@@ -270,9 +263,7 @@ def create_app(config_class=Config):
     admin.add_view(SecureModelView(Roadmap, db.session))
     admin.add_view(SecureModelView(Notification, db.session))
     
-    # === TAMBAHKAN BARIS INI UNTUK MEREGISTRASIKAN VIEW BARU ===
     admin.add_view(JobApplicationView(JobApplication, db.session, name="Job Applications"))
-    # === AKHIR DARI BLOK TAMBAHAN ===
     
     admin.add_view(CertificateView(Certificate, db.session))
     admin.add_view(AnalyticsView(name='Analytics', endpoint='analytics'))
