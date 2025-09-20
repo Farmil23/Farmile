@@ -2549,35 +2549,37 @@ def handle_resume(resume_id):
 def community_page():
     """Menampilkan halaman utama Komunitas untuk menemukan pengguna lain."""
     if not current_user.username:
-        base_username = current_user.name.lower().replace(' ', '-')
+        # Mengganti semua karakter tidak valid dengan '_'
+        base_username = re.sub(r'[^a-zA-Z0-9]', '_', current_user.name.lower())
+        if base_username.isdigit(): # Menambahkan underscore jika nama hanya berisi angka
+            base_username = '_' + base_username
         username = base_username
         counter = 1
         while User.query.filter_by(username=username).first():
-            username = f"{base_username}-{counter}"
+            username = f"{base_username}_{counter}"
             counter += 1
         current_user.username = username
         db.session.commit()
 
     users = User.query.filter(User.id != current_user.id).all()
 
-    # --- PERBAIKAN DI SINI ---
-    # Memastikan semua pengguna yang ditampilkan memiliki username
     users_changed = False
     for user in users:
         if not user.username:
-            base_username = user.name.lower().replace(' ', '-')
+            # Mengganti semua karakter tidak valid dengan '_'
+            base_username = re.sub(r'[^a-zA-Z0-9]', '_', user.name.lower())
+            if base_username.isdigit(): # Menambahkan underscore jika nama hanya berisi angka
+               base_username = '_' + base_username
             username = base_username
             counter = 1
             while User.query.filter_by(username=username).first():
-                username = f"{base_username}-{counter}"
+                username = f"{base_username}_{counter}"
                 counter += 1
             user.username = username
             users_changed = True
 
-    # Jika ada username baru yang dibuat, simpan ke database
     if users_changed:
         db.session.commit()
-    # --- AKHIR PERBAIKAN ---
 
     return render_template('community.html', title="Komunitas", users=users)
 
