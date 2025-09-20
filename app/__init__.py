@@ -202,6 +202,7 @@ def create_app(config_class=Config):
     oauth.register(name='google', client_id=app.config.get('GOOGLE_CLIENT_ID'), client_secret=app.config.get('GOOGLE_CLIENT_SECRET'), server_metadata_url='https://accounts.google.com/.well-known/openid-configuration', client_kwargs={'scope': 'openid email profile'})
     
     # --- PERBAIKAN 2: Ganti seluruh blok inisialisasi Ark Client ---
+     # --- PERBAIKAN INISIALISASI ARK CLIENT ---
     global ark_client
     try:
         api_key = app.config.get('ARK_API_KEY')
@@ -218,7 +219,6 @@ def create_app(config_class=Config):
     except Exception as e:
         app.logger.error(f"Failed to initialize BytePlus Ark client: {e}")
         ark_client = None
-    # -------------------------------------------------------------
 
     from app.models import (User, Roadmap, Module, Lesson, Project, ProjectSubmission, Task, Event, Notification, UserProject, UserActivityLog, UserResume, JobApplication, JobCoachMessage, AnalyticsSnapshot, Certificate, UserProgress)
     

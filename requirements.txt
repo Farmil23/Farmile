@@ -1,3 +1,5 @@
+# farmil23/farmile/Farmile-4126b32981584cc2df34694a4edc3d5e80a1a749/requirements.txt
+
 # --- Core Flask Framework ---
 Flask==3.1.2
 Flask-Login==0.6.3
