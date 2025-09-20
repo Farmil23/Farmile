@@ -42,7 +42,7 @@ pycparser
 pycryptodome
 pydantic
 pydantic_core
-PyPDF2
+pypdf
 PySocks
 python-dateutil
 python-dotenv

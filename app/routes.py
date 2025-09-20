@@ -14,7 +14,7 @@ import pytz
     # Tambahkan ini di app/routes.py
 from flask import session # Pastikan session diimpor dari flask
 from collections import defaultdict
-import PyPDF2
+from pypdf import PdfReader
 import io
 from sqlalchemy import or_
 from sqlalchemy import func, cast, String
@@ -2040,7 +2040,7 @@ def review_resume_pdf_api():
         return jsonify({'error': 'File tidak valid. Harap unggah file PDF.'}), 400
 
     try:
-        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file.read()))
+        pdf_reader = PdfReader(io.BytesIO(file.read()))
         cv_text = ""
         for page in pdf_reader.pages:
             cv_text += page.extract_text()
