@@ -21,7 +21,7 @@ Authlib==1.6.3
 cryptography==45.0.6
 
 # --- AI & PDF Processing ---
-byteplussdkarkruntime
+byteplus-python-sdk-v2
 PyPDF2
 
 # --- Web Server (untuk Production) ---
