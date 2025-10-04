@@ -1,0 +1,29 @@
+{% extends "dashboard_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{{ title }}</h1>
+    <p class="lead mb-5">Belajar sambil berbuat! Pilih proyek nyata dari mitra industri, pemerintah, atau NGO untuk membangun portofolio yang berdampak dan menjadi bagian dari solusi untuk lingkungan.</p>
+
+    <div class="row">
+        {% for project in projects %}
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ project.title }}</h5>
+                    {% if project.partner %}
+                    <h6 class="card-subtitle mb-2 text-muted">Mitra: {{ project.partner.name }}</h6>
+                    {% endif %}
+                    <p class="card-text">{{ project.description | truncate(200) }}</p>
+                    <a href="{{ url_for('green_project_detail', project_id=project.id) }}" class="btn btn-success">Lihat Detail Proyek</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col">
+            <p>Belum ada proyek yang tersedia di hub saat ini. Silakan cek kembali nanti!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "dashboard_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{{ url_for('green_career_paths') }}" class="btn btn-sm btn-outline-secondary mb-3"><i class="fas fa-arrow-left"></i> Kembali ke Semua Jalur</a>
+    <h2>{{ path.title }}</h2>
+    <p class="lead">{{ path.description }}</p>
+    <hr>
+    
+    <h4 class="mt-4 mb-3">Roadmap Pembelajaran</h4>
+    <div class="accordion" id="modulesAccordion">
+        {% for module in modules %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-{{ module.id }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ module.id }}" aria-expanded="false" aria-controls="collapse-{{ module.id }}">
+                    <strong>Modul {{ module.order }}: {{ module.title }}</strong>
+                </button>
+            </h2>
+            <div id="collapse-{{ module.id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ module.id }}" data-bs-parent="#modulesAccordion">
+                <div class="accordion-body">
+                    {{ module.description | safe }}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p>Modul untuk jalur karier ini akan segera ditambahkan.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

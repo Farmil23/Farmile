@@ -524,3 +524,85 @@ class Certificate(db.Model):
 
     def __repr__(self):
         return f'<Certificate {self.id} for User {self.user_id} on {self.career_path}>'
+    
+    
+# Tambahkan ini di akhir file app/models.py
+
+# --- Green Career Pathways Models ---
+
+class GreenCareerPath(db.Model):
+    __tablename__ = 'green_career_path'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False, unique=True)
+    description = db.Column(db.Text, nullable=False)
+    # Contoh: 'Renewable Energy Engineer', 'Sustainability Analyst'
+    slug = db.Column(db.String(150), nullable=False, unique=True)
+    
+    modules = db.relationship('GreenModule', backref='career_path', lazy='dynamic', cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f'<GreenCareerPath {self.title}>'
+
+class GreenModule(db.Model):
+    __tablename__ = 'green_module'
+    id = db.Column(db.Integer, primary_key=True)
+    career_path_id = db.Column(db.Integer, db.ForeignKey('green_career_path.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    order = db.Column(db.Integer, nullable=False)
+    
+    # Anda bisa menambahkan relasi ke lesson atau project spesifik green tech jika perlu
+    # lessons = db.relationship('GreenLesson', backref='module', cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f'<GreenModule {self.title}>'
+
+
+# --- Green Impact Project Hub Models ---
+
+class ProjectPartner(db.Model):
+    __tablename__ = 'project_partner'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False, unique=True)
+    # Tipe partner: 'Perusahaan Energi', 'Dinas Lingkungan Hidup', 'NGO Konservasi'
+    partner_type = db.Column(db.String(100), nullable=False)
+    logo_url = db.Column(db.String(255), nullable=True)
+    website = db.Column(db.String(255), nullable=True)
+    
+    projects = db.relationship('GreenProject', backref='partner', lazy='dynamic')
+
+    def __repr__(self):
+        return f'<ProjectPartner {self.name}>'
+
+class GreenProject(db.Model):
+    __tablename__ = 'green_project'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    # 'challenge' atau 'real-world'
+    project_type = db.Column(db.String(50), default='challenge', nullable=False)
+    partner_id = db.Column(db.Integer, db.ForeignKey('project_partner.id'), nullable=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    submissions = db.relationship('GreenProjectSubmission', backref='project', lazy='dynamic', cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f'<GreenProject {self.title}>'
+
+class GreenProjectSubmission(db.Model):
+    __tablename__ = 'green_project_submission'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('green_project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    submission_link = db.Column(db.String(255), nullable=False)
+    reflection = db.Column(db.Text, nullable=True)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Menambahkan lencana 'Verified Green Impact Project'
+    verified = db.Column(db.Boolean, default=False, nullable=False)
+    
+    author = db.relationship('User', backref=db.backref('green_submissions', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<GreenProjectSubmission by User {self.user_id} for Project {self.project_id}>'
+    

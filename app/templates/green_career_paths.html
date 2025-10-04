@@ -1,0 +1,26 @@
+{% extends "dashboard_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">{{ title }}</h1>
+    <p class="lead mb-5">Jelajahi jalur karier terstruktur di industri hijau yang sedang naik daun. Pilih jalur yang paling sesuai dengan minat dan bakat Anda untuk memulai perjalanan menuju karier yang berdampak.</p>
+    
+    <div class="row">
+        {% for path in paths %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ path.title }}</h5>
+                    <p class="card-text flex-grow-1">{{ path.description }}</p>
+                    <a href="{{ url_for('green_career_detail', slug=path.slug) }}" class="btn btn-primary mt-auto">Lihat Roadmap</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col">
+            <p>Belum ada jalur karier hijau yang tersedia saat ini. Nantikan pembaruan selanjutnya!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

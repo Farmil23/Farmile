@@ -5,5 +5,5 @@ __pycache__/
 *.pyc
 .env
 
-generate/
+
 dump/
