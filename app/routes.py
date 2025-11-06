@@ -741,7 +741,7 @@ def change_career_path():
         'ui-ux-designer',
         'generative-ai',
         'nlp-engineer',
-        'computer-vision-engineer'
+        'computer-vision-engineer',
         'llm-research-papers'
     ]
     
