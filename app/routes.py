@@ -742,6 +742,7 @@ def change_career_path():
         'generative-ai',
         'nlp-engineer',
         'computer-vision-engineer'
+        'llm-research-papers'
     ]
     
     # Cek apakah new_path ada di dalam daftar yang valid
