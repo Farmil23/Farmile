@@ -19,7 +19,8 @@
             'ai-ml-engineer': 'AI/ML Engineer',
             'devops-engineer': 'DevOps Engineer',
             'cyber-security': 'Cyber Security',
-            'network-engineer': 'Network Engineer'
+            'network-engineer': 'Network Engineer',
+            'llm-research-papers': 'Researh Papers'
         } %}
         <h2>{{ career_map.get(current_user.career_path, current_user.career_path|replace('-', ' ')|title) }}</h2>
         
@@ -154,7 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'ui-ux-designer': { title: 'UI/UX Designer', icon: '🎨', desc: 'Merancang pengalaman pengguna yang intuitif dan menarik secara visual untuk produk digital.' },
         'generative-ai': { title: 'Generative AI Specialist', icon: '✨', desc: 'Mengembangkan dan menerapkan model AI canggih yang dapat menciptakan teks, gambar, dan konten baru.' },
         'nlp-engineer': { title: 'NLP Engineer', icon: '💬', desc: 'Fokus pada pembangunan sistem yang dapat memahami, memproses, dan merespons bahasa manusia.'},
-        'computer-vision-engineer': { title: 'Computer Vision Engineer', icon: '👁️', desc: 'Membangun sistem yang memungkinkan komputer untuk "melihat" dan menginterpretasi dunia visual.'}
+        'computer-vision-engineer': { title: 'Computer Vision Engineer', icon: '👁️', desc: 'Membangun sistem yang memungkinkan komputer untuk "melihat" dan menginterpretasi dunia visual.'},
+
+        'llm-research-papers': { title: 'Paper Research', icon: '👁️', desc: 'Topik skripsi di bidang ai Large Language Model pada penerapan RAG dan LLM.'}
         // ------------------------------------
     };
 

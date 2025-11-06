@@ -281,6 +281,7 @@ def create_app(config_class=Config):
     app.register_blueprint(routes_bp)
     from app import commands
     app.cli.add_command(commands.ensure_admin)
+    app.cli.add_command(commands.seed_llm_command)
 
     if not app.debug and not app.testing:
         # Hanya aktifkan file logging jika variabel VERCEL tidak ada
