@@ -1,35 +1,36 @@
-# Farmile - AI-Powered Career Ecosystem for Tech Students
+Here is the English version of your README file. I have removed all the citation markers ([cite]) and cleaned up the formatting to make it professional and ready for GitHub.
 
-[![Status](https://img.shields.io/badge/status-in_development-blue)](https://farmile.vercel.app/)
-[![Achievement](https://img.shields.io/badge/Achievement-Top_20_Finalist_AI_Talent_Hub_2025-brightgreen)](https://farmile.vercel.app/)
+Farmile - AI-Powered Career Ecosystem for Tech Students
+Farmile is an integrated platform designed to transform students into job-ready talent. We bridge the gap between academia and industry by providing a complete ecosystem ranging from learning to career preparation, all powered by AI.
 
-**Farmile** adalah platform terintegrasi yang didesain untuk mentransformasi mahasiswa menjadi talenta siap kerja. Kami menjembatani kesenjangan antara dunia akademik dan industri dengan menyediakan ekosistem lengkap dari pembelajaran hingga persiapan karier, semuanya didukung oleh AI.
+🏆 Recent Achievement: Top 20 Finalist at AI Talent Hub 2025
+We are proud to announce that Farmile has been selected as one of the Top 20 Finalists in the "AI Talent Hub 2025" program.
 
-## 🏆 Pencapaian Terbaru: Top 20 Finalist di AI Talent Hub 2025
+This prestigious program is organized by the Directorate of Innovation and Science Techno Park, Universitas Indonesia in collaboration with PT Pertamina (Persero), aiming to identify and develop the best Artificial Intelligence (AI) innovations in Indonesia.
 
-[cite_start]Dengan bangga kami umumkan bahwa **Farmile** telah terpilih sebagai salah satu dari **20 Finalis Terbaik** dalam program **"AI Talent Hub 2025"**. 
+As a finalist, we had the opportunity to present Farmile's vision and prototype in a pitching session before a panel of judges comprising industry experts and academics. This achievement serves as validation of the urgency of the problem we are addressing and the potential of the solution we offer to tackle the digital talent paradox in Indonesia.
 
-[cite_start]Program prestisius ini diselenggarakan oleh **Direktorat Inovasi dan Riset Berdampak Tinggi, Universitas Indonesia** bekerja sama dengan **PT Pertamina (Persero)**, bertujuan untuk menjaring dan mengembangkan inovasi berbasis *Artificial Intelligence* (AI) terbaik di Indonesia. [cite: 221, 352]
+🎯 The Problem We Solve
+The Talent Paradox: Indonesia requires 10 million digital talents by 2030, yet only a small fraction of IT graduates are truly job-ready.
 
-[cite_start]Sebagai finalis, kami mendapat kesempatan untuk mempresentasikan visi dan prototipe Farmile dalam sebuah *pitching session* di hadapan dewan juri yang terdiri dari para ahli di industri dan akademisi. [cite: 222, 311] [cite_start]Pencapaian ini merupakan validasi atas urgensi masalah yang kami angkat dan potensi solusi yang kami tawarkan untuk mengatasi paradoks talenta digital di Indonesia. [cite: 24]
+Curriculum Gap: University curricula often do not align with practical industry needs.
 
-## 🎯 Masalah yang Diselesaikan
+Rising Unemployment: Consequently, unemployment rates among computer science graduates are rising globally.
 
--   [cite_start]**Paradoks Talenta**: Indonesia membutuhkan 10 juta talenta digital pada tahun 2030, namun hanya sebagian kecil lulusan IT yang benar-benar siap kerja. [cite: 25, 27]
--   [cite_start]**Kesenjangan Kurikulum**: Kurikulum kampus seringkali tidak selaras dengan kebutuhan praktis industri. 
--   [cite_start]**Peningkatan Pengangguran**: Akibatnya, tingkat pengangguran di kalangan lulusan ilmu komputer meningkat secara global. [cite: 30]
+✨ Our Solution: Key Features
+Farmile provides an integrated, AI-driven career ecosystem with the following features:
 
-## ✨ Solusi Kami: Fitur Utama Farmile
+AI Mentor & Personalized Learning Roadmap: Industry-relevant curriculum accompanied by a personal AI Mentor.
 
-Farmile menyediakan ekosistem karier terpadu berbasis AI dengan fitur-fitur berikut:
-1.  [cite_start]**AI Mentor & Roadmap Belajar Terpersonalisasi**: Kurikulum relevan industri yang didampingi oleh AI Mentor personal. [cite: 32]
-2.  [cite_start]**Proyek Portofolio Terverifikasi**: Pengguna mengerjakan proyek nyata yang divalidasi melalui simulasi wawancara teknis berbasis AI. [cite: 63]
-3.  [cite_start]**AI Resume Builder & ATS Checker**: Secara cerdas membuat CV profesional dan menganalisis kecocokannya dengan deskripsi pekerjaan. [cite: 93]
-4.  [cite_start]**AI Job Coach & Application Tracker**: Mengelola seluruh proses lamaran kerja sambil didampingi AI Coach. [cite: 39]
+Verified Portfolio Projects: Users work on real-world projects validated through AI-based technical interview simulations.
 
-## 🚀 Demo & Kontak
+AI Resume Builder & ATS Checker: Intelligently creates professional CVs and analyzes their compatibility with job descriptions.
 
--   [cite_start]**Live App**: [farmile.vercel.app](https://farmile.vercel.app/) [cite: 143]
--   [cite_start]**Video Demo**: [bit.ly/demofarmile](http://bit.ly/demofarmile) [cite: 146]
+AI Job Coach & Application Tracker: Manages the entire job application process while being guided by an AI Coach.
 
-Kami sangat terbuka untuk kolaborasi dan masukan. Mari bersama-sama membangun masa depan talenta digital Indonesia!
+🚀 Demo & Contact
+Live App: farmile.vercel.app
+
+Video Demo: bit.ly/demofarmile
+
+We are open to collaboration and feedback. Let's build the future of Indonesia's digital talent together!
