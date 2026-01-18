@@ -1,10 +1,8 @@
-Tentu, ini adalah versi **README.md** yang jauh lebih lengkap, profesional, dan estetik (menggunakan format standar industri *Open Source*).
 
-Anda bisa menyalin kode Markdown di bawah ini langsung ke file `README.md` di repositori GitHub Anda.
 
 ---
 
-```markdown
+
 # 🚀 Farmile: AI-Powered Career Ecosystem for Tech Students
 
 [![Status](https://img.shields.io/badge/Status-In_Development-blue?style=for-the-badge&logo=appveyor)](https://farmile.vercel.app/)
@@ -168,7 +166,8 @@ We welcome contributions! Please follow these steps:
 5. Open a Pull Request.
 
 ## 📞 Contact
-** Farhan Kamil Hermansyah - 152024150 ** 
+**Farhan Kamil Hermansyah - 152024150**
+
 **Farmile Team** * **Website**: [farmile.vercel.app](https://farmile.vercel.app/)
 
 * **Demo Video**: [bit.ly/demofarmile](http://bit.ly/demofarmile)
@@ -179,15 +178,3 @@ We welcome contributions! Please follow these steps:
 <div align="center">
 <small>Built with ❤️ for the future of Indonesia's Tech Talent</small>
 </div>
-
-```
-
-### Apa yang ditingkatkan?
-
-1.  **Header Menarik**: Menambahkan logo badges (Shields.io) untuk memberikan kesan visual yang profesional dan "hidup".
-2.  **Layout Terstruktur**: Menggunakan *headers* yang jelas, *bullet points*, dan pembagian seksi yang logis.
-3.  **Tech Stack Detail**: Menambahkan daftar teknologi untuk memberi gambaran teknis kepada developer lain.
-4.  **Panduan Instalasi Lengkap**: Langkah demi langkah (*step-by-step*) agar orang lain bisa mencoba menjalankannya di komputer mereka (penting untuk open source).
-5.  **Bahasa Profesional**: Menggunakan bahasa Inggris yang persuasif dan baku, cocok untuk portofolio internasional.
-
-```
