@@ -1,6 +1,6 @@
 // GANTI SELURUH ISI FILE personal_hub.js DENGAN KODE LENGKAP DI BAWAH INI
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // --- API ENDPOINTS & REFERENSI ELEMEN DOM ---
     const EVENTS_API_URL = window.APP_CONFIG.api.events;
     const TASKS_API_URL = window.APP_CONFIG.api.tasks;
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarDateEl = document.getElementById('sidebar-date-today');
     const sidebarEventsList = document.querySelector('#sidebar-events .item-list');
     const sidebarTasksContainer = document.getElementById('task-categories-container');
-    
+
     const eventModal = document.getElementById('eventModal');
     const eventForm = document.getElementById('eventForm');
     const eventModalTitle = document.getElementById('eventModalTitle');
@@ -28,10 +28,106 @@ document.addEventListener('DOMContentLoaded', function() {
     const taskIdInput = document.getElementById('taskId');
     const taskDeleteBtn = document.getElementById('taskDeleteBtn');
 
+    // NEW SKS REFS
+    const taskPagesInput = document.getElementById('taskPages');
+    const taskIsCodingInput = document.getElementById('taskIsCoding');
+    const aiEstimationResult = document.getElementById('aiEstimationResult');
+
+    // ... (rest of inits)
+
+    // SKS EVENT LISTENERS
+    let debounceTimer;
+    function triggerEstimation() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            const title = document.getElementById('taskTitle').value;
+            const pages = taskPagesInput.value;
+            const isCoding = taskIsCodingInput.value;
+            if (!title) return;
+
+            aiEstimationResult.textContent = '🤖 Menghitung estimasi...';
+            try {
+                const res = await fetch('/ai/estimate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, pages, is_coding: isCoding })
+                });
+                const data = await res.json();
+                aiEstimationResult.textContent = "✨ " + data.message;
+            } catch (e) {
+                console.error(e);
+                aiEstimationResult.textContent = '';
+            }
+        }, 800);
+    }
+
+    taskPagesInput.addEventListener('input', triggerEstimation);
+    taskIsCodingInput.addEventListener('change', triggerEstimation);
+    document.getElementById('taskTitle').addEventListener('blur', triggerEstimation);
+
+    // ...
+
+    function openTaskModal(task) {
+        taskForm.reset();
+        if (task) {
+            taskModalTitle.textContent = "Detail Tugas";
+            taskIdInput.value = task.id;
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDescription').value = task.description || '';
+            taskDueDatePicker.setDate(task.due_date || '', true);
+            document.getElementById('taskPriority').value = task.priority || 'medium';
+            document.getElementById('taskReminder').value = task.reminder_minutes || '30';
+
+            // SKS Populate
+            taskPagesInput.value = task.estimated_pages || 0;
+            taskIsCodingInput.value = task.is_coding ? 'true' : 'false';
+            aiEstimationResult.textContent = '';
+
+            taskDeleteBtn.style.display = 'inline-block';
+        } else {
+            taskModalTitle.textContent = "Tugas Baru";
+            taskIdInput.value = '';
+            taskDueDatePicker.clear();
+            document.getElementById('taskPriority').value = 'medium';
+            document.getElementById('taskReminder').value = '30';
+
+            // SKS Reset
+            taskPagesInput.value = 0;
+            taskIsCodingInput.value = 'false';
+            aiEstimationResult.textContent = '';
+
+            taskDeleteBtn.style.display = 'none';
+        }
+        taskModal.classList.add('visible');
+    }
+
+    async function handleTaskFormSubmit(e) {
+        e.preventDefault();
+        const taskId = taskIdInput.value;
+        const taskData = {
+            title: document.getElementById('taskTitle').value,
+            description: document.getElementById('taskDescription').value,
+            due_date: document.getElementById('taskDueDate').value || null,
+            priority: document.getElementById('taskPriority').value,
+            reminder_minutes: document.getElementById('taskReminder').value,
+            // SKS Data
+            estimated_pages: taskPagesInput.value,
+            is_coding: taskIsCodingInput.value === 'true'
+        };
+        const url = taskId ? `${TASKS_API_URL}/${taskId}` : TASKS_API_URL;
+        const method = taskId ? 'PUT' : 'POST';
+        try {
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(taskData) });
+            if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan tugas');
+            taskModal.classList.remove('visible');
+            calendar.refetchEvents();
+            loadTodaysAgenda();
+        } catch (error) { alert(error.message); }
+    }
     const dailyAgendaModal = document.getElementById('dailyAgendaModal');
     const confirmDeleteModal = document.getElementById('confirmDeleteModal');
     const aiOrganizerBtn = document.getElementById('ai-organizer-btn');
-    
+
     // --- INISIALISASI LIBRARY ---
     const flatpickrConfig = { locale: "id", onOpen: () => document.body.classList.add('no-scroll'), onClose: () => document.body.classList.remove('no-scroll') };
     const startDatePicker = flatpickr("#eventStartDate", { ...flatpickrConfig, dateFormat: "Y-m-d" });
@@ -47,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             list7Days: { type: 'list', duration: { days: 7 }, buttonText: '7 Hari' },
             list30Days: { type: 'list', duration: { days: 30 }, buttonText: '30 Hari' }
         },
-        events: EVENTS_API_URL, 
+        events: EVENTS_API_URL,
         editable: true,
         selectable: true,
         dateClick: (info) => handleDateClick(info),
@@ -73,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
         openTaskModal(null);
         taskDueDatePicker.setDate(selectedDateForNewEvent, true);
     });
-    
+
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.closest('.modal-close-btn')) {
@@ -84,11 +180,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     eventForm.addEventListener('submit', handleEventFormSubmit);
     taskForm.addEventListener('submit', handleTaskFormSubmit);
-    eventDeleteBtn.addEventListener('click', () => { const eventId = eventIdInput.value.replace('event-',''); const event = { id: eventId, title: document.getElementById('eventTitle').value }; handleDeleteEvent(event); });
-    taskDeleteBtn.addEventListener('click', () => { const taskId = taskIdInput.value.replace('task-',''); const task = { id: taskId, title: document.getElementById('taskTitle').value }; handleDeleteTask(task); });
-    
+    eventDeleteBtn.addEventListener('click', () => { const eventId = eventIdInput.value.replace('event-', ''); const event = { id: eventId, title: document.getElementById('eventTitle').value }; handleDeleteEvent(event); });
+    taskDeleteBtn.addEventListener('click', () => { const taskId = taskIdInput.value.replace('task-', ''); const task = { id: taskId, title: document.getElementById('taskTitle').value }; handleDeleteTask(task); });
+
     document.querySelectorAll('.color-option').forEach(option => {
-        option.addEventListener('click', function() {
+        option.addEventListener('click', function () {
             document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
             this.classList.add('selected');
             eventColorInput.value = this.dataset.color;
@@ -103,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateStr = clickInfo.dateStr;
         const dailyAgendaTitle = document.getElementById('dailyAgendaTitle');
         const dailyAgendaContent = document.getElementById('dailyAgendaContent');
-        
+
         dailyAgendaTitle.textContent = `Agenda untuk ${clickInfo.date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}`;
         dailyAgendaContent.innerHTML = "<p class='empty-item'>Memuat agenda...</p>";
         dailyAgendaModal.classList.add('visible');
@@ -114,9 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const events = items.filter(item => item.extendedProps.item_type === 'event');
             const tasks = items.filter(item => item.extendedProps.item_type === 'task');
-            
+
             dailyAgendaContent.innerHTML = '';
-            
+
             const eventHeader = document.createElement('h4');
             eventHeader.textContent = 'Acara';
             dailyAgendaContent.appendChild(eventHeader);
@@ -192,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadTodaysAgenda() {
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
-        
+
         sidebarDateEl.textContent = today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
         sidebarEventsList.innerHTML = '<li class="empty-item">Memuat...</li>';
         sidebarTasksContainer.innerHTML = '<p class="empty-item">Memuat...</p>';
@@ -203,12 +299,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(`${TASKS_API_URL}?filter=today_and_overdue`)
             ]);
             const allCalendarItems = await eventsResponse.json();
-            const tasksData = await tasksResponse.json(); 
-            
+            const tasksData = await tasksResponse.json();
+
             const events = allCalendarItems.filter(item => item.extendedProps.item_type === 'event');
-            
+
             renderEvents(sidebarEventsList, events);
-            renderCategorizedTasks(sidebarTasksContainer, tasksData); 
+            renderCategorizedTasks(sidebarTasksContainer, tasksData);
         } catch (error) {
             console.error("Gagal memuat data agenda:", error);
             sidebarEventsList.innerHTML = '<li class="empty-item error">Gagal memuat acara.</li>';
@@ -225,9 +321,9 @@ document.addEventListener('DOMContentLoaded', function() {
         events.forEach(event => {
             const li = document.createElement('li');
             li.className = 'agenda-item';
-            
+
             const timeString = new Date(event.start).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            
+
             let descriptionHtml = '';
             if (event.extendedProps.description) {
                 descriptionHtml = `<p class="agenda-item-detail">${event.extendedProps.description}</p>`;
@@ -241,33 +337,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p class="agenda-item-detail">${timeString}</p>
                 ${descriptionHtml}
             `;
-            
+
             li.addEventListener('click', () => {
                 openEventModal(event);
             });
             listElement.appendChild(li);
         });
     }
-    
+
     function renderCategorizedTasks(container, tasksData) {
         container.innerHTML = '';
         let hasAnyTask = false;
-    
+
         const createTaskList = (tasks, title, icon) => {
             if (!tasks || tasks.length === 0) return '';
             hasAnyTask = true;
-            
+
             let tasksHtml = `<div class="task-category">
                                 <div class="task-category-header">
                                     <span class="icon">${icon}</span> ${title}
                                 </div>
                                 <ul class="item-list">`;
-            
+
             tasks.forEach(task => {
-                const dueDateString = task.due_date 
-                    ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}` 
+                const dueDateString = task.due_date
+                    ? `Jatuh tempo: ${new Date(task.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}`
                     : 'Tanpa batas waktu';
-                
+
                 tasksHtml += `
                     <li class="agenda-item" data-task-id="${task.id}">
                         <div class="agenda-item-title">${task.title}</div>
@@ -277,21 +373,21 @@ document.addEventListener('DOMContentLoaded', function() {
             tasksHtml += `</ul></div>`;
             return tasksHtml;
         };
-    
+
         container.innerHTML += createTaskList(tasksData.overdue, 'Terlewat', '❗️');
         container.innerHTML += createTaskList(tasksData.today, 'Hari Ini', '🎯');
         container.innerHTML += createTaskList(tasksData.no_due_date, 'Tugas Lainnya', '📚');
-    
+
         if (!hasAnyTask) {
             container.innerHTML = `<p class="empty-item">Tidak ada tugas yang perlu ditampilkan.</p>`;
         }
-    
+
         container.querySelectorAll('.agenda-item').forEach(item => {
             item.addEventListener('click', () => {
                 const taskId = item.dataset.taskId;
                 const allTasks = [...(tasksData.overdue || []), ...(tasksData.today || []), ...(tasksData.no_due_date || [])];
                 const taskData = allTasks.find(t => t.id == taskId);
-                if(taskData) openTaskModal(taskData);
+                if (taskData) openTaskModal(taskData);
             });
         });
     }
@@ -300,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function openEventModal(event) {
         eventForm.reset();
         document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
-        if (event) { 
+        if (event) {
             eventModalTitle.textContent = "Edit Acara";
             eventIdInput.value = event.id.replace('event-', '');
             document.getElementById('eventTitle').value = event.title;
@@ -318,11 +414,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedColorEl = document.querySelector(`.color-option[data-color='${eventColor}']`);
             if (selectedColorEl) selectedColorEl.classList.add('selected');
             eventDeleteBtn.style.display = 'inline-block';
-        } else { 
+        } else {
             eventModalTitle.textContent = "Acara Baru";
             eventIdInput.value = '';
             document.getElementById('eventReminder').value = '10';
-            const initialDate = event || new Date(); 
+            const initialDate = event || new Date();
             startDatePicker.setDate(initialDate, true);
             startTimePicker.clear();
             endDatePicker.clear();
@@ -338,12 +434,12 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         const eventIdRaw = eventIdInput.value;
         const eventId = eventIdRaw.startsWith('event-') ? eventIdRaw.replace('event-', '') : eventIdRaw;
-        const eventData = { 
-            title: document.getElementById('eventTitle').value, 
-            description: document.getElementById('eventDescription').value, 
-            start: combineDateTime(startDatePicker.input.value, startTimePicker.input.value), 
-            end: combineDateTime(endDatePicker.input.value, endTimePicker.input.value), 
-            link: document.getElementById('eventLink').value, 
+        const eventData = {
+            title: document.getElementById('eventTitle').value,
+            description: document.getElementById('eventDescription').value,
+            start: combineDateTime(startDatePicker.input.value, startTimePicker.input.value),
+            end: combineDateTime(endDatePicker.input.value, endTimePicker.input.value),
+            link: document.getElementById('eventLink').value,
             color: eventColorInput.value,
             reminder_minutes: document.getElementById('eventReminder').value
         };
@@ -357,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadTodaysAgenda();
         } catch (error) { alert(error.message); }
     }
-    
+
     async function handleDeleteEvent(event) {
         const confirmed = await showConfirmModal("Hapus Acara", `Anda yakin ingin menghapus "${event.title}"?`);
         if (event.id && confirmed) {
@@ -370,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) { alert(error.message); }
         }
     }
-    
+
     async function handleEventDrop(info) {
         if (info.event.extendedProps.item_type === 'task') {
             info.revert();
@@ -387,7 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function openTaskModal(task) {
         taskForm.reset();
-        if(task) {
+        if (task) {
             taskModalTitle.textContent = "Detail Tugas";
             taskIdInput.value = task.id;
             document.getElementById('taskTitle').value = task.title;
@@ -410,17 +506,17 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleTaskFormSubmit(e) {
         e.preventDefault();
         const taskId = taskIdInput.value;
-        const taskData = { 
-            title: document.getElementById('taskTitle').value, 
-            description: document.getElementById('taskDescription').value, 
-            due_date: document.getElementById('taskDueDate').value || null, 
+        const taskData = {
+            title: document.getElementById('taskTitle').value,
+            description: document.getElementById('taskDescription').value,
+            due_date: document.getElementById('taskDueDate').value || null,
             priority: document.getElementById('taskPriority').value,
             reminder_minutes: document.getElementById('taskReminder').value
         };
         const url = taskId ? `${TASKS_API_URL}/${taskId}` : TASKS_API_URL;
         const method = taskId ? 'PUT' : 'POST';
         try {
-            const response = await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(taskData)});
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(taskData) });
             if (!response.ok) throw new Error((await response.json()).message || 'Gagal menyimpan tugas');
             taskModal.classList.remove('visible');
             calendar.refetchEvents();
@@ -430,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function handleDeleteTask(task) {
         const confirmed = await showConfirmModal("Hapus Tugas", `Anda yakin ingin menghapus "${task.title}"?`);
-        if(task.id && confirmed) {
+        if (task.id && confirmed) {
             try {
                 const response = await fetch(`${TASKS_API_URL}/${task.id}`, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Gagal menghapus tugas');
@@ -440,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) { alert(error.message); }
         }
     }
-    
+
     function handleAIOrganizerClick() {
         aiOrganizerBtn.disabled = true;
         aiOrganizerBtn.textContent = 'Mengarahkan...';
@@ -487,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!dateStr) return null;
         return `${dateStr} ${timeStr || '00:00:00'}`;
     }
-    
+
     function handleUrlFragment() {
         setTimeout(() => {
             const hash = window.location.hash;
@@ -501,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (hash.startsWith('#task-')) {
                 const taskId = hash.substring('#task-'.length);
                 const allCalendarItems = calendar.getEvents();
-                const taskEvent = allCalendarItems.find(item => 
+                const taskEvent = allCalendarItems.find(item =>
                     item.extendedProps.item_type === 'task' && item.extendedProps.original_task.id == taskId
                 );
                 if (taskEvent) {
@@ -514,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 500);
     }
-    
+
     // --- SISTEM ANTRIAN MODAL PROAKTIF (BARU) ---
     let isModalShowing = false;
     const modalQueue = [];
@@ -531,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showModal(modalElement) {
         modalElement.style.display = 'flex';
         setTimeout(() => modalElement.classList.add('visible'), 10);
-        
+
         const closeModal = () => {
             modalElement.classList.remove('visible');
             setTimeout(() => {
@@ -540,10 +636,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 processModalQueue();
             }, 300);
         };
-        
+
         // Asumsi tombol kedua selalu 'Nanti saja' atau 'Oke'
         modalElement.querySelector('.button-secondary').onclick = closeModal;
-        modalElement.onclick = (e) => { if(e.target === modalElement) closeModal(); };
+        modalElement.onclick = (e) => { if (e.target === modalElement) closeModal(); };
     }
 
     async function queueProactiveSuggestion() {
@@ -551,7 +647,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(PROACTIVE_SUGGESTION_URL);
             if (!response.ok) return;
             const data = await response.json();
-            
+
             if (data.suggestion) {
                 modalQueue.push(() => {
                     const modal = document.getElementById('ai-suggestion-modal');
@@ -572,7 +668,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(LEARNING_SUGGESTION_URL);
             if (!response.ok) return;
             const data = await response.json();
-            
+
             if (data.suggestion && data.lesson_url) {
                 modalQueue.push(() => {
                     const modal = document.getElementById('learning-suggestion-modal');
@@ -584,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) { console.error('Gagal mengambil saran belajar:', error); }
     }
-    
+
     // --- Inisialisasi ---
     loadTodaysAgenda();
     handleUrlFragment();

@@ -159,6 +159,27 @@
                     <option value="urgent">Mendesak</option>
                 </select>
             </div>
+            
+            <!-- SKS Estimator Fields -->
+            <div style="border: 1px dashed #2DD4BF; padding: 10px; border-radius: 8px; margin-bottom: 1rem; background-color: rgba(45, 212, 191, 0.05);">
+                <label style="color: #2DD4BF; font-weight: bold; display: block; margin-bottom: 0.5rem;" title="Sistem Kebut Semalam Estimator">⏳ SKS Estimator (AI Predict)</label>
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="taskPages" style="font-size: 0.85rem;">Jml. Halaman/Slide</label>
+                        <input type="number" id="taskPages" class="form-control" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label for="taskIsCoding" style="font-size: 0.85rem;">Ada Coding?</label>
+                        <select id="taskIsCoding" class="form-control">
+                            <option value="false">Tidak</option>
+                            <option value="true">Ya</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="aiEstimationResult" style="margin-top: 8px; font-size: 0.9rem; color: #2DD4BF; min-height: 20px;"></div>
+            </div>
+            <!-- End SKS Fields -->
+
             <div class="form-group">
                 <label for="taskReminder">Ingatkan saya</label>
                 <select id="taskReminder" name="reminder_minutes" class="form-control">

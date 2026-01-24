@@ -199,6 +199,12 @@ class Task(db.Model):
     
     lesson_id = db.Column(db.Integer, db.ForeignKey('lesson.id'), nullable=True)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)
+
+    # --- SKS Estimator Fields ---
+    estimated_pages = db.Column(db.Integer, default=0)
+    is_coding = db.Column(db.Boolean, default=False)
+    ai_predicted_duration = db.Column(db.Integer, nullable=True) # in minutes
+    # ---------------------------
     
     author = db.relationship('User', back_populates='tasks')
 

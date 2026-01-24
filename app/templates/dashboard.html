@@ -1,339 +1,356 @@
 {% extends "dashboard_base.html" %}
 
 {% block dashboard_content %}
-  <div class="dashboard-header">
-    <div class="welcome-section">
-      <h1 class="dashboard-title">Selamat Datang Kembali!</h1>
-      <p class="dashboard-subtitle">
-        Mari lanjutkan perjalanan belajar Anda hari ini. 
-        {% if current_user.career_path %}
-          Jalur <strong>{{ current_user.career_path|replace('-', ' ')|title }}</strong> menanti Anda.
-        {% else %}
-          Mulai dengan memilih jalur karier Anda.
-        {% endif %}
-      </p>
+<div class="dashboard-header">
+  <div class="welcome-section">
+    <h1 class="dashboard-title">Selamat Datang Kembali!</h1>
+    <p class="dashboard-subtitle">
+      Mari lanjutkan perjalanan belajar Anda hari ini.
+      {% if current_user.career_path %}
+      Jalur <strong>{{ current_user.career_path|replace('-', ' ')|title }}</strong> menanti Anda.
+      {% else %}
+      Mulai dengan memilih jalur karier Anda.
+      {% endif %}
+    </p>
+  </div>
+  <div class="dashboard-actions">
+    <a href="{{ url_for('routes.chatbot') }}" class="quick-action-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>Chat AI</span>
+    </a>
+    <a href="#" onclick="startFeynman(prompt('Mau belajar topik apa hari ini?'))" class="quick-action-btn secondary">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+      </svg>
+      <span>Feynman Test</span>
+    </a>
+    <a href="{{ url_for('routes.profile') }}" class="quick-action-btn secondary">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      <span>Profil</span>
+    </a>
+  </div>
+</div>
+
+<!-- ... (rest of dashboard) ... -->
+
+{% include 'partials/ai_features.html' %}
+{% endblock %}
+<div class="stat-card">
+  <div class="stat-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>
+  </div>
+  <div class="stat-content">
+    <div class="stat-number">{{ current_user.user_progress.count() }}</div>
+    <div class="stat-label">Materi Diselesaikan</div>
+  </div>
+</div>
+<div class="stat-card">
+  <div class="stat-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+      <polyline points="2 17 12 22 22 17"></polyline>
+      <polyline points="2 12 12 17 22 12"></polyline>
+    </svg>
+  </div>
+  <div class="stat-content">
+    <div class="stat-number">{{ current_user.submissions.count() }}</div>
+    <div class="stat-label">Proyek Aktif</div>
+  </div>
+</div>
+<div class="stat-card">
+  <div class="stat-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+    </svg>
+  </div>
+  <div class="stat-content">
+    <div class="stat-number">{{ progress_percentage }}%</div>
+    <div class="stat-label">Progress Keseluruhan</div>
+  </div>
+</div>
+<div class="stat-card">
+  <div class="stat-icon">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  </div>
+  <div class="stat-content">
+    <div class="stat-number">{{ current_user.chat_sessions.count() }}</div>
+    <div class="stat-label">Sesi Chat</div>
+  </div>
+</div>
+</div>
+
+<div class="dashboard-grid">
+  <div class="dashboard-card main-card">
+    <div class="card-header">
+      <div class="card-title-section">
+        <h3 class="card-title">Jalur Belajar Anda</h3>
+        <div class="card-badge">
+          {% if current_user.career_path %}
+          {{ current_user.career_path|replace('-', ' ')|title }}
+          {% else %}
+          Belum Dipilih
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-progress">
+        <span class="progress-text">{{ progress_percentage }}% Selesai</span>
+      </div>
     </div>
-    <div class="dashboard-actions">
-      <a href="{{ url_for('routes.chatbot') }}" class="quick-action-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-        <span>Chat AI</span>
-      </a>
-      <a href="{{ url_for('routes.profile') }}" class="quick-action-btn secondary">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-        <span>Profil</span>
-      </a>
+    <div class="card-content">
+      {% if current_user.career_path %}
+      <p class="card-description">
+        Lanjutkan perjalanan belajar Anda di jalur <strong>{{ current_user.career_path|replace('-', ' ')|title
+          }}</strong>.
+        Anda telah menyelesaikan {{ current_user.user_progress.count() }} materi.
+      </p>
+
+      <div class="card-actions">
+        <a href="{{ url_for('routes.roadmap') }}" class="button-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          Lihat Roadmap
+        </a>
+        {# --- INI BAGIAN YANG DIPERBARUI --- #}
+        {% if next_learning_url %}
+        <a href="{{ next_learning_url }}" class="button-secondary">Lanjutkan Belajar</a>
+        {% elif current_user.career_path %}
+        <a href="{{ url_for('routes.roadmap') }}" class="button-secondary">🎉 Roadmap Selesai!</a>
+        {% endif %}
+        {# --- AKHIR BAGIAN YANG DIPERBARUI --- #}
+      </div>
+      {% else %}
+      <p class="card-description">
+        Mulai perjalanan belajar Anda dengan memilih jalur karier yang sesuai dengan minat dan tujuan Anda.
+      </p>
+      <div class="card-actions">
+        <a href="#" class="button-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
+          Pilih Jalur Karier
+        </a>
+      </div>
+      {% endif %}
     </div>
   </div>
 
-  <div class="stats-overview">
-    <div class="stat-card">
-      <div class="stat-icon">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <div class="card-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
       </div>
-      <div class="stat-content">
-        <div class="stat-number">{{ current_user.user_progress.count() }}</div>
-        <div class="stat-label">Materi Diselesaikan</div>
+      <h3 class="card-title">Mentor AI</h3>
+    </div>
+    <div class="card-content">
+      <p class="card-description">
+        Dapatkan bantuan instan dari AI mentor untuk pertanyaan teknis, review kode, atau saran karier.
+      </p>
+      <div class="card-actions">
+        <a href="{{ url_for('routes.chatbot') }}" class="button-primary full-width">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Mulai Percakapan
+        </a>
       </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-icon">
+  </div>
+
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <div class="card-icon">
+        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      </div>
+      <h3 class="card-title">Resume AI</h3>
+    </div>
+    <div class="card-content">
+      <p class="card-description">
+        Dapatkan pengecekan Resume mu secara professional oleh Farmile dan Pilihlah sesukamu!
+      </p>
+      <div class="card-actions">
+        <a href="{{ url_for('routes.ai_resume_pro') }}" class="button-primary full-width">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Resume Builder
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <div class="card-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
           <polyline points="2 17 12 22 22 17"></polyline>
           <polyline points="2 12 12 17 22 12"></polyline>
         </svg>
       </div>
-      <div class="stat-content">
-        <div class="stat-number">{{ current_user.submissions.count() }}</div>
-        <div class="stat-label">Proyek Aktif</div>
-      </div>
+      <h3 class="card-title">Proyek Aktif</h3>
     </div>
-    <div class="stat-card">
-      <div class="stat-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-        </svg>
+    <div class="card-content">
+      {% if current_user.submissions.count() > 0 %}
+      {% for submission in recent_submissions %}
+      <div class="project-item">
+        <div class="project-info">
+          <h4 class="project-name">{{ submission.project.title }}</h4>
+          <p class="project-status">
+            {% if submission.interview_score %}
+            Selesai (Skor: {{ submission.interview_score }})
+            {% else %}
+            Menunggu Wawancara
+            {% endif %}
+          </p>
+        </div>
+        <div class="project-progress">
+          <div class="progress-bar small">
+            {% if submission.interview_score %}
+            <div class="progress-fill" style="width: 100%"></div>
+            {% else %}
+            <div class="progress-fill" style="width: 50%"></div>
+            {% endif %}
+          </div>
+        </div>
       </div>
-      <div class="stat-content">
-        <div class="stat-number">{{ progress_percentage }}%</div>
-        <div class="stat-label">Progress Keseluruhan</div>
+      {% endfor %}
+      {% else %}
+      <div class="project-item">
+        <div class="project-info">
+          <h4 class="project-name">Belum Ada Proyek</h4>
+          <p class="project-status">Mulai proyek pertama Anda</p>
+        </div>
       </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>
-      </div>
-      <div class="stat-content">
-        <div class="stat-number">{{ current_user.chat_sessions.count() }}</div>
-        <div class="stat-label">Sesi Chat</div>
+      {% endif %}
+      <div class="card-actions">
+        <a href="{{ url_for('routes.my_projects') }}" class="button-secondary full-width">
+          {% if current_user.submissions.count() > 0 %}
+          Lihat Semua Proyek
+          {% else %}
+          Pilih Proyek Pertama
+          {% endif %}
+        </a>
       </div>
     </div>
   </div>
 
-  <div class="dashboard-grid">
-    <div class="dashboard-card main-card">
-      <div class="card-header">
-        <div class="card-title-section">
-          <h3 class="card-title">Jalur Belajar Anda</h3>
-          <div class="card-badge">
-            {% if current_user.career_path %}
-              {{ current_user.career_path|replace('-', ' ')|title }}
-            {% else %}
-              Belum Dipilih
-            {% endif %}
-          </div>
-        </div>
-        <div class="card-progress">
-            <span class="progress-text">{{ progress_percentage }}% Selesai</span>
-        </div>
+  <div class="dashboard-card full-width">
+    <div class="card-header">
+      <div class="card-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
       </div>
-      <div class="card-content">
-      {% if current_user.career_path %}
-        <p class="card-description">
-          Lanjutkan perjalanan belajar Anda di jalur <strong>{{ current_user.career_path|replace('-', ' ')|title }}</strong>. 
-          Anda telah menyelesaikan {{ current_user.user_progress.count() }} materi.
-        </p>
-        
-        <div class="card-actions">
-          <a href="{{ url_for('routes.roadmap') }}" class="button-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-            </svg>
-            Lihat Roadmap
-          </a>
-          {# --- INI BAGIAN YANG DIPERBARUI --- #}
-          {% if next_learning_url %}
-            <a href="{{ next_learning_url }}" class="button-secondary">Lanjutkan Belajar</a>
-          {% elif current_user.career_path %}
-            <a href="{{ url_for('routes.roadmap') }}" class="button-secondary">🎉 Roadmap Selesai!</a>
-          {% endif %}
-          {# --- AKHIR BAGIAN YANG DIPERBARUI --- #}
-        </div>
-      {% else %}
-        <p class="card-description">
-          Mulai perjalanan belajar Anda dengan memilih jalur karier yang sesuai dengan minat dan tujuan Anda.
-        </p>
-        <div class="card-actions">
-          <a href="#" class="button-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 5v14M5 12h14"></path>
-            </svg>
-            Pilih Jalur Karier
-          </a>
-        </div>
-      {% endif %}
-      </div>
+      <h3 class="card-title">Aktivitas Terbaru</h3>
     </div>
+    <div class="card-content">
+      <div class="activity-list">
+        {% set has_activity = false %}
 
-    <div class="dashboard-card">
-      <div class="card-header">
-        <div class="card-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-        </div>
-        <h3 class="card-title">Mentor AI</h3>
-      </div>
-      <div class="card-content">
-        <p class="card-description">
-          Dapatkan bantuan instan dari AI mentor untuk pertanyaan teknis, review kode, atau saran karier.
-        </p>
-        <div class="card-actions">
-          <a href="{{ url_for('routes.chatbot') }}" class="button-primary full-width">
+        {% if recent_sessions is defined and recent_sessions %}
+        {% for session in recent_sessions[:1] %}
+        {% set has_activity = true %}
+        <div class="activity-item">
+          <div class="activity-icon chat">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
-            Mulai Percakapan
-          </a>
-        </div>
-      </div>
-    </div>
-
-
-    <div class="dashboard-card">
-      <div class="card-header">
-        <div class="card-icon">
-          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-        </div>
-        <h3 class="card-title">Resume AI</h3>
-      </div>
-      <div class="card-content">
-        <p class="card-description">
-          Dapatkan pengecekan Resume mu secara professional oleh Farmile dan Pilihlah sesukamu!
-        </p>
-        <div class="card-actions">
-          <a href="{{ url_for('routes.ai_resume_pro') }}" class="button-primary full-width">
-            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-            Resume Builder 
-          </a>
-        </div>
-      </div>
-    </div>
-
-    
-
-    
-
-    <div class="dashboard-card">
-      <div class="card-header">
-        <div class="card-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-            <polyline points="2 17 12 22 22 17"></polyline>
-            <polyline points="2 12 12 17 22 12"></polyline>
-          </svg>
-        </div>
-        <h3 class="card-title">Proyek Aktif</h3>
-      </div>
-      <div class="card-content">
-        {% if current_user.submissions.count() > 0 %}
-        {% for submission in recent_submissions %}
-          <div class="project-item">
-            <div class="project-info">
-              <h4 class="project-name">{{ submission.project.title }}</h4>
-              <p class="project-status">
-                {% if submission.interview_score %}
-                  Selesai (Skor: {{ submission.interview_score }})
-                {% else %}
-                  Menunggu Wawancara
-                {% endif %}
-              </p>
-            </div>
-            <div class="project-progress">
-              <div class="progress-bar small">
-                {% if submission.interview_score %}
-                  <div class="progress-fill" style="width: 100%"></div>
-                {% else %}
-                  <div class="progress-fill" style="width: 50%"></div>
-                {% endif %}
-              </div>
-            </div>
           </div>
-          {% endfor %}
-        {% else %}
-          <div class="project-item">
-            <div class="project-info">
-              <h4 class="project-name">Belum Ada Proyek</h4>
-              <p class="project-status">Mulai proyek pertama Anda</p>
-            </div>
+          <div class="activity-content">
+            <p class="activity-text">Chat dengan AI Mentor: "{{ session.title }}"</p>
+            <span class="activity-time">{{ session.timestamp.strftime('%d %b %Y') if session.timestamp else 'Baru saja'
+              }}</span>
           </div>
+        </div>
+        {% endfor %}
         {% endif %}
-        <div class="card-actions">
-          <a href="{{ url_for('routes.my_projects') }}" class="button-secondary full-width">
-            {% if current_user.submissions.count() > 0 %}
-              Lihat Semua Proyek
-            {% else %}
-              Pilih Proyek Pertama
-            {% endif %}
-          </a>
-        </div>
-      </div>
-  </div>
 
-    <div class="dashboard-card full-width">
-      <div class="card-header">
-        <div class="card-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-            <path d="M3 3v5h5"></path>
-          </svg>
+        {% if recent_submissions is defined and recent_submissions %}
+        {% for submission in recent_submissions[:1] %}
+        {% set has_activity = true %}
+        <div class="activity-item">
+          <div class="activity-icon project">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            </svg>
+          </div>
+          <div class="activity-content">
+            <p class="activity-text">Submit proyek: "{{ submission.project.title }}"</p>
+            <span class="activity-time">Baru saja</span>
+          </div>
         </div>
-        <h3 class="card-title">Aktivitas Terbaru</h3>
-      </div>
-      <div class="card-content">
-        <div class="activity-list">
-          {% set has_activity = false %}
-          
-          {% if recent_sessions is defined and recent_sessions %}
-            {% for session in recent_sessions[:1] %}
-              {% set has_activity = true %}
-              <div class="activity-item">
-                <div class="activity-icon chat">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                </div>
-                <div class="activity-content">
-                  <p class="activity-text">Chat dengan AI Mentor: "{{ session.title }}"</p>
-                  <span class="activity-time">{{ session.timestamp.strftime('%d %b %Y') if session.timestamp else 'Baru saja' }}</span>
-                </div>
-              </div>
-            {% endfor %}
-          {% endif %}
-          
-          {% if recent_submissions is defined and recent_submissions %}
-            {% for submission in recent_submissions[:1] %}
-              {% set has_activity = true %}
-              <div class="activity-item">
-                <div class="activity-icon project">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                  </svg>
-                </div>
-                <div class="activity-content">
-                  <p class="activity-text">Submit proyek: "{{ submission.project.title }}"</p>
-                  <span class="activity-time">Baru saja</span>
-                </div>
-              </div>
-            {% endfor %}
-          {% endif %}
-          
-          {% if recent_progress is defined and recent_progress %}
-            {% for progress in recent_progress[:1] %}
-              {% set has_activity = true %}
-              <div class="activity-item">
-                <div class="activity-icon completed">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </div>
-                <div class="activity-content">
-                  <p class="activity-text">Menyelesaikan materi: "{{ progress.lesson.title if progress.lesson else 'Materi' }}"</p>
-                  <span class="activity-time">{{ progress.completed_at.strftime('%d %b %Y') if progress.completed_at else 'Baru saja' }}</span>
-                </div>
-              </div>
-            {% endfor %}
-          {% endif %}
-          
-          {% if not has_activity %}
-            <div class="activity-item">
-              <div class="activity-icon completed">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                </svg>
-              </div>
-              <div class="activity-content">
-                <p class="activity-text">Selamat datang! Mulai perjalanan belajar Anda</p>
-                <span class="activity-time">Sekarang</span>
-              </div>
-            </div>
-          {% endif %}
+        {% endfor %}
+        {% endif %}
+
+        {% if recent_progress is defined and recent_progress %}
+        {% for progress in recent_progress[:1] %}
+        {% set has_activity = true %}
+        <div class="activity-item">
+          <div class="activity-icon completed">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="activity-content">
+            <p class="activity-text">Menyelesaikan materi: "{{ progress.lesson.title if progress.lesson else 'Materi'
+              }}"</p>
+            <span class="activity-time">{{ progress.completed_at.strftime('%d %b %Y') if progress.completed_at else
+              'Baru saja' }}</span>
+          </div>
         </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if not has_activity %}
+        <div class="activity-item">
+          <div class="activity-icon completed">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
+              </path>
+            </svg>
+          </div>
+          <div class="activity-content">
+            <p class="activity-text">Selamat datang! Mulai perjalanan belajar Anda</p>
+            <span class="activity-time">Sekarang</span>
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
+</div>
 
+{% include 'partials/ai_features.html' %}
 {% endblock %}

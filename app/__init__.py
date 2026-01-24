@@ -250,7 +250,7 @@ def create_app(config_class=Config):
         
         return dict(progress=0)
 
-    admin = Admin(app, name='Farmile Admin', template_mode='bootstrap4', url='/admin')
+    admin = Admin(app, name='Farmile Admin', url='/admin') # template_mode removed to fix error
 
     admin.add_view(UserView(User, db.session))
     admin.add_view(TaskView(Task, db.session))
@@ -279,6 +279,10 @@ def create_app(config_class=Config):
 
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)
+    
+    from app.routes_ai import bp as ai_bp
+    app.register_blueprint(ai_bp)
+    
     from app import commands
     app.cli.add_command(commands.ensure_admin)
 

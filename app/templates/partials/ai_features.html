@@ -1,0 +1,304 @@
+<!-- AI FEATURES PARTIAL -->
+<style>
+    /* Floating Liquid Chat */
+    .liquid-chat-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        border-radius: 50%;
+        box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        z-index: 1000;
+        transition: transform 0.2s;
+    }
+
+    .liquid-chat-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .liquid-chat-window {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 350px;
+        height: 500px;
+        background: #1F2937;
+        border: 1px solid #374151;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        display: none;
+        flex-direction: column;
+        z-index: 1000;
+    }
+
+    .liquid-chat-window.visible {
+        display: flex;
+    }
+
+    .chat-header {
+        padding: 15px;
+        background: #111827;
+        border-bottom: 1px solid #374151;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-body {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .chat-footer {
+        padding: 15px;
+        border-top: 1px solid #374151;
+        display: flex;
+    }
+
+    .chat-input {
+        flex: 1;
+        background: #374151;
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-right: 8px;
+    }
+
+    /* OVT Panic Button */
+    .ovt-btn {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        padding: 10px 20px;
+        background: #EF4444;
+        color: white;
+        border-radius: 30px;
+        font-weight: bold;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+        cursor: pointer;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.2s;
+    }
+
+    .ovt-btn:hover {
+        transform: scale(1.05);
+    }
+
+    /* Modals */
+    .ai-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1100;
+        backdrop-filter: blur(4px);
+    }
+
+    .ai-modal-overlay.visible {
+        display: flex;
+    }
+
+    .ai-modal-content {
+        background: #1F2937;
+        border: 1px solid #374151;
+        padding: 24px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        color: white;
+    }
+
+    .message {
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 80%;
+        font-size: 0.9rem;
+    }
+
+    .message.user {
+        align-self: flex-end;
+        background: #3B82F6;
+        color: white;
+    }
+
+    .message.ai {
+        align-self: flex-start;
+        background: #374151;
+        color: white;
+    }
+</style>
+
+<!-- LIQUID SCHEDULER WIDGET -->
+<div class="liquid-chat-btn" onclick="toggleLiquidChat()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path
+            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+        </path>
+    </svg>
+</div>
+
+<div class="liquid-chat-window" id="liquidChatWindow">
+    <div class="chat-header">
+        <span style="font-weight: bold; color: white;">🌊 Liquid Schedule Agent</span>
+        <button onclick="toggleLiquidChat()"
+            style="background:none; border:none; color:#f00; cursor:pointer;">&times;</button>
+    </div>
+    <div class="chat-body" id="liquidChatBody">
+        <div class="message ai">Halo! Jadwalmu berantakan? Atau lagi capek? Cerita aja, aku bantu atur ulang.</div>
+    </div>
+    <div class="chat-footer">
+        <input type="text" id="liquidChatInput" class="chat-input"
+            placeholder="Misal: 'Gue capek, geser tugas malam ini'...">
+        <button onclick="sendLiquidMessage()"
+            style="background: #3B82F6; border:none; color:white; padding: 8px; border-radius: 6px;">Send</button>
+    </div>
+</div>
+
+<!-- OVT PANIC BUTTON -->
+<div class="ovt-btn" onclick="triggerOVT()">
+    <span>🚨 Panic Mode</span>
+</div>
+
+<!-- OVT MODAL -->
+<div class="ai-modal-overlay" id="ovtModal">
+    <div class="ai-modal-content" style="text-align: center;">
+        <h2 style="color: #EF4444; margin-bottom: 1rem;">Stoic Reality Check</h2>
+        <div id="ovtContent">
+            Loading wisdom...
+        </div>
+        <button onclick="document.getElementById('ovtModal').classList.remove('visible')"
+            style="margin-top: 20px; padding: 8px 16px; background: #374151; color: white; border: none; border-radius: 6px;">Close</button>
+    </div>
+</div>
+
+<!-- FEYNMAN MODAL (Triggered via link/button usually, adding hidden trigger for now) -->
+<div class="ai-modal-overlay" id="feynmanModal">
+    <div class="ai-modal-content">
+        <h3>🧠 Feynman Interrogator</h3>
+        <p style="font-size: 0.9rem; color: #9CA3AF;">Jelaskan konsep ini seolah-olah aku anak 5 tahun.</p>
+        <div id="feynmanChatBody"
+            style="height: 200px; overflow-y: auto; background: #111827; padding: 10px; border-radius: 6px; margin: 10px 0; display: flex; flex-direction: column; gap: 8px;">
+        </div>
+        <div style="display: flex;">
+            <input type="text" id="feynmanInput" class="chat-input" placeholder="Jelaskan di sini...">
+            <button onclick="sendFeynmanMessage()"
+                style="background: #10B981; border:none; color:white; padding: 8px; border-radius: 6px;">Explain</button>
+        </div>
+        <button onclick="document.getElementById('feynmanModal').classList.remove('visible')"
+            style="margin-top: 10px; width: 100%; background: #374151; color: white; border: none; padding: 8px; border-radius: 6px;">End
+            Session</button>
+    </div>
+</div>
+
+
+<script>
+    // Liquid Chat Logic
+    function toggleLiquidChat() {
+        document.getElementById('liquidChatWindow').classList.toggle('visible');
+    }
+
+    async function sendLiquidMessage() {
+        const input = document.getElementById('liquidChatInput');
+        const text = input.value;
+        if (!text) return;
+
+        appendMessage('liquidChatBody', text, 'user');
+        input.value = '';
+
+        try {
+            const res = await fetch('/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await res.json();
+            appendMessage('liquidChatBody', data.reply_text, 'ai');
+        } catch (e) {
+            appendMessage('liquidChatBody', 'Error connecting to agent.', 'ai');
+        }
+    }
+
+    // OVT Logic
+    async function triggerOVT() {
+        document.getElementById('ovtModal').classList.add('visible');
+        const content = document.getElementById('ovtContent');
+        content.innerHTML = '<p>Consulting the Stoics...</p>';
+
+        try {
+            const res = await fetch('/ai/ovt');
+            const data = await res.json();
+
+            content.innerHTML = `
+                <div style="font-size: 1.2rem; font-style: italic; margin-bottom: 20px;">"${data.stoic_quote || 'You suffer more in imagination than in reality.'}"</div>
+                <div style="background: #111827; padding: 15px; border-radius: 8px; text-align: left;">
+                    <p><strong>Facts over Feelings:</strong></p>
+                    <p>${data.data_analysis || ' Your stats are stable.'}</p>
+                    <p style="margin-top: 10px; color: #10B981;">${data.reassurance}</p>
+                </div>
+            `;
+        } catch (e) {
+            content.innerHTML = '<p>Even AI fails sometimes. Breathe.</p>';
+        }
+    }
+
+    // Feynman Logic (Optional Trigger)
+    let feynmanTopic = '';
+    function startFeynman(topic) {
+        feynmanTopic = topic;
+        document.getElementById('feynmanModal').classList.add('visible');
+        document.getElementById('feynmanChatBody').innerHTML = '';
+        appendMessage('feynmanChatBody', `Topik: ${topic}. Coba jelaskan apa itu ${topic}?`, 'ai');
+    }
+
+    async function sendFeynmanMessage() {
+        const input = document.getElementById('feynmanInput');
+        const text = input.value;
+        if (!text) return;
+
+        appendMessage('feynmanChatBody', text, 'user');
+        input.value = '';
+
+        // Mock call for now as route implemented
+        try {
+            const res = await fetch('/ai/feynman', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: feynmanTopic, explanation: text })
+            });
+            const data = await res.json();
+            appendMessage('feynmanChatBody', data.response, 'ai');
+        } catch (e) {
+            appendMessage('feynmanChatBody', 'Error getting feedback.', 'ai');
+        }
+    }
+
+    function appendMessage(containerId, text, type) {
+        const container = document.getElementById(containerId);
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        div.textContent = text;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+</script>
