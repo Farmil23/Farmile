@@ -31,8 +31,6 @@ pydantic==2.5.3
 python-dateutil==2.8.2
 pytz==2023.3
 
-# PDF Reader
-pypdf==3.12.0
 
 # HTML Parsing
 beautifulsoup4==4.12.2
