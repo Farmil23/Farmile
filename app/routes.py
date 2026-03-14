@@ -1873,9 +1873,6 @@ def ai_resume_pro():
     saved_resumes = UserResume.query.filter_by(user_id=current_user.id).order_by(UserResume.created_at.desc()).all()
     return render_template('ai_resume_pro.html', title="AI Resume Pro", saved_resumes=saved_resumes)
 
-
-# GANTI FUNGSI review_resume_pdf_api DI app/routes.py DENGAN INI
-
 @bp.route('/api/ai/review-resume-pdf', methods=['POST'])
 @login_required
 def review_resume_pdf_api():
